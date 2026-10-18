@@ -7,6 +7,7 @@ authors:
     given-names: "Tyson"
 version: "2026.10.18"
 date-released: "2026-10-18"
+repository-code: "https://github.com/twitt212/econsim"
 license: Apache-2.0
 abstract: >-
   EconSim is an agent-based macroeconomic simulator of a US-like economy, written in Rust. Each question is run twice

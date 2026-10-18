@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Tyson Wittmann"]
 license = "Apache-2.0"
+repository = "https://github.com/twitt212/econsim"
 
 [dependencies]
 econsim-core = { path = "../econsim-core" }
