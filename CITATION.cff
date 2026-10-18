@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use EconSim in your work, please cite it as below. EconSim is a simulation, not a forecast."
+title: "EconSim"
+type: software
+authors:
+  - family-names: "Wittmann"
+    given-names: "Tyson"
+version: "2026.10.18"
+date-released: "2026-10-18"
+license: Apache-2.0
+abstract: >-
+  EconSim is an agent-based macroeconomic simulator of a US-like economy, written in Rust. Each question is run twice
+  from the same starting state with the same random numbers, with and without the change, so the difference between the
+  two runs isolates the effect of the change. It is a simulation, not a forecast.
+keywords:
+  - agent-based model
+  - macroeconomics
+  - simulation
+  - monetary policy
+  - Rust

@@ -1,0 +1,98 @@
+{
+ "EA": {
+  "k_us": 0.3,
+  "lam_rp": 1.5,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 2.0
+ },
+ "CN": {
+  "k_us": 0.2,
+  "lam_rp": 0.3,
+  "theta_scale": 1.0,
+  "g_z": 0.0,
+  "uip_w": 0.85,
+  "oil_is_scale": 2.2
+ },
+ "JP": {
+  "k_us": 0.1,
+  "lam_rp": 1.5,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 2.0
+ },
+ "UK": {
+  "k_us": 0.3,
+  "lam_rp": 1.5,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 2.0
+ },
+ "CA": {
+  "k_us": 0.3,
+  "lam_rp": 1.5,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 1.0
+ },
+ "MX": {
+  "k_us": 0.4,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.25,
+  "uip_w": "research",
+  "oil_is_scale": 1.0
+ },
+ "IN": {
+  "k_us": 0.4,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.25,
+  "uip_w": "research",
+  "oil_is_scale": 0.4
+ },
+ "KR": {
+  "k_us": 0.4,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.25,
+  "uip_w": "research",
+  "oil_is_scale": 0.3
+ },
+ "BR": {
+  "k_us": 0.4,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.25,
+  "uip_w": "research",
+  "oil_is_scale": 1.0
+ },
+ "AU": {
+  "k_us": 0.3,
+  "lam_rp": 1.5,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 1.0
+ },
+ "OPEC+": {
+  "k_us": 0.325,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.0,
+  "uip_w": "research",
+  "oil_is_scale": 1.0
+ },
+ "RoW": {
+  "k_us": 0.33,
+  "lam_rp": 2.0,
+  "theta_scale": 0.8,
+  "g_z": 0.25,
+  "uip_w": "research",
+  "oil_is_scale": 0.3
+ }
+}

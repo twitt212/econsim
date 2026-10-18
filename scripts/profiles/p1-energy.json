@@ -1,0 +1,11 @@
+{
+  "energy_fuel_split": true,
+  "pump_expectations": true,
+  "pump_salience": 0.004,
+  "oil_ar": 0.985,
+  "oil_sigma": 0.085,
+  "oil_t_nu": 4.0,
+  "oil_garch_alpha": 0.15,
+  "oil_garch_beta": 0.80,
+  "oil_index_to_world": true
+}

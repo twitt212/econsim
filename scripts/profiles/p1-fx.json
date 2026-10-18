@@ -1,0 +1,10 @@
+{
+  "fx_psi_rho": 0.99,
+  "fx_psi_sigma": 0.0215,
+  "export_elasticity_sr": 0.3,
+  "export_elasticity_lr": 1.0,
+  "export_lag_speed": 0.08,
+  "import_price_elasticity": 0.2,
+  "import_elasticity_lr": 0.6,
+  "import_lag_speed": 0.08
+}

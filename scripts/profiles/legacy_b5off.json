@@ -1,0 +1,22 @@
+{
+  "udur_contact_on": false,
+  "udur_contact_d1": 0.92,
+  "udur_contact_m1": 12,
+  "udur_contact_d2": 1.0,
+  "udur_contact_m2": 12,
+  "udur_effort_norm": 0.5,
+  "udur_rank_kappa": 0.0,
+  "udur_rank_cap": 24.0,
+  "udur_ui_ext_t1": 99.0,
+  "udur_ui_ext_t2": 99.0,
+  "udur_ui_ext_m1": 0.0,
+  "udur_ui_ext_m2": 0.0,
+  "udur_ui_ext_search_scale": 1.0,
+  "udur_hc_loss": 0.0,
+  "udur_hc_loss_max": 0.2,
+  "udur_hc_recover": 0.05,
+  "udur_exit_base_shift": 0.0,
+  "udur_exit_dur": 0.0,
+  "udur_exit_dur_months": 12.0,
+  "udur_resv_decay": 0.97
+}

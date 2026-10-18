@@ -1,0 +1,10 @@
+{
+  "tp_level_sigma": 0.0014,
+  "tp_curv_sigma": 0.002,
+  "lr_infl_gain": 0.02,
+  "rule_path_weight": 0.0,
+  "i_star_gain": 0.6,
+  "speed_limit_weight": 0.0,
+  "r_star_adapt": 0.3,
+  "curve_report": true
+}

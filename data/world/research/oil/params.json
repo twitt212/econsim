@@ -1,0 +1,1745 @@
+{
+ "_meta": {
+  "description": "Endogenous monthly world oil market for the world block: calibration of the prototype in scripts/oil_market_model.py. Flows in % of world consumption Q (103.1 mb/d, 2024); p = 100 ln(P/P*) real Brent; stocks in % of Q-months.",
+  "base_year": 2024,
+  "Q_mbd": 103.1,
+  "date": "2026-10-11",
+  "report": "REPORT.md",
+  "units_note": "mb/d = million barrels per day; % of Q means percent of world consumption (1 mb/d = 0.97%); monthly frequency throughout",
+  "reproduce": "python3 -I scripts/calibrate_oil_model.py --smm; python3 -I scripts/check_oil_model.py; python3 -I scripts/build_params.py (from this folder)"
+ },
+ "anchors": {
+  "Brent_2024_usd": {
+   "value": 80.53,
+   "range": [
+    76,
+    85
+   ],
+   "unit": "USD/bbl, nominal annual mean",
+   "source": "FRED MCOILBRENTEU, 2024"
+  },
+  "WTI_2024_usd": {
+   "value": 76.55,
+   "range": [
+    72,
+    80
+   ],
+   "unit": "USD/bbl",
+   "source": "FRED MCOILWTICO, 2024"
+  },
+  "Brent_2025_usd": {
+   "value": 69.1,
+   "range": null,
+   "unit": "USD/bbl",
+   "source": "FRED MCOILBRENTEU, 2025; EIA STEO Oct 2026 Table 2"
+  },
+  "WTI_2025_usd": {
+   "value": 65.46,
+   "range": null,
+   "unit": "USD/bbl",
+   "source": "FRED MCOILWTICO, 2025"
+  },
+  "world_consumption_2024": {
+   "value": 103.11,
+   "range": [
+    102.5,
+    104.7
+   ],
+   "unit": "mb/d",
+   "source": "EIA INTL 5-2 / STEO Oct 2026 Table 3a (103.10); Energy Institute 104.7 [unverified, definition differs]"
+  },
+  "world_liquids_production_2024": {
+   "value": 103.13,
+   "range": null,
+   "unit": "mb/d",
+   "source": "EIA INTL 53-1; STEO 103.15"
+  },
+  "opec_surplus_capacity_2024": {
+   "value": 3.56,
+   "range": [
+    2.5,
+    5.0
+   ],
+   "unit": "mb/d",
+   "source": "EIA STEO Oct 2026 Table 3d (annual mean of monthly); 3.43 in 2025; ~0 from Mar 2026 (capacity trapped behind Hormuz)"
+  },
+  "stochastic_mean_offset": {
+   "value": 8.355287233989602,
+   "range": null,
+   "unit": "log points",
+   "source": "set by scripts/check_oil_model.py (K4): mean of the simulated monthly-average price above the zero-shock anchor; subtract when stochastic oil is on"
+  }
+ },
+ "time_aggregation": {
+  "w": {
+   "value": 0.789,
+   "range": [
+    0.75,
+    0.8
+   ],
+   "unit": "weight of end-of-month price in the monthly average",
+   "source": "Working (1960): average of a random walk; implies AC1(d pbar)=0.25 and var ratio 2/3; matches 8.88/11.21=0.79 (Kilian T24 oil-specific h0/h1)"
+  }
+ },
+ "demand_aggregate": {
+  "eta0": {
+   "value": 0.1,
+   "range": [
+    0.03,
+    0.18
+   ],
+   "unit": "|elasticity| of world demand to the crude price within the month",
+   "source": "Hamilton 2009 Tables 1-2 (0.05-0.07); CCI 2019 Table 3 (0.017/0.031/0.080 IV); Kilian-Murphy 2014 / Kilian 2020 Table 4 (0.18-0.28 inventory-adjusted); BH 2019 (0.35 flow)"
+  },
+  "eta1": {
+   "value": 0.2001,
+   "range": [
+    0.1,
+    0.4
+   ],
+   "unit": "additional slow elasticity, long run eta0+eta1",
+   "source": "IRF calibration with prior 0.20+-0.08; LR crude elasticity = half of gasoline LR 0.58-0.90 (Dahl-Sterner 1991, Espey 1998, Graham-Glaister 2004, Brons 2008, Hausman-Newey 1995; BH 2019 s3.4)"
+  },
+  "eta_long_run": {
+   "value": 0.30010000000000003,
+   "range": [
+    0.15,
+    0.55
+   ],
+   "unit": "|elasticity|",
+   "source": "eta0+eta1"
+  },
+  "rho_z": {
+   "value": 0.975,
+   "range": [
+    0.95,
+    0.99
+   ],
+   "unit": "monthly persistence of slow demand response (half-life 27 months)",
+   "source": "assumed; vehicle-stock turnover (BH 2019 s3.4: more than a decade); not identified by IRFs"
+  },
+  "beta_y": {
+   "value": 0.85,
+   "range": [
+    0.6,
+    1.1
+   ],
+   "unit": "cyclical income elasticity, consumption-weighted",
+   "source": "Hamilton 2009 Fig 2; BH 2019 prior 0.7, posterior 0.66 (replication); annual comovement 1992-2019 this report (advanced 1.07, EM 0.77)"
+  },
+  "rho_ylag": {
+   "value": 0.6328,
+   "range": [
+    0.3,
+    0.9
+   ],
+   "unit": "oil demand follows the activity gap with this monthly persistence",
+   "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5"
+  }
+ },
+ "supply": {
+  "eps_S": {
+   "value": 0.025,
+   "range": [
+    0.01,
+    0.1
+   ],
+   "unit": "within-month global supply elasticity (spare capacity use)",
+   "source": "Kilian-Murphy 2012 bound 0.0258; CCI 2019 Table 3 0.054-0.081 (Saudi 0.212, OPEC ex-Saudi 0.191, non-OPEC -0.004); BH 2019 0.15 [0.09,0.22]; Saudi 3-month price response 0.15 (this report)"
+  },
+  "opec": {
+   "spare_capacity": {
+    "value": 3.4,
+    "range": [
+     2.5,
+     5.0
+    ],
+    "unit": "% of Q",
+    "source": "EIA STEO Table 3d 2024 3.56 mb/d"
+   },
+   "theta_O": {
+    "value": 0.35,
+    "range": [
+     0.2,
+     0.6
+    ],
+    "unit": "monthly speed of output toward the target",
+    "source": "announced vs realised cuts 2022-24 (about 60% delivered); OPEC press releases"
+   },
+   "price_floor": {
+    "value": -12.0,
+    "range": [
+     -25,
+     0
+    ],
+    "unit": "% below the anchor (3-month average price)",
+    "source": "cuts triggered at Brent $70-95 in 2022-24; fiscal breakevens Saudi $85-93 [secondary]; floor $71.5 in 2024 dollars, range $60-80"
+   },
+   "price_ceiling": {
+    "value": 25.0,
+    "range": [
+     10,
+     40
+    ],
+    "unit": "% above the anchor",
+    "source": "ceiling $103 (range $90-110): shale breakeven $66 (Dallas Fed 2026) plus margin; weakly identified"
+   },
+   "kappa_L": {
+    "value": 0.02,
+    "range": [
+     0.01,
+     0.04
+    ],
+    "unit": "% of Q cut per month per 1% below the floor",
+    "source": "Dec 2008 (-4.2 mb/d in 4 months), Apr 2020, 2016-18 decisions; judgemental"
+   },
+   "kappa_H": {
+    "value": 0.008,
+    "range": [
+     0.002,
+     0.015
+    ],
+    "unit": "% of Q added per month per 1% above the ceiling",
+    "source": "2021-22 unwinding 0.4 mb/d per month; capacity-limited; judgemental"
+   },
+   "tau_min": {
+    "value": -12.0,
+    "range": [
+     -15,
+     -8
+    ],
+    "unit": "% of Q, deepest cumulative cut",
+    "source": "Apr 2020: 9.7 mb/d = 9.4% of Q (OPEC press release 12 Apr 2020)"
+   },
+   "tau_decay": {
+    "value": 0.02,
+    "range": [
+     0.01,
+     0.04
+    ],
+    "unit": "monthly erosion of past cuts while price above floor",
+    "source": "compliance erosion after 2009 and 2020-22; judgemental"
+   },
+   "market_share_unwind_rate": {
+    "value": 0.37,
+    "range": [
+     0.2,
+     0.4
+    ],
+    "unit": "mb/d per month",
+    "source": "OPEC+ April-September 2025: 2.2 mb/d in six months (OPEC press releases 2025)"
+   }
+  },
+  "us_tight_oil": {
+   "share_of_Q": {
+    "value": 0.128,
+    "range": null,
+    "unit": "share",
+    "source": "EIA MER T03.01: US crude 13.27 mb/d / 103.1"
+   },
+   "eps_LR": {
+    "value": 0.45,
+    "range": [
+     0.25,
+     0.95
+    ],
+    "unit": "long-run elasticity of US crude output to price",
+    "source": "Newell-Prest 2019 (0.32 at 1y, 0.95 at 5y implied); Bjornland-Nordvik-Rohrer 2021 (0.3-0.9 well level); this report LP 2009-19 0.19 at 12m, 2021-26 0.06; Dallas Fed Q2 2026"
+   },
+   "rho_stage": {
+    "value": 0.92,
+    "range": [
+     0.9,
+     0.95
+    ],
+    "unit": "monthly persistence of each of two lag stages",
+    "source": "cumulative step response 0.06/0.14/0.28/0.37/0.43 at 6/12/24/36/60 months; EIA MER T05.02 wells drilled and T03.01 production LP"
+   },
+   "within_month_elasticity": {
+    "value": 0.0,
+    "range": [
+     0.0,
+     0.05
+    ],
+    "unit": "",
+    "source": "Newell-Prest 2019 (-0.022 shale, 0.017 conventional per quarter); Kilian 2020"
+   },
+   "regimes": {
+    "boom": {
+     "eps_LR": 0.8,
+     "rho_stage": 0.9
+    },
+    "discipline": {
+     "eps_LR": 0.25,
+     "rho_stage": 0.93
+    }
+   }
+  },
+  "rest_of_world_conventional": {
+   "share_of_Q": {
+    "value": 0.28,
+    "range": null,
+    "unit": "share",
+    "source": "non-OPEC+ non-US liquids excluding NGL/biofuel growth"
+   },
+   "eps_LR": {
+    "value": 0.15,
+    "range": [
+     0.05,
+     0.25
+    ],
+    "unit": "long-run elasticity",
+    "source": "Bornstein-Krusell-Rebelo 2023 Table 8 (0.20); Bjornland et al. Table A.6 (0.05-0.26); CCI non-OPEC -0.004 within month"
+   },
+   "rho": {
+    "value": 0.96,
+    "range": [
+     0.93,
+     0.98
+    ],
+    "unit": "monthly persistence",
+    "source": "conventional lag 3 years (BKR 2023); judgemental"
+   }
+  }
+ },
+ "inventories": {
+  "psi": {
+   "value": 1.8507,
+   "range": [
+    0.5,
+    6.0
+   ],
+   "unit": "% of Q per 1% expected price change",
+   "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5; only psi*(1-rho_E) is identified"
+  },
+  "rho_E": {
+   "value": 0.9,
+   "range": [
+    0.8,
+    0.97
+   ],
+   "unit": "expected persistence of the price deviation",
+   "source": "assumed (not identified)"
+  },
+  "absorption_through_stocks": {
+   "value": 0.18506999999999996,
+   "range": [
+    0.12,
+    0.35
+   ],
+   "unit": "% of Q per 1% price",
+   "source": "psi*(1-rho_E)"
+  },
+  "xi_builds": {
+   "value": 0.15,
+   "range": [
+    0.0,
+    0.25
+   ],
+   "unit": "stock-level feedback when stocks are above normal",
+   "source": "stationarity of stocks; IRF loss flat up to 0.10 (scripts/calibrate_oil_model.py)"
+  },
+  "xi_draws": {
+   "value": 0.08,
+   "range": [
+    0.0,
+    0.4
+   ],
+   "unit": "stock-level feedback when stocks are below normal (scarcity premium)",
+   "source": "stationarity; Sep 2026 Brent miss suggests convexity (REPORT section 9, item 7)"
+  },
+  "lambda_news": {
+   "value": 0.4882,
+   "range": [
+    0.1,
+    1.5
+   ],
+   "unit": "loading of the news state on expected price",
+   "source": "Kanzig (2021) IRF calibration step 2"
+  }
+ },
+ "shocks": {
+  "oil_specific": {
+   "sigma": {
+    "value": 1.774,
+    "range": [
+     1.3,
+     2.4
+    ],
+    "unit": "% of Q per month, scale of the unit-variance innovation of the inventory/precautionary flow (the persistent consumption-demand part is theta_q times this)",
+    "source": "IRF step 1 gives 1.613 for one Kilian sd (T19/T24 oil-specific impact 7.4/8.9% on the monthly-average price); times 1.10 from the step-3 moment match and hand adjustment (SMM 1.07); scripts/calibrate_oil_model.py, REPORT section 7.5"
+   },
+   "rho_I": {
+    "value": 0.95,
+    "range": [
+     0.85,
+     0.95
+    ],
+    "unit": "monthly persistence of the precautionary/inventory flow (at the upper bound of the search)",
+    "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5"
+   },
+   "theta_q": {
+    "value": 0.8405,
+    "range": [
+     0.3,
+     1.2
+    ],
+    "unit": "persistent consumption-demand innovation per unit of inventory innovation",
+    "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5; BH 2019 oil consumption-demand vs inventory-demand shocks"
+   },
+   "rho_q": {
+    "value": 0.99,
+    "range": [
+     0.98,
+     0.995
+    ],
+    "unit": "monthly persistence of the consumption-demand shift",
+    "source": "fixed; carries the long-horizon tail of the Kilian oil-specific IRF (T19 h24 4.5, T24 3.0)"
+   },
+   "student_nu": {
+    "value": 6.0,
+    "range": [
+     4,
+     10
+    ],
+    "unit": "degrees of freedom",
+    "source": "handoff/second-researcher fits: oil-specific nu 10.4 (T19), 7.3 (T24); legacy oil_t_nu 4"
+   },
+   "garch": {
+    "alpha": {
+     "value": 0.1,
+     "range": [
+      0.05,
+      0.18
+     ],
+     "unit": "",
+     "source": "second-researcher GARCH-t fits (T19 0.167/0.765; T24 0.18/0.25); legacy 0.15/0.80"
+    },
+    "beta": {
+     "value": 0.8,
+     "range": [
+      0.25,
+      0.85
+     ],
+     "unit": "",
+     "source": "same"
+    }
+   },
+   "jumps": {
+    "intensity": {
+     "value": 0.013,
+     "range": [
+      0.008,
+      0.02
+     ],
+     "unit": "per month",
+     "source": "jump grid: 0.01-0.02 (second researcher)"
+    },
+    "mean_sd_units": {
+     "value": -2.3,
+     "range": [
+      -3.0,
+      -1.0
+     ],
+     "unit": "sd units of the innovation",
+     "source": "jump grid, SMM"
+    },
+    "sd_sd_units": {
+     "value": 3.3972,
+     "range": [
+      3.0,
+      4.5
+     ],
+     "unit": "sd units",
+     "source": "jump grid, SMM"
+    }
+   }
+  },
+  "supply_disruption": {
+   "intensity": {
+    "value": 0.045,
+    "range": [
+     0.03,
+     0.08
+    ],
+    "unit": "events per month",
+    "source": "CCI 2019 Table 2: 15 exogenous drops in 372 months (0.040); larger here to include sanctions and wars"
+   },
+   "mean_size": {
+    "value": 2.1,
+    "range": [
+     1.5,
+     3.5
+    ],
+    "unit": "% of Q, exponential",
+    "source": "CCI 2019: average 1.9% of world output (Gulf War 7.6%); 2026 Gulf loss about 12%"
+   },
+   "rho_D": {
+    "value": 0.9794,
+    "range": [
+     0.95,
+     0.99
+    ],
+    "unit": "monthly persistence of a disruption",
+    "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5; Kilian production IRF keeps 58-64% of impact at h60"
+   },
+   "compensated": {
+    "value": 1.0,
+    "range": null,
+    "unit": "",
+    "source": "jump arrivals are compensated so the mean disruption is zero"
+   }
+  },
+  "opec_policy_surprise": {
+   "sigma": {
+    "value": 0.55,
+    "range": [
+     0.3,
+     1.0
+    ],
+    "unit": "% of Q per month",
+    "source": "typical monthly quota step 0.2-0.5 mb/d; judgemental"
+   },
+   "student_nu": {
+    "value": 5.0,
+    "range": [
+     3,
+     8
+    ],
+    "unit": "",
+    "source": "assumed"
+   }
+  },
+  "activity": {
+   "sigma": {
+    "value": 1.6657,
+    "range": [
+     1.0,
+     2.2
+    ],
+    "unit": "% per month (prototype only; in the world block y comes from the bloc models)",
+    "source": "variance share of aggregate demand 0.2-0.25 at 24 months (Kilian T24 0.19, T19 0.25)"
+   },
+   "rho_y": {
+    "value": 0.9943,
+    "range": [
+     0.95,
+     0.995
+    ],
+    "unit": "monthly persistence of the activity gap seen by oil demand",
+    "source": "IRF calibration to Kilian (2009) SVAR bands, scripts/calibrate_oil_model.py step 1; REPORT section 7.5"
+   }
+  },
+  "news": {
+   "cut_share": {
+    "value": 0.3915,
+    "range": [
+     0.1,
+     0.6
+    ],
+    "unit": "announced OPEC+ cut as a share of the expectation shock",
+    "source": "Kanzig (2021) IRF calibration step 2: +10% price -> announced cut about 1.6% of Q (1.66 mb/d)"
+   },
+   "phase": {
+    "value": 0.9427,
+    "range": [
+     0.85,
+     0.98
+    ],
+    "unit": "monthly persistence of the un-implemented announced cut",
+    "source": "Kanzig (2021) Fig 3 production IRF (-0.24 at h12, -0.53 at h24)"
+   },
+   "rho_n": {
+    "value": 0.99,
+    "range": [
+     0.9,
+     0.99
+    ],
+    "unit": "persistence of the expectation shock",
+    "source": "Kanzig (2021) price IRF"
+   }
+  }
+ },
+ "us_links": {
+  "oil_import_share": {
+   "value": 0.13,
+   "range": [
+    0.11,
+    0.15
+   ],
+   "unit": "net crude imports / refinery crude input",
+   "source": "EIA MER T03.03b/e: 2.49/16.3 (2024), 2.20 (2025), 1.82 (2026 YTD)"
+  },
+  "crude_share_retail_gasoline": {
+   "value": 0.514,
+   "range": [
+    0.5,
+    0.53
+   ],
+   "unit": "share",
+   "source": "EIA, Factors affecting gasoline prices, 2025 ($3.10/gal); 51.7% average 2016-2025"
+  },
+  "crude_share_refinery_gate": {
+   "value": 0.78,
+   "range": [
+    0.75,
+    0.82
+   ],
+   "unit": "share",
+   "source": "EIA 2025: 51.4/(51.4+14.3)"
+  },
+  "gasoline_passthrough": {
+   "value": 0.0284,
+   "range": [
+    0.0235,
+    0.029
+   ],
+   "unit": "$/gal per $/bbl, monthly differences lags 0-1",
+   "source": "FRED APU000074714 on MCOILWTICO 1990-2024 (this report); EIA Today in Energy 6850: 2.4 cents; 60% in month 0"
+  },
+  "gasoline_margin": {
+   "mean": {
+    "value": 1.57,
+    "range": [
+     1.49,
+     1.63
+    ],
+    "unit": "2024 $/gal",
+    "source": "retail minus WTI/42, 2000-2024"
+   },
+   "ar1": {
+    "value": 0.8,
+    "range": [
+     0.77,
+     0.82
+    ],
+    "unit": "monthly",
+    "source": "same"
+   },
+   "innovation_sd": {
+    "value": 0.15,
+    "range": [
+     0.14,
+     0.17
+    ],
+    "unit": "$/gal",
+    "source": "same"
+   }
+  },
+  "brent_wti_spread": {
+   "mean": {
+    "value": 4.1,
+    "range": [
+     3.6,
+     4.1
+    ],
+    "unit": "USD/bbl",
+    "source": "FRED 2016-2025 (2024 3.98; 2025 3.64)"
+   },
+   "sd": {
+    "value": 2.5,
+    "range": null,
+    "unit": "USD/bbl",
+    "source": "same"
+   },
+   "ar1_log": {
+    "value": 0.81,
+    "range": null,
+    "unit": "monthly",
+    "source": "same; 2026 spikes to 16.9"
+   }
+  },
+  "cpi_pass_through": {
+   "longrun_elasticity_headline": {
+    "value": 0.053,
+    "range": [
+     0.041,
+     0.071
+    ],
+    "unit": "per 1% oil",
+    "source": "geometric lag fitted to Kanzig (2021) / Kilian-LP responses, scripts/us_passthrough_targets.py; Kanzig 1986-2024 0.061"
+   },
+   "half_life_months": {
+    "value": 3.1,
+    "range": [
+     2.3,
+     6.8
+    ],
+    "unit": "months",
+    "source": "same"
+   }
+  }
+ },
+ "blocs": {
+  "US": {
+   "consumption_2024_mbd": {
+    "value": 20.46372024590164,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.1984645770978655,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 22.84437075956284,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 13.23458562021858,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 1.1266921052653092,
+    "range": [
+     0.7766921052653092,
+     1.4766921052653093
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 1.25 (s.e. 0.19), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0723724278632123,
+    "range": [
+     0.03618621393160615,
+     0.25330349752124304
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2958584851048119,
+    "range": [
+     0.14792924255240594,
+     0.5917169702096238
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.51,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 0.77,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "euro_area": {
+   "consumption_2024_mbd": {
+    "value": 9.20567177242,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0892799419294737,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.7208085741388927,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.1692367618436713,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.8194124401929522,
+    "range": [
+     0.46941244019295225,
+     1.1694124401929522
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.80 (s.e. 0.19), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0425720163901248,
+    "range": [
+     0.0212860081950624,
+     0.14900205736543679
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.1740344030028305,
+    "range": [
+     0.08701720150141525,
+     0.348068806005661
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.3,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": -0.88,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "China": {
+   "consumption_2024_mbd": {
+    "value": 16.37053619973,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.1587673944279706,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 5.334335843478484,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 4.234027322404371,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.6145593301447141,
+    "range": [
+     0.2645593301447141,
+     0.9645593301447141
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.39 (s.e. 0.35), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 4.78,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Japan": {
+   "consumption_2024_mbd": {
+    "value": 3.1628934429999997,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0306748871675141,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.1022518646919344,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.0031717076502732,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.8194124401929522,
+    "range": [
+     0.46941244019295225,
+     1.1694124401929522
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.82 (s.e. 0.38), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": -1.76,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "UK": {
+   "consumption_2024_mbd": {
+    "value": 1.424754099,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0138177817292589,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.7388008670120272,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.593886912568306,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.6145593301447141,
+    "range": [
+     0.2645593301447141,
+     0.9645593301447141
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.42 (s.e. 0.23), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0397338819641165,
+    "range": [
+     0.01986694098205825,
+     0.13906858687440776
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.1624321094693085,
+    "range": [
+     0.08121605473465425,
+     0.324864218938617
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.28,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": -0.33,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Canada": {
+   "consumption_2024_mbd": {
+    "value": 2.517879782,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0244193108639654,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 5.996887845763059,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 4.776393035519126,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.7169858851688331,
+    "range": [
+     0.3669858851688331,
+     1.0669858851688332
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.45 (s.e. 0.50), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0638580245851873,
+    "range": [
+     0.03192901229259365,
+     0.22350308604815555
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2610516045042458,
+    "range": [
+     0.1305258022521229,
+     0.5221032090084916
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.45,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 0.53,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Mexico": {
+   "consumption_2024_mbd": {
+    "value": 1.915868853,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0185807906439577,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 2.010520281029429,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 1.841777868852459,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.9218389952170712,
+    "range": [
+     0.5718389952170713,
+     1.2718389952170712
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.88 (s.e. 0.26), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": -0.76,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "India": {
+   "consumption_2024_mbd": {
+    "value": 5.59889,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0543000648325423,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.9386422473754428,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.5899741928259017,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.7169858851688331,
+    "range": [
+     0.3669858851688331,
+     1.0669858851688332
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.29 (s.e. 0.35), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 5.11,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Korea": {
+   "consumption_2024_mbd": {
+    "value": 2.541781421,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0246511176233952,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.1132463542424262,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.0,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 1.02426555024119,
+    "range": [
+     0.67426555024119,
+     1.3742655502411898
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 1.80 (s.e. 0.29), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 1.58,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Brazil": {
+   "consumption_2024_mbd": {
+    "value": 3.26878122138,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0317018252268451,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 4.277066245200474,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 3.356467092896175,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 1.02426555024119,
+    "range": [
+     0.67426555024119,
+     1.3742655502411898
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 1.02 (s.e. 0.23), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0567626885201665,
+    "range": [
+     0.02838134426008325,
+     0.19866940982058273
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2320458706704407,
+    "range": [
+     0.11602293533522035,
+     0.4640917413408814
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.4,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 0.76,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "Australia": {
+   "consumption_2024_mbd": {
+    "value": 1.141980874,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.0110753444871614,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 0.393074662562008,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 0.2703931134012048,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.7169858851688331,
+    "range": [
+     0.3669858851688331,
+     1.0669858851688332
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.25 (s.e. 0.31), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0638580245851873,
+    "range": [
+     0.03192901229259365,
+     0.22350308604815555
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2610516045042458,
+    "range": [
+     0.1305258022521229,
+     0.5221032090084916
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.45,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 1.03,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "OPEC+": {
+   "consumption_2024_mbd": {
+    "value": 15.00950244070111,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.1455675956545445,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 47.688755663246255,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 43.18418277620391,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.6145593301447141,
+    "range": [
+     0.2645593301447141,
+     0.9645593301447141
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 0.63 (s.e. 0.18), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0212860081950624,
+    "range": [
+     0.0106430040975312,
+     0.07450102868271839
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.0870172015014152,
+    "range": [
+     0.0435086007507076,
+     0.1740344030028304
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.15,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 2.0,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  },
+  "rest_of_world": {
+   "consumption_2024_mbd": {
+    "value": 20.4879296129546,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 5-2 (bloc_oil_balance.csv)"
+   },
+   "consumption_share": {
+    "value": 0.1986993683155051,
+    "range": null,
+    "unit": "share",
+    "source": "same"
+   },
+   "liquids_production_2024_mbd": {
+    "value": 11.9739612480262,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 53-1"
+   },
+   "crude_production_2024_mbd": {
+    "value": 9.695351757976228,
+    "range": null,
+    "unit": "mb/d",
+    "source": "EIA INTL 57-1"
+   },
+   "cyclical_income_elasticity": {
+    "value": 0.9730522727291306,
+    "range": [
+     0.6230522727291307,
+     1.3230522727291305
+    ],
+    "unit": "elasticity to the bloc output gap",
+    "source": "scaled so that the consumption-weighted mean is 0.85; annual comovement estimate 1.01 (s.e. 0.25), scripts/demand_elasticities.py"
+   },
+   "sr_crude_price_elasticity": {
+    "value": 0.0496673524551456,
+    "range": [
+     0.0248336762275728,
+     0.1738357335930096
+    ],
+    "unit": "|elasticity| within the month",
+    "source": "eta0 x phi_i / weighted phi"
+   },
+   "slow_crude_price_elasticity": {
+    "value": 0.2030401368366355,
+    "range": [
+     0.10152006841831775,
+     0.406080273673271
+    ],
+    "unit": "|elasticity| added over years",
+    "source": "eta1 x phi_i / weighted phi"
+   },
+   "crude_share_of_fuel_price_phi": {
+    "value": 0.35,
+    "range": null,
+    "unit": "share",
+    "source": "US EIA 2025; euro area Fuels Europe/EC Jan 2025 (taxes about half); Japan own arithmetic (taxes about 41%); others judgemental [unverified]"
+   },
+   "trend_consumption_growth_2010_19_pct": {
+    "value": 1.44,
+    "range": null,
+    "unit": "%/yr",
+    "source": "EIA INTL 5-2 CAGR 2010-2019"
+   }
+  }
+ },
+ "alternatives": {
+  "low_demand_elasticity": {
+   "changes": {
+    "eta0": 0.05,
+    "psi": 2.2452
+   },
+   "note": "Hamilton (2009) / CCI IV low end of the short-run demand elasticity; same total impact absorption A0, inventories absorb more",
+   "share_of_IRF_horizons_inside_bands": 1.0,
+   "moments": {
+    "sd": 9.784,
+    "skew": -0.621,
+    "exkurt": 5.676,
+    "ac1": 0.238,
+    "vr12": 1.354,
+    "ar1_level": 0.967,
+    "sd_level_20y": 0.357,
+    "share_big12": 0.195
+   },
+   "variance_shares_24m": {
+    "I": 0.65,
+    "y": 0.26,
+    "S": 0.091
+   },
+   "mean_offset_logpts": 9.79,
+   "replay_rmse_logpts": 9.1,
+   "replay_consumption_change_mbd": [
+    -1.7,
+    -2.6,
+    -3.1,
+    -2.7,
+    -2.3,
+    -2.6,
+    -2.7
+   ]
+  },
+  "high_demand_elasticity": {
+   "changes": {
+    "eta0": 0.18,
+    "psi": 1.2195
+   },
+   "note": "Kilian-Murphy (2014) short-run demand elasticity 0.18-0.28; same total impact absorption A0, inventories absorb less",
+   "share_of_IRF_horizons_inside_bands": 0.79,
+   "moments": {
+    "sd": 9.59,
+    "skew": -0.654,
+    "exkurt": 6.021,
+    "ac1": 0.118,
+    "vr12": 0.929,
+    "ar1_level": 0.946,
+    "sd_level_20y": 0.275,
+    "share_big12": 0.116
+   },
+   "variance_shares_24m": {
+    "I": 0.685,
+    "y": 0.232,
+    "S": 0.083
+   },
+   "mean_offset_logpts": 7.0,
+   "replay_rmse_logpts": 7.9,
+   "replay_consumption_change_mbd": [
+    -5.9,
+    -7.6,
+    -8.4,
+    -6.0,
+    -4.5,
+    -5.3,
+    -5.1
+   ]
+  },
+  "supply_heavy": {
+   "changes": {
+    "jump_lam_D": 0.07,
+    "jump_mean_D": 3.5,
+    "sig_O": 1.6,
+    "sig_I": 1.4,
+    "sig_y": 1.8,
+    "jump_mu_I": -2.6,
+    "jump_lam_I": 0.02
+   },
+   "note": "Baumeister-Hamilton / Caldara et al. view: supply 30-45% of price variance (same IRF parameters, larger and more frequent supply shocks, smaller oil-specific innovation)",
+   "share_of_IRF_horizons_inside_bands": 0.93,
+   "moments": {
+    "sd": 8.665,
+    "skew": -0.479,
+    "exkurt": 7.979,
+    "ac1": 0.24,
+    "vr12": 1.396,
+    "ar1_level": 0.971,
+    "sd_level_20y": 0.335,
+    "share_big12": 0.158
+   },
+   "variance_shares_24m": {
+    "I": 0.385,
+    "y": 0.264,
+    "S": 0.351
+   },
+   "mean_offset_logpts": 9.82,
+   "replay_rmse_logpts": 8.1,
+   "replay_consumption_change_mbd": [
+    -3.3,
+    -4.7,
+    -5.3,
+    -4.2,
+    -3.3,
+    -3.9,
+    -3.8
+   ]
+  },
+  "shale_boom": {
+   "changes": {
+    "eps_US_LR": 0.8,
+    "rho_U1": 0.9,
+    "rho_U2": 0.9
+   },
+   "note": "2009-2019 regime: production elasticity 0.19 at 12 months, 0.28 at 24",
+   "share_of_IRF_horizons_inside_bands": 0.93,
+   "moments": {
+    "sd": 9.73,
+    "skew": -0.624,
+    "exkurt": 5.797,
+    "ac1": 0.195,
+    "vr12": 1.142,
+    "ar1_level": 0.954,
+    "sd_level_20y": 0.303,
+    "share_big12": 0.16
+   },
+   "variance_shares_24m": {
+    "I": 0.682,
+    "y": 0.235,
+    "S": 0.083
+   },
+   "mean_offset_logpts": 7.76,
+   "replay_rmse_logpts": 8.1,
+   "replay_consumption_change_mbd": [
+    -3.3,
+    -4.7,
+    -5.3,
+    -4.2,
+    -3.3,
+    -3.9,
+    -3.8
+   ]
+  },
+  "shale_discipline": {
+   "changes": {
+    "eps_US_LR": 0.25,
+    "rho_U1": 0.93,
+    "rho_U2": 0.93
+   },
+   "note": "2021-2026 regime: production elasticity 0.06 at 12 months, 0.10 at 24",
+   "share_of_IRF_horizons_inside_bands": 0.93,
+   "moments": {
+    "sd": 9.684,
+    "skew": -0.636,
+    "exkurt": 5.847,
+    "ac1": 0.189,
+    "vr12": 1.162,
+    "ar1_level": 0.962,
+    "sd_level_20y": 0.327,
+    "share_big12": 0.161
+   },
+   "variance_shares_24m": {
+    "I": 0.662,
+    "y": 0.251,
+    "S": 0.088
+   },
+   "mean_offset_logpts": 9.05,
+   "replay_rmse_logpts": 8.1,
+   "replay_consumption_change_mbd": [
+    -3.3,
+    -4.7,
+    -5.3,
+    -4.2,
+    -3.3,
+    -3.9,
+    -3.8
+   ]
+  }
+ },
+ "checks_summary": {
+  "K1": {
+   "market_clearing_identity_max_abs_error": 7.993605777301127e-15,
+   "zero_shock_drift": 0.0,
+   "world_consumption_2024_mbd": 103.11018996508736,
+   "world_production_2024_mbd": 103.13272245632947,
+   "balance_gap_mbd": 0.022532491242117203,
+   "pass_": true
+  },
+  "K2_K3": {
+   "agg_demand_price": 0.86,
+   "kanzig_price": 0.88,
+   "kanzig_production": 1.0,
+   "oil_specific_price": 1.0,
+   "oil_specific_production": 0.67,
+   "supply_price(Cholesky bands)": 0.43,
+   "supply_production": 0.57
+  },
+  "K4": {
+   "sd": 9.529533109120383,
+   "skew": -0.6594767668707091,
+   "exkurt": 5.833917677464237,
+   "ac1": 0.1926932508709318,
+   "vr12": 1.1620885704616857,
+   "ar1_level": 0.9601211985399221,
+   "sd_level": 0.34147600010877655,
+   "sd_level_20y": 0.3196501627603528,
+   "share_big12": 0.15350877192982457,
+   "share_gt3sd": 0.01284796573875803
+  },
+  "K5": {
+   "12": {
+    "I": 0.736,
+    "D": 0.042,
+    "O": 0.025,
+    "y": 0.197
+   },
+   "24": {
+    "I": 0.658,
+    "D": 0.053,
+    "O": 0.035,
+    "y": 0.254
+   }
+  },
+  "K6_rmse_logpts": 8.052066475389656
+ }
+}

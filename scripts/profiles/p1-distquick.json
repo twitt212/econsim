@@ -1,0 +1,7 @@
+{
+  "distquick_entrant_skill_sigma": 0.45,
+  "distquick_top10_nw_target": 0.72,
+  "distquick_kink_wage_indexed": true,
+  "distquick_heir_match": true,
+  "distquick_estate_heirs": 1
+}

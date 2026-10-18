@@ -1,0 +1,13 @@
+bloc,duty_on_us_goods,status,source
+EA,0.0,unverified,EU countermeasures adopted Jul 2025 then suspended 5 Aug 2025 for six months; no later status found. Taken as none in place (research params trade retaliation EU)
+CN,0.319,secondary,"PIIE (Bown), US-China Trade War Tariffs: An Up-to-Date Chart, updated 22 Aug 2026: China's average tariff on US exports 31.9%, covering 100% of goods (total duty, includes MFN)"
+JP,0.0,unverified,no tariff retaliation found 2018-19 or 2025-26
+UK,0.0,unverified,no duties applied (UK-US deal May 2025); the model gives the UK a kappa of 0.2 for new US increments by owner choice
+CA,0.03,estimate,"Canada counter-tariffs of 15%, 25% and 50% on C$27.6bn of US goods effective 8 Sep 2026 (announced 25 Aug 2026; Blakes, Thomson Reuters, Covington) plus the earlier steel, aluminium and autos measures: about 3% of US goods exports to Canada by the author's arithmetic (2% to 5%); not a published statistic"
+MX,0.0,unverified,no tariff retaliation in 2025-26 found
+IN,0.0,unverified,none found
+KR,0.0,unverified,none found
+BR,0.0,unverified,none found
+AU,0.0,unverified,none found
+OPEC+,0.0,assumed,assumption
+RoW,0.0,unverified,Turkey and others retaliated in 2018; nothing current found

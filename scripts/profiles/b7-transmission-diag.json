@@ -1,0 +1,12 @@
+{
+  "disc_rate_knee": 0.0,
+  "disc_rate_sat_scale": 0.01,
+  "disc_rate_sat_slack": 0.0,
+  "fx_mp_premium": 1.25,
+  "fx_rate_knee": 0.02,
+  "fx_rate_sat_scale": 0.015,
+  "pin_exit_decay": 0.9,
+  "pin_exit_hazard": 0.0417,
+  "pin_path_on": true,
+  "qe_duration_weight": 1.5
+}

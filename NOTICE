@@ -1,0 +1,70 @@
+EconSim.
+Copyright 2026 Tyson Wittmann.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+EconSim is a simulation, not a forecast. It is not endorsed or certified by any of
+the organisations named below.
+
+THIRD-PARTY DATA NOTICES
+
+Some files in this repository contain numbers taken from, or computed from, data
+published by others. They are listed one by one, with the source address and the
+terms that were read, in data/README.md. The Apache License applies to the
+EconSim code and to EconSim's own work; it does not change the terms of the
+original data. Attribution:
+
+- U.S. Energy Information Administration (EIA): International Energy Statistics and
+  Short-Term Energy Outlook (October 2026), https://www.eia.gov/. Source: U.S.
+  Energy Information Administration.
+- U.S. Bureau of Economic Analysis (BEA): international transactions, international
+  investment position, direct investment, NIPA tables. Source: U.S. Bureau of
+  Economic Analysis.
+- U.S. Bureau of Labor Statistics (BLS): unemployment rate. Source: U.S. Bureau of
+  Labor Statistics.
+- U.S. Census Bureau: foreign trade statistics. Source: U.S. Census Bureau.
+- Board of Governors of the Federal Reserve System: H.15 selected interest rates,
+  H.10 foreign exchange rates and trade weights. Source: Board of Governors of the
+  Federal Reserve System.
+- U.S. Department of the Treasury: Treasury International Capital (TIC) system,
+  including the Survey of Foreign Portfolio Holdings (SHL, SHC).
+- Federal Reserve Bank of St. Louis, FRED(R): series retrieved from FRED. This
+  product is not endorsed or certified by the Federal Reserve Bank of St. Louis.
+- Freddie Mac, Primary Mortgage Market Survey(R) (30-year fixed-rate mortgage
+  average, retrieved from FRED as MORTGAGE30US): 24 monthly values in
+  scripts/data/us_now.json. Source: Freddie Mac. See "Items to confirm" in
+  data/README.md.
+- World Bank, World Development Indicators (NY.GDP.MKTP.CD, NY.GDP.MKTP.PP.CD):
+  licensed under CC BY 4.0. Used to compute GDP weights; changes were made.
+- International Monetary Fund (IMF): World Economic Outlook data used to fill gaps
+  in GDP weights and as reference growth rates (DataMapper NGDP_RPCH); parameter
+  values from IMF Working Paper WP/13/87 (Carabenciov and others, "GPM6: The
+  Global Projection Model with 6 Regions"). Source: IMF. See "Items to confirm" in
+  data/README.md.
+- OECD, Balanced International Merchandise Trade Statistics (BIMTS) and Trade in
+  Value Added (TiVA, 2025 edition): used to compute bloc trade weights; changes were made. See
+  "Items to confirm" in data/README.md.
+- Bank for International Settlements (BIS), locational banking statistics. Source:
+  BIS.
+- European Central Bank (ECB), "The international role of the euro" (June 2026
+  edition, Table 1). Source: ECB.
+- The Budget Lab at Yale, "The State of U.S. Tariffs" (editions of 8 April and 24
+  August 2026), https://budgetlab.yale.edu/. See "Items to confirm" in
+  data/README.md.
+- Peterson Institute for International Economics (PIIE), Chad P. Bown, "US-China
+  Trade War Tariffs: An Up-to-Date Chart" (22 August 2026). See "Items to confirm"
+  in data/README.md.
+- Federal Reserve Bank of New York, Holston-Laubach-Williams estimates of the
+  natural rate of interest, https://www.newyorkfed.org/research/policy/rstar.
+
+Published studies cited in the parameter files and the documents (for example
+Kilian, Iacoviello and Navarro, Gopinath and others) are cited for the values they
+report; their text is not reproduced.
+
+THIRD-PARTY SOFTWARE
+
+The Rust dependencies, their versions and their licences are listed in
+THIRD_PARTY.md. All are permissive licences compatible with Apache-2.0. A binary
+distribution of EconSim should carry the licence texts of the dependencies it
+contains (for example the MIT and BSD notices); THIRD_PARTY.md says how to
+regenerate the list.

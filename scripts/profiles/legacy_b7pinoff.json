@@ -1,0 +1,8 @@
+{
+  "pin_path_on": false,
+  "pin_exit_decay": 0.97,
+  "pin_exit_hazard": 0.0,
+  "disc_rate_knee": 0.0,
+  "disc_rate_sat_scale": 0.0,
+  "disc_rate_sat_slack": 0.0
+}

@@ -1,0 +1,14 @@
+{
+  "target_utilization": 0.85,
+  "upstream_margin": 0.1,
+  "cipi_excludes_nonstorable": false,
+  "duration_contact_decay": 0.92,
+  "fx_mp_premium": 0.0,
+  "qe_duration_weight": 1.0,
+  "pin_path_on": false,
+  "pin_exit_decay": 0.97,
+  "pin_exit_hazard": 0.0,
+  "disc_rate_knee": 0.0,
+  "disc_rate_sat_scale": 0.0,
+  "disc_rate_sat_slack": 0.0
+}

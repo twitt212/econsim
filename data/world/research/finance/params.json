@@ -1,0 +1,5076 @@
+{
+ "_meta": {
+  "area": "international finance: US financial links with the 12 blocs",
+  "as_of": "2026-10-11 (TIC to 2026-07; BEA IIP 2026Q2; SHL end-June 2025; SHC end-December 2025 preliminary; BEA FDI 2025; BIS LBS 2026Q1)",
+  "blocs": [
+   "euro_area",
+   "china",
+   "japan",
+   "uk",
+   "canada",
+   "mexico",
+   "india",
+   "korea",
+   "brazil",
+   "australia",
+   "opec_plus",
+   "rest_of_world"
+  ],
+  "conventions": {
+   "sign_dollar": "+ = dollar appreciates (foreign currency per USD up); ln S = ln(foreign currency per USD)",
+   "shock_us_policy": "+100bp unexpected persistent US tightening, normalised so that the 1-year yield / policy indicator rises 100bp on impact (Degasperi-Hong-Ricco; Miranda-Agrippino-Rey; Iacoviello-Navarro use the funds rate)",
+   "horizons": "months after the shock unless stated; h12 = one year",
+   "confidence": "high = read from the primary source or computed from official data; medium = literature range with judgement on central value; low = analyst assumption or interpolation",
+   "unverified": "items marked low are not taken from a verified primary-source number"
+  },
+  "files": "REPORT.md has the derivations; data/SOURCES.md lists every file"
+ },
+ "us_policy_spillovers": {
+  "gdp_pct_AE_baseline": {
+   "h12": {
+    "value": -0.15,
+    "range": [
+     -0.35,
+     -0.05
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019 (IFDP 1227): -0.5% at 3y; path interpolated (peak timing delayed vs US)",
+    "confidence": "low",
+    "note": "Peak value verified; 1y/2y values are interpolation assuming the hump shape in their Fig. 4"
+   },
+   "h24": {
+    "value": -0.4,
+    "range": [
+     -0.8,
+     -0.15
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019; Georgiadis 2016 Table 2 (foreign/US trough ratio 0.25-1)",
+    "confidence": "low"
+   },
+   "h36": {
+    "value": -0.5,
+    "range": [
+     -1.0,
+     -0.25
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019 (IFDP 1227), abstract/intro: advanced economies -0.5% after three years",
+    "confidence": "high"
+   }
+  },
+  "gdp_pct_EM_baseline": {
+   "h12": {
+    "value": -0.3,
+    "range": [
+     -0.6,
+     -0.1
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019: interpolated",
+    "confidence": "low"
+   },
+   "h24": {
+    "value": -0.65,
+    "range": [
+     -1.2,
+     -0.3
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019: interpolated",
+    "confidence": "low"
+   },
+   "h36": {
+    "value": -0.8,
+    "range": [
+     -1.5,
+     -0.4
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019 (IFDP 1227): emerging economies -0.8% after three years (text: -0.7% after four)",
+    "confidence": "high"
+   }
+  },
+  "gdp_pct_US_reference": {
+   "h24": {
+    "value": -0.7,
+    "range": [
+     -1.0,
+     -0.4
+    ],
+    "unit": "% of GDP level per +100bp",
+    "source": "Iacoviello & Navarro 2019: US GDP -0.7% after two years",
+    "confidence": "high"
+   }
+  },
+  "gdp_spillover_multiplier": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1.0,
+     "range": [
+      0.7,
+      1.3
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "japan": {
+     "value": 0.9,
+     "range": [
+      0.6,
+      1.3
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "uk": {
+     "value": 0.9,
+     "range": [
+      0.6,
+      1.2
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "canada": {
+     "value": 1.6,
+     "range": [
+      1.2,
+      2.0
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "australia": {
+     "value": 0.6,
+     "range": [
+      0.3,
+      0.9
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "china": {
+     "value": 0.4,
+     "range": [
+      0.2,
+      0.8
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "india": {
+     "value": 0.7,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "korea": {
+     "value": 1.0,
+     "range": [
+      0.7,
+      1.3
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "mexico": {
+     "value": 1.3,
+     "range": [
+      1.0,
+      1.6
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "brazil": {
+     "value": 1.2,
+     "range": [
+      0.8,
+      1.6
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "opec_plus": {
+     "value": 0.9,
+     "range": [
+      0.5,
+      1.3
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    },
+    "rest_of_world": {
+     "value": 1.0,
+     "range": [
+      0.7,
+      1.4
+     ],
+     "unit": "multiplier on AE baseline (euro_area, japan, uk, canada, australia) or EM baseline (all others)",
+     "source": "Judgement from Iacoviello & Navarro 2019 (trade openness, pegs, vulnerability), Georgiadis 2016 (China weak, Australasia smaller), Dedola-Rivolta-Stracca 2017 (Japan IP -0.8%, EA -0.5% per s.d.)"
+    }
+   },
+   "confidence": "low"
+  },
+  "cpi_level_pct_AE": {
+   "h12": {
+    "value": -0.2,
+    "range": [
+     -0.4,
+     0.0
+    ],
+    "unit": "% of CPI level per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021 (OECD CPI peak -0.5%); shape assumed",
+    "confidence": "low"
+   },
+   "h24": {
+    "value": -0.4,
+    "range": [
+     -0.7,
+     -0.1
+    ],
+    "unit": "% per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021",
+    "confidence": "low"
+   },
+   "h36": {
+    "value": -0.5,
+    "range": [
+     -0.8,
+     -0.2
+    ],
+    "unit": "% per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021: OECD CPI peak about -0.5%",
+    "confidence": "medium"
+   }
+  },
+  "cpi_level_pct_EM": {
+   "h12": {
+    "value": -0.3,
+    "range": [
+     -0.8,
+     0.0
+    ],
+    "unit": "% of CPI level per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021; shape assumed",
+    "confidence": "low"
+   },
+   "h24": {
+    "value": -0.7,
+    "range": [
+     -1.3,
+     -0.2
+    ],
+    "unit": "% per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021",
+    "confidence": "low"
+   },
+   "h36": {
+    "value": -1.0,
+    "range": [
+     -1.5,
+     -0.3
+    ],
+    "unit": "% per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021: median EM CPI persistent drop of 1%",
+    "confidence": "medium"
+   }
+  },
+  "policy_rate_response_pp_AE": {
+   "impact": {
+    "value": 0.3,
+    "range": [
+     0.1,
+     0.5
+    ],
+    "unit": "pp per +100bp",
+    "source": "Degasperi-Hong-Ricco 2021: AE ST-rate differential vs US -0.7pp on impact",
+    "confidence": "medium"
+   },
+   "h12": {
+    "value": 0.0,
+    "range": [
+     -0.3,
+     0.3
+    ],
+    "unit": "pp per +100bp",
+    "source": "Miranda-Agrippino & Rey 2020: UK and euro area ease about 30bp endogenously; net of impact",
+    "confidence": "low"
+   },
+   "h24": {
+    "value": -0.3,
+    "range": [
+     -0.5,
+     0.0
+    ],
+    "unit": "pp per +100bp",
+    "source": "Miranda-Agrippino & Rey 2020",
+    "confidence": "low"
+   }
+  },
+  "policy_rate_response_pp_EM": {
+   "impact": {
+    "value": 0.2,
+    "range": [
+     0.0,
+     0.5
+    ],
+    "unit": "pp per +100bp",
+    "source": "Iacoviello & Navarro 2019",
+    "confidence": "low"
+   },
+   "h12": {
+    "value": 0.5,
+    "range": [
+     0.2,
+     1.0
+    ],
+    "unit": "pp per +100bp",
+    "source": "Iacoviello & Navarro 2019: EM policy rates peak about +50bp and stay up longer than the US rate",
+    "confidence": "medium"
+   },
+   "h24": {
+    "value": 0.4,
+    "range": [
+     0.1,
+     0.8
+    ],
+    "unit": "pp per +100bp",
+    "source": "Iacoviello & Navarro 2019",
+    "confidence": "low"
+   }
+  },
+  "policy_rate_surprise_passthrough_xi": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "china": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.2
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "japan": {
+     "value": 0.1,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "uk": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "canada": {
+     "value": 0.35,
+     "range": [
+      0.2,
+      0.6
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "mexico": {
+     "value": 0.6,
+     "range": [
+      0.3,
+      1.0
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "india": {
+     "value": 0.2,
+     "range": [
+      0.0,
+      0.4
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "korea": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "brazil": {
+     "value": 0.1,
+     "range": [
+      0.0,
+      0.4
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "australia": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "opec_plus": {
+     "value": 1.0,
+     "range": [
+      0.8,
+      1.0
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    },
+    "rest_of_world": {
+     "value": 0.4,
+     "range": [
+      0.2,
+      0.7
+     ],
+     "unit": "pp change in bloc policy rate on impact per +1pp exogenous US policy surprise (direct term, on top of the bloc rule on own gaps)",
+     "source": "Degasperi-Hong-Ricco 2021 (AE +0.3 on impact); Iacoviello & Navarro 2019 (EM +0.5 peak); own 12m regressions of 3m rates on US 3m (derived_foreign_3m_on_us3m_12mchg.csv) used as upper bounds; Gulf pegs by construction"
+    }
+   },
+   "confidence": "low",
+   "note": "Raw 12-month co-movement betas (upper bounds): Canada 0.73, UK 0.65, EA 0.52, Australia 0.52, Korea 0.46, India 0.26, Mexico 1.0, Japan 0, Brazil 0"
+  },
+  "fx_dollar_appreciation_pct_AE": {
+   "h12": {
+    "value": 4.0,
+    "range": [
+     2.0,
+     8.0
+    ],
+    "unit": "% dollar appreciation vs bloc currency per +100bp",
+    "source": "Kalemli-Ozcan 2019 (AE 6% after 8 quarters); Ammer et al. 2016 (4% per 100bp of 10y yield); model kappa=4",
+    "confidence": "medium"
+   },
+   "h24": {
+    "value": 5.0,
+    "range": [
+     2.0,
+     10.0
+    ],
+    "unit": "%",
+    "source": "Kalemli-Ozcan 2019: AE 6% at 8 quarters, unconditional",
+    "confidence": "medium"
+   },
+   "h36": {
+    "value": 3.0,
+    "range": [
+     0.0,
+     8.0
+    ],
+    "unit": "%",
+    "source": "Jiang-Krishnamurthy-Lustig 2021 (reversal over 2-3y); assumed",
+    "confidence": "low"
+   }
+  },
+  "fx_dollar_appreciation_pct_EM": {
+   "h12": {
+    "value": 6.0,
+    "range": [
+     2.0,
+     12.0
+    ],
+    "unit": "% dollar appreciation vs bloc currency per +100bp",
+    "source": "Kalemli-Ozcan 2019 (EM 15.7% after 8 quarters unconditional; fades within 4 quarters once the domestic policy response is controlled)",
+    "confidence": "low"
+   },
+   "h24": {
+    "value": 8.0,
+    "range": [
+     2.0,
+     16.0
+    ],
+    "unit": "%",
+    "source": "Kalemli-Ozcan 2019; Dedola-Rivolta-Stracca 2017 (depreciation vs USD in most countries)",
+    "confidence": "low"
+   },
+   "h36": {
+    "value": 5.0,
+    "range": [
+     0.0,
+     16.0
+    ],
+    "unit": "%",
+    "source": "assumed",
+    "confidence": "low"
+   }
+  },
+  "equity_pct_impact": {
+   "value": -8.0,
+   "range": [
+    -12.0,
+    -5.0
+   ],
+   "unit": "% US equity price on impact per +100bp",
+   "source": "Miranda-Agrippino & Rey 2020: global factor falls about 40% on impact, about 8% for a local stock market with equal loading; consistent with US stock response in their Fig. 5",
+   "confidence": "medium",
+   "note": "foreign equity = relative loading x this value"
+  },
+  "us_10y_yield_impact_bp": {
+   "value": 40,
+   "range": [
+    20,
+    50
+   ],
+   "unit": "bp per +100bp",
+   "source": "Miranda-Agrippino & Rey 2020 (implied 40bp rise in the 10y); Degasperi-Hong-Ricco 2021 (10y rises less than 1y)",
+   "confidence": "medium"
+  },
+  "vix_response_pts_per_100bp": {
+   "value": 13,
+   "range": [
+    5,
+    15
+   ],
+   "unit": "VIX points on impact per +100bp",
+   "source": "Derived: MAR 2020 equity -8% divided by own S&P-on-VIX slope -0.63%/pt; Dedola-Rivolta-Stracca 2017 report +7% VIX per s.d. shock (about +10bp peak FFR) but linear scaling to 100bp is not credible",
+   "confidence": "low"
+  },
+  "em_cross_border_bank_loans_pp_per_100bp": {
+   "value": -8.0,
+   "range": [
+    -12.0,
+    -3.0
+   ],
+   "unit": "pp change in loan volume to EM borrowers relative to DM borrowers per +100bp FFR",
+   "source": "Brauning & Ivashina 2020: +2pp per 25bp easing (32pp over a 4pp cycle); firm-level, same bank-quarter",
+   "confidence": "high"
+  },
+  "em_loan_spread_bp_per_100bp": {
+   "value": 10,
+   "range": [
+    4,
+    20
+   ],
+   "unit": "bp (EM relative to DM) per +100bp",
+   "source": "Brauning & Ivashina 2020: +2.4bp per 25bp",
+   "confidence": "medium"
+  },
+  "em_uip_deviation_pp_per_100bp": {
+   "value": 3.0,
+   "range": [
+    1.0,
+    4.0
+   ],
+   "unit": "pp of excess return on EM currency after two quarters per +100bp US policy",
+   "source": "Kalemli-Ozcan 2019, Chart 12 (EM only; AEs show none)",
+   "confidence": "medium"
+  },
+  "em_12m_govt_rate_differential_pp_per_100bp": {
+   "value": 2.5,
+   "range": [
+    1.5,
+    3.0
+   ],
+   "unit": "pp rise in EM 12m government rate minus US after three quarters",
+   "source": "Kalemli-Ozcan 2019 (79 EMEs; AE differential falls 0.5pp after 1q and 1.7pp after 6q)",
+   "confidence": "medium"
+  },
+  "foreign_to_us_gdp_ratio": {
+   "value": 0.7,
+   "range": [
+    0.25,
+    1.0
+   ],
+   "unit": "foreign trough GDP response / US trough response (AE 0.7, EM about 1)",
+   "source": "Georgiadis 2016 Table 2 summarising Kim 2001, Faust-Rogers 2003, Nobili-Neri 2006, Mackowiak 2007, di Giovanni-Shambaugh 2008, Dees et al 2010, Bluedorn-Bowdler 2011, Ilzetzki-Jin 2013, IMF 2013",
+   "confidence": "medium"
+  },
+  "foreign_10y_beta_to_us_10y_12m": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.67,
+     "range": [
+      0.56,
+      0.73
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "japan": {
+     "value": 0.23,
+     "range": [
+      0.12,
+      0.32
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "uk": {
+     "value": 0.81,
+     "range": [
+      0.69,
+      0.88
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "canada": {
+     "value": 0.71,
+     "range": [
+      0.57,
+      0.8
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "australia": {
+     "value": 0.87,
+     "range": [
+      0.87,
+      0.9
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "korea": {
+     "value": 0.61,
+     "range": [
+      0.54,
+      0.63
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    },
+    "mexico": {
+     "value": 0.99,
+     "range": [
+      0.99,
+      0.99
+     ],
+     "unit": "beta of 12-month change in bloc 10y yield on 12-month change in US 10y (OECD monthly averages; euro area = Germany)",
+     "source": "Own regressions, 2001-2026 with sub-samples 2001-13 and 2014-26; derived_foreign_10y_on_us10y.csv (Mexico 2014-26 only; India, Brazil, China not available)"
+    }
+   },
+   "confidence": "high"
+  },
+  "foreign_term_premium_passthrough_lambda": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.4,
+     "range": [
+      0.25,
+      0.55
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "japan": {
+     "value": 0.19,
+     "range": [
+      0.1,
+      0.3
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "uk": {
+     "value": 0.46,
+     "range": [
+      0.3,
+      0.6
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "canada": {
+     "value": 0.6,
+     "range": [
+      0.45,
+      0.75
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "australia": {
+     "value": 0.69,
+     "range": [
+      0.5,
+      0.8
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "china": {
+     "value": 0.1,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "india": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "korea": {
+     "value": 0.4,
+     "range": [
+      0.2,
+      0.6
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "mexico": {
+     "value": 0.5,
+     "range": [
+      0.3,
+      0.8
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "brazil": {
+     "value": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "opec_plus": {
+     "value": 0.5,
+     "range": [
+      0.3,
+      0.8
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    },
+    "rest_of_world": {
+     "value": 0.4,
+     "range": [
+      0.2,
+      0.6
+     ],
+     "unit": "bp of bloc 10y term premium per bp of US 10y term premium (QE-type shocks)",
+     "source": "Neely 2015 (QE1 buy windows: foreign 10y fell 65 AU, 56 CA, 38 DE, 43 UK, 18 JP bp vs US 94bp; ratios used for those blocs); other blocs assumed"
+    }
+   },
+   "confidence": "medium",
+   "note": "Neely all-FOMC-event ratio 22/60 = 0.37; mean of five ratios 0.46"
+  }
+ },
+ "global_financial_cycle": {
+  "vix_points_per_unit_f": {
+   "value": 10,
+   "range": [
+    8,
+    20
+   ],
+   "unit": "VIX points per unit of the model financial factor f_t",
+   "source": "Scale choice (assumption). With 10, a month with VIX +10 points (4.4% of months since 2006) is one unit of f",
+   "confidence": "low",
+   "note": "Every f-linked coefficient below is given per VIX point; multiply by this scale. Use the US ERP response in the model as numeraire for equity loadings."
+  },
+  "global_factor_variance_share_risky_assets": {
+   "value": 0.241,
+   "range": [
+    0.2,
+    0.25
+   ],
+   "unit": "share of variance of 858 monthly risky-asset prices (1990-2012 / extended 1980-2019)",
+   "source": "Miranda-Agrippino & Rey 2020 (about 20%); Miranda-Agrippino & Rey 2022 Handbook chapter, Table 1: 24.1%",
+   "confidence": "high"
+  },
+  "global_factor_variance_share_capital_flows": {
+   "value": 0.207,
+   "range": [
+    0.145,
+    0.25
+   ],
+   "unit": "share of variance: first global factor in capital flows (F1; F2 = 14.5%; two factors about 35%)",
+   "source": "Miranda-Agrippino & Rey 2022, Table 1; Cerutti-Claessens-Rose 2019: all methods rarely exceed one quarter",
+   "confidence": "high"
+  },
+  "index_level_first_pc_share_equity": {
+   "value": 0.661,
+   "range": [
+    0.638,
+    0.677
+   ],
+   "unit": "share of variance of monthly national equity index returns (11 markets, 2000-2026)",
+   "source": "Own PCA on OECD MEI share-price indices (FRED SPASTT01*); sub-samples 2000-13 0.677, 2014-26 0.638",
+   "confidence": "high",
+   "note": "Index-level share is far above the 24% for individual assets because indices diversify idiosyncratic risk; China loads weakly (R2 0.12)"
+  },
+  "correlation_global_factor_with_vix": {
+   "value": -0.649,
+   "range": [
+    -0.7,
+    -0.6
+   ],
+   "unit": "correlation (levels, 1990-2018)",
+   "source": "Miranda-Agrippino & Rey 2022, Table 3 (VSTOXX -0.695; USD exchange rate -0.413)",
+   "confidence": "high"
+  },
+  "fed_share_of_vix_variance": {
+   "value": 0.1,
+   "range": [
+    0.04,
+    0.3
+   ],
+   "unit": "share of VIX variance explained by US monetary shocks",
+   "source": "Kalemli-Ozcan 2019 citing Rey 2013 and Miranda-Agrippino & Rey (4%-17%), Bruno & Shin 2015 (up to 30%), Bekaert et al. 2013 (>20% beyond 7 months)",
+   "confidence": "medium"
+  },
+  "equity_loading_relative_to_us": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1.15,
+     "range": [
+      1.12,
+      1.17
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "china": {
+     "value": 0.55,
+     "range": [
+      0.52,
+      0.57
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "japan": {
+     "value": 0.94,
+     "range": [
+      0.87,
+      0.98
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "uk": {
+     "value": 0.89,
+     "range": [
+      0.89,
+      0.89
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "canada": {
+     "value": 0.92,
+     "range": [
+      0.92,
+      0.92
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "mexico": {
+     "value": 1.01,
+     "range": [
+      0.8,
+      1.14
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "india": {
+     "value": 1.14,
+     "range": [
+      0.84,
+      1.31
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "korea": {
+     "value": 1.14,
+     "range": [
+      0.99,
+      1.23
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "brazil": {
+     "value": 1.35,
+     "range": [
+      1.17,
+      1.44
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "australia": {
+     "value": 0.83,
+     "range": [
+      0.8,
+      0.89
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "opec_plus": {
+     "value": 1.1,
+     "range": [
+      0.8,
+      1.4
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    },
+    "rest_of_world": {
+     "value": 1.0,
+     "range": [
+      0.8,
+      1.2
+     ],
+     "unit": "ratio of bloc equity-return loading on the first principal component to the US loading",
+     "source": "Own PCA (derived_equity_pca.json); range = min/max over full sample, 2000-13, 2014-26; opec_plus and rest_of_world assumed"
+    }
+   },
+   "confidence": "medium"
+  },
+  "us_equity_pct_per_vix_point": {
+   "value": -0.63,
+   "range": [
+    -0.82,
+    -0.6
+   ],
+   "unit": "% S&P 500 month-end return per +1 VIX point",
+   "source": "Own regression, month-end 2016-10 to 2026-09 (FRED SP500 history is limited to ten years); 2007-19 sub-sample -0.82 on 38 obs.",
+   "confidence": "medium"
+  },
+  "dollar_pct_per_vix_point": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.209,
+     "range": [
+      0.103,
+      0.3
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "japan": {
+     "value": -0.006,
+     "range": [
+      -0.051,
+      0.05
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "uk": {
+     "value": 0.182,
+     "range": [
+      0.168,
+      0.182
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "canada": {
+     "value": 0.231,
+     "range": [
+      0.153,
+      0.287
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "mexico": {
+     "value": 0.295,
+     "range": [
+      0.242,
+      0.345
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "india": {
+     "value": 0.148,
+     "range": [
+      0.052,
+      0.235
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "korea": {
+     "value": 0.271,
+     "range": [
+      0.154,
+      0.362
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "brazil": {
+     "value": 0.297,
+     "range": [
+      0.26,
+      0.328
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "australia": {
+     "value": 0.393,
+     "range": [
+      0.291,
+      0.475
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "china": {
+     "value": 0.043,
+     "range": [
+      0.038,
+      0.043
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "opec_plus": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.1
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    },
+    "rest_of_world": {
+     "value": 0.176,
+     "range": [
+      0.124,
+      0.218
+     ],
+     "unit": "% appreciation of the dollar vs bloc currency per +1 VIX point (monthly, with US 2y control)",
+     "source": "Own regressions 2007-07 to 2026-09 (HAC, 3 lags); range = min/max across 2007-26, 2007-19, 2020-26; derived_fx_on_vix_us2y_monthly.csv"
+    }
+   },
+   "confidence": "high",
+   "note": "Japan: no safe-haven loading on VIX at monthly frequency but yen strengthens 1-3 months after spikes (event paths). Gulf pegs and China managed: near 0."
+  },
+  "dollar_vix_asymmetry_broad": {
+   "value": 1.7,
+   "range": [
+    1.2,
+    2.5
+   ],
+   "unit": "ratio of dollar response to VIX increases (0.216) vs decreases (0.129), broad index",
+   "source": "Own regression, 2007-2026",
+   "confidence": "medium"
+  },
+  "dollar_event_path_after_vix_spike": {
+   "impact": {
+    "value": 2.9,
+    "range": [
+     2.4,
+     3.4
+    ],
+    "unit": "% broad dollar after month with VIX +14 points on average (11 events 2008-2022)",
+    "source": "Own event study, derived_vix_spike_event_paths.csv",
+    "confidence": "high"
+   },
+   "h6": {
+    "value": 3.6,
+    "range": [
+     2.0,
+     3.7
+    ],
+    "unit": "% broad dollar at 6 months (all events 3.6; excluding 2008 cluster 2.0)",
+    "source": "Own event study",
+    "confidence": "high"
+   },
+   "h12": {
+    "value": 1.0,
+    "range": [
+     0.9,
+     1.1
+    ],
+    "unit": "% broad dollar at 12 months",
+    "source": "Own event study",
+    "confidence": "high"
+   }
+  },
+  "credit_spread_bp_per_vix_point": {
+   "baa_minus_10y": {
+    "value": 2.3,
+    "range": [
+     1.9,
+     2.7
+    ],
+    "unit": "bp per +1 VIX point, monthly 2000-2026",
+    "source": "Own regression (FRED BAA10Y)",
+    "confidence": "high"
+   },
+   "high_yield_oas": {
+    "value": 2.8,
+    "range": [
+     2.1,
+     3.5
+    ],
+    "unit": "bp per +1 VIX point (daily 2.1, weekly 3.5; 2023-10 to 2026-10 only)",
+    "source": "Own regression (FRED BAMLH0A0HYM2, 3-year history)",
+    "confidence": "medium"
+   },
+   "em_corporate_oas": {
+    "value": 0.5,
+    "range": [
+     0.3,
+     0.8
+    ],
+    "unit": "bp per +1 VIX point (same window)",
+    "source": "Own regression (FRED BAMLEMCBPIOAS)",
+    "confidence": "low",
+    "note": "EM sovereign spreads: no verified estimate; IMF GFSR Oct 2025 ch.3 annex reports a dVIX coefficient 2.12 for high-debt sovereigns (units unconfirmed)"
+   }
+  },
+  "us_yields_per_vix_point_bp": {
+   "y2": {
+    "value": -0.5,
+    "range": [
+     -0.9,
+     -0.1
+    ],
+    "unit": "bp per +1 VIX point (not significant)",
+    "source": "Own regression 2007-2026",
+    "confidence": "medium"
+   },
+   "y10": {
+    "value": -0.15,
+    "range": [
+     -0.6,
+     0.4
+    ],
+    "unit": "bp (not significant)",
+    "source": "Own regression",
+    "confidence": "medium"
+   },
+   "tp10": {
+    "value": 0.0,
+    "range": [
+     -0.1,
+     0.4
+    ],
+    "unit": "bp (not significant)",
+    "source": "Own regression, ACM term premium",
+    "confidence": "medium"
+   }
+  },
+  "vix_jump_frequency_per_month": {
+   "ge_10pts": {
+    "value": 0.044,
+    "range": [
+     0.029,
+     0.044
+    ],
+    "unit": "probability of a month-end VIX rise >= 10 points (2006-26; 1990-2026 2.9%)",
+    "source": "Own count (11 and 13 events)",
+    "confidence": "high"
+   },
+   "ge_15pts": {
+    "value": 0.016,
+    "range": [
+     0.011,
+     0.016
+    ],
+    "unit": "probability of a rise >= 15 points",
+    "source": "Own count (4 and 5 events)",
+    "confidence": "high"
+   },
+   "ge_20pts": {
+    "value": 0.008,
+    "range": [
+     0.005,
+     0.008
+    ],
+    "unit": "probability of a rise >= 20 points",
+    "source": "Own count (2 events each)",
+    "confidence": "high"
+   }
+  },
+  "vix_spike_persistence_fraction_remaining": {
+   "m1": {
+    "value": 0.71,
+    "range": [
+     0.5,
+     0.9
+    ],
+    "unit": "fraction of the month-0 VIX jump remaining after 1 month (13 events >=10 points since 1990)",
+    "source": "Own event study",
+    "confidence": "high"
+   },
+   "m2": {
+    "value": 0.28,
+    "range": [
+     0.1,
+     0.5
+    ],
+    "unit": "after 2 months",
+    "source": "Own",
+    "confidence": "high"
+   },
+   "m3": {
+    "value": 0.21,
+    "range": [
+     0.05,
+     0.4
+    ],
+    "unit": "after 3 months",
+    "source": "Own",
+    "confidence": "high"
+   },
+   "m4": {
+    "value": 0.12,
+    "range": [
+     0.0,
+     0.3
+    ],
+    "unit": "after 4 months",
+    "source": "Own",
+    "confidence": "high"
+   }
+  },
+  "vix_ar1_monthly_level": {
+   "value": 0.83,
+   "range": [
+    0.8,
+    0.85
+   ],
+   "unit": "AR(1) of the monthly-average VIX (2006-26 0.825; 1990-26 0.847; log VIX 0.85-0.88)",
+   "source": "Own estimate",
+   "confidence": "high"
+  },
+  "us_investor_retrenchment_pct_of_foreign_holdings_per_vix_pt": {
+   "value": -0.023,
+   "range": [
+    -0.04,
+    -0.006
+   ],
+   "unit": "% of US holdings of foreign securities sold per month per +1 VIX point (2023-02 to 2026-07, n=42)",
+   "source": "Own regression on TIC SLT Table 2 net purchases; euro area -0.035 (se 0.007), Japan -0.044 (0.022), Australia -0.043 (0.016) significant; Canada -0.031 (0.019) t=1.6; others not significant",
+   "confidence": "medium",
+   "note": "About -$4.7bn per month per VIX point at the $20.4tn stock of July 2026"
+  },
+  "foreign_official_ust_holdings_per_vix_point_usd_bn_per_month": {
+   "value": 1.05,
+   "range": [
+    0.4,
+    1.4
+   ],
+   "unit": "$bn per month per +1 VIX point (valuation-adjusted; 2011-2026); zero beyond six months",
+   "source": "Own regression on TIC major-foreign-holders history",
+   "confidence": "medium"
+  }
+ },
+ "treasury_demand": {
+  "foreign_holdings_ust_bn_2026_07": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1950.5,
+     "range": [
+      1755.45,
+      2145.55
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "china": {
+     "value": 618.0,
+     "range": [
+      556.2,
+      679.8000000000001
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "japan": {
+     "value": 1103.9,
+     "range": [
+      993.5100000000001,
+      1214.2900000000002
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "uk": {
+     "value": 998.3,
+     "range": [
+      898.47,
+      1098.13
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "canada": {
+     "value": 426.3,
+     "range": [
+      383.67,
+      468.93000000000006
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "mexico": {
+     "value": 101.3,
+     "range": [
+      91.17,
+      111.43
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "india": {
+     "value": 202.6,
+     "range": [
+      182.34,
+      222.86
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "korea": {
+     "value": 131.5,
+     "range": [
+      118.35000000000001,
+      144.65
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "brazil": {
+     "value": 168.0,
+     "range": [
+      151.20000000000002,
+      184.8
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "australia": {
+     "value": 80.8,
+     "range": [
+      72.72,
+      88.88000000000001
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "opec_plus": {
+     "value": 351.0,
+     "range": [
+      315.90000000000003,
+      386.1
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    },
+    "rest_of_world": {
+     "value": 3115.7,
+     "range": [
+      2804.13,
+      3427.27
+     ],
+     "unit": "$bn (market value, TIC SLT, custodian basis)",
+     "source": "Treasury TIC SLT Table 3, July 2026 (euro area = TIC memo line, rest of world = grand total minus the 11 named blocs); +/-10% range = custody-attribution uncertainty"
+    }
+   },
+   "confidence": "high"
+  },
+  "foreign_holdings_ust_bn_2025_07": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1899.0,
+     "range": [
+      1709.1000000000001,
+      2088.9
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "china": {
+     "value": 695.6,
+     "range": [
+      626.0400000000001,
+      765.1600000000001
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "japan": {
+     "value": 1155.4,
+     "range": [
+      1039.8600000000001,
+      1270.9400000000003
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "uk": {
+     "value": 895.9,
+     "range": [
+      806.31,
+      985.49
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "canada": {
+     "value": 381.8,
+     "range": [
+      343.62,
+      419.98
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "mexico": {
+     "value": 96.2,
+     "range": [
+      86.58,
+      105.82000000000001
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "india": {
+     "value": 219.7,
+     "range": [
+      197.73,
+      241.67000000000002
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "korea": {
+     "value": 132.3,
+     "range": [
+      119.07000000000001,
+      145.53000000000003
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "brazil": {
+     "value": 201.8,
+     "range": [
+      181.62,
+      221.98000000000002
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "australia": {
+     "value": 71.0,
+     "range": [
+      63.9,
+      78.10000000000001
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "opec_plus": {
+     "value": 323.0,
+     "range": [
+      290.7,
+      355.3
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    },
+    "rest_of_world": {
+     "value": 3037.8,
+     "range": [
+      2734.0200000000004,
+      3341.5800000000004
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2025"
+    }
+   },
+   "confidence": "high"
+  },
+  "foreign_holdings_ust_bn_2020_07": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1193.5,
+     "range": [
+      1074.15,
+      1312.8500000000001
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "china": {
+     "value": 1073.4,
+     "range": [
+      966.0600000000001,
+      1180.7400000000002
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "japan": {
+     "value": 1293.0,
+     "range": [
+      1163.7,
+      1422.3000000000002
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "uk": {
+     "value": 424.6,
+     "range": [
+      382.14000000000004,
+      467.06000000000006
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "canada": {
+     "value": 133.9,
+     "range": [
+      120.51,
+      147.29000000000002
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "mexico": {
+     "value": 47.6,
+     "range": [
+      42.84,
+      52.36000000000001
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "india": {
+     "value": 194.6,
+     "range": [
+      175.14,
+      214.06
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "korea": {
+     "value": 123.1,
+     "range": [
+      110.78999999999999,
+      135.41
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "brazil": {
+     "value": 265.7,
+     "range": [
+      239.13,
+      292.27000000000004
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "australia": {
+     "value": 43.8,
+     "range": [
+      39.42,
+      48.18
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "opec_plus": {
+     "value": 225.2,
+     "range": [
+      202.68,
+      247.72
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    },
+    "rest_of_world": {
+     "value": 2077.8,
+     "range": [
+      1870.0200000000002,
+      2285.5800000000004
+     ],
+     "unit": "$bn",
+     "source": "Treasury TIC SLT Table 3, July 2020"
+    }
+   },
+   "confidence": "high"
+  },
+  "foreign_total_ust_bn": {
+   "value": 9248.1,
+   "range": [
+    9100,
+    9400
+   ],
+   "unit": "$bn, July 2026",
+   "source": "Treasury TIC SLT Table 5 / Table 3",
+   "confidence": "high",
+   "note": "29.4% of marketable debt ($31.43tn, MSPD July 2026), 34.4% of marketable debt outside the Fed ($26.9tn)"
+  },
+  "foreign_official_ust_bn": {
+   "value": 3773.1,
+   "range": [
+    3700,
+    3900
+   ],
+   "unit": "$bn, July 2026 (40.8% of foreign holdings; peak $4,265bn Feb 2020)",
+   "source": "Treasury TIC Table 5 (Of which: Foreign Official)",
+   "confidence": "high",
+   "note": "SHL June 2025: $3,899bn incl. bills, 43.0% of foreign; long-term nominal 3,054; official share of foreign Treasuries fell from 76% (2008) to 46% (2025)"
+  },
+  "official_share_of_bloc_ust_holdings": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.1,
+     "range": [
+      0.05,
+      0.25
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "china": {
+     "value": 0.95,
+     "range": [
+      0.85,
+      1.0
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "japan": {
+     "value": 0.6,
+     "range": [
+      0.45,
+      0.8
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "uk": {
+     "value": 0.15,
+     "range": [
+      0.05,
+      0.3
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "canada": {
+     "value": 0.1,
+     "range": [
+      0.05,
+      0.2
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "mexico": {
+     "value": 0.75,
+     "range": [
+      0.5,
+      0.9
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "india": {
+     "value": 0.95,
+     "range": [
+      0.9,
+      1.0
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "korea": {
+     "value": 0.85,
+     "range": [
+      0.7,
+      0.95
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "brazil": {
+     "value": 0.95,
+     "range": [
+      0.9,
+      1.0
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "australia": {
+     "value": 0.25,
+     "range": [
+      0.1,
+      0.4
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "opec_plus": {
+     "value": 0.8,
+     "range": [
+      0.6,
+      0.95
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    },
+    "rest_of_world": {
+     "value": 0.42,
+     "range": [
+      0.25,
+      0.6
+     ],
+     "unit": "share of the TIC-recorded bloc holdings that is official (reserve managers, SWFs, central banks)",
+     "source": "Analyst estimate constrained to the TIC official total 3,773bn; TIC does not publish official holdings by country"
+    }
+   },
+   "confidence": "low",
+   "note": "Not verified by any source. Custody centres (Belgium, Luxembourg, Cayman, UK) hold part of China, Gulf and other official holdings; China may hold $1tn+ in total (unverified). The split only matters for who sells in a dollar shock."
+  },
+  "fo_purchase_100bn_effect_on_10y_bp": {
+   "first_year_flow": {
+    "value": -8.0,
+    "range": [
+     -21.0,
+     -3.0
+    ],
+    "unit": "bp on the 10y yield from a $100bn net foreign-official purchase of Treasuries at the 2026 size ($100bn = 0.31% of GDP = 0.37% of marketable debt outside the Fed)",
+    "source": "Beltran et al. 2013 (IFDP 1041): -13.5bp per 1% of debt (flow, 5y), -69.6bp per 1% of GDP; Warnock & Warnock 2009; Ahmed & Rebucci 2022 Table 1; rescaled by debt (5bp) and by GDP (21bp), geometric blend",
+    "confidence": "medium"
+   },
+   "stock_long_run": {
+    "value": -4.0,
+    "range": [
+     -9.0,
+     -2.0
+    ],
+    "unit": "bp on the 10y yield from $100bn additional official holdings after private investors adjust",
+    "source": "Beltran et al. 2013: 4.6-6.1bp per 1% of debt held (17-20bp per $100bn in 2007); rescaled by debt (1.7-2.3bp) and GDP (7.4-8.7bp)",
+    "confidence": "medium"
+   },
+   "ahmed_rebucci_svar_upper_bound": {
+    "value": -100.0,
+    "range": [
+     -140.0,
+     -40.0
+    ],
+    "unit": "bp per $100bn on impact in sample dollars (identified through heteroskedasticity); not adopted",
+    "source": "Ahmed & Rebucci 2022 (NBER WP 30476): 112bp (5y), 125bp (10y) per $100bn; OLS 19-44bp",
+    "confidence": "low"
+   }
+  },
+  "rescaling_of_literature_per_100bn_bp": {
+   "beltran_flow_5y_debt_scaled": {
+    "value": -5.0,
+    "range": [
+     -5.0,
+     -5.0
+    ],
+    "unit": "bp (13.5bp per 1% of debt x 0.372%)",
+    "source": "Beltran et al. 2013",
+    "confidence": "high"
+   },
+   "beltran_flow_5y_gdp_scaled": {
+    "value": -21.4,
+    "range": [
+     -21.4,
+     -21.4
+    ],
+    "unit": "bp (69.6bp per 1% of GDP x 0.307%)",
+    "source": "Beltran et al. 2013",
+    "confidence": "high"
+   },
+   "beltran_holdings_debt_scaled": {
+    "value": -2.0,
+    "range": [
+     -2.3,
+     -1.7
+    ],
+    "unit": "bp (4.6-6.1bp per 1% of debt x 0.372%)",
+    "source": "Beltran et al. 2013",
+    "confidence": "high"
+   },
+   "beltran_holdings_gdp_scaled": {
+    "value": -8.0,
+    "range": [
+     -8.7,
+     -7.4
+    ],
+    "unit": "bp (24-28bp per 1% of GDP x 0.307%)",
+    "source": "Beltran et al. 2013",
+    "confidence": "high"
+   },
+   "warnock_warnock_gdp_scaled": {
+    "value": -12.0,
+    "range": [
+     -16.0,
+     -8.0
+    ],
+    "unit": "bp (AR Table 1: -34 to -68bp per $100bn at the 1984-2005 mean GDP of $7.7tn = 1.29% of GDP, rescaled to 0.307%)",
+    "source": "Warnock & Warnock 2009 via Ahmed & Rebucci 2022 Table 1; mean GDP from FRED",
+    "confidence": "medium"
+   },
+   "bernanke_reinhart_sack_gdp_scaled": {
+    "value": -21.0,
+    "range": [
+     -21.0,
+     -21.0
+    ],
+    "unit": "bp (-66bp per $100bn at about 0.95% of 2000-04 GDP, rescaled)",
+    "source": "Bernanke, Reinhart & Sack 2004 via Ahmed & Rebucci Table 1",
+    "confidence": "low"
+   }
+  },
+  "official_demand_term_premium_coefficients": {
+   "theta_stock_bp_per_1pct_gdp": {
+    "value": 13.0,
+    "range": [
+     6.0,
+     28.0
+    ],
+    "unit": "bp of 10y term premium per 1% of GDP of official Treasury holdings (long-run)",
+    "source": "Derived from the two rows above (4bp per $100bn / 0.307% of GDP); of which 3bp comes from netting official holdings out of the privately held duration at omega=1 (model kappa=0.025)",
+    "confidence": "medium"
+   },
+   "theta_transitory_bp_per_1pct_gdp": {
+    "value": 20.0,
+    "range": [
+     8.0,
+     55.0
+    ],
+    "unit": "bp per 1% of GDP of net official purchases, transitory component",
+    "source": "Derived: initial effect 8-10bp per $100bn minus the long-run 4bp",
+    "confidence": "low"
+   },
+   "transitory_half_life_months": {
+    "value": 12,
+    "range": [
+     6,
+     18
+    ],
+    "unit": "months",
+    "source": "Beltran et al. 2013 (short-run -40..-60bp falls to about -20bp once private investors respond); assumed horizon",
+    "confidence": "low"
+   },
+   "omega_official_in_duration_netting": {
+    "value": 1.0,
+    "range": [
+     0.5,
+     1.0
+    ],
+    "unit": "weight of official face-years removed from the privately held duration D (Fed = 1)",
+    "source": "Beltran et al. 2013 holding elasticity (4.6bp per 1% of debt) is of the same order as QE (about 4-5bp per 1% of debt, Gagnon et al. 2011); weights <1 if official holders are treated as partly price-sensitive",
+    "confidence": "medium"
+   }
+  },
+  "reserve_manager_response_to_dollar": {
+   "fraction_of_official_holdings_per_1pct_dollar_6m": {
+    "value": -0.0023,
+    "range": [
+     -0.0035,
+     -0.0005
+    ],
+    "unit": "change in official Treasury holdings (valuation adjusted) as a fraction of holdings per +1% broad dollar, 6-month window",
+    "source": "Own regression, TIC major-foreign-holders history 2006-2026: -$8bn (6m, se 4.1) 2006-26; -$9bn (se 3.1) 2011-26; -$7.8bn (se 2.9) 2018-26 per +1%",
+    "confidence": "medium",
+    "note": "3m window -$7..-10bn, 12m window -$5..-11bn (se 3-6). Dollar +10% => sales of $70-120bn over 3-12 months."
+   },
+   "march_2020_sales": {
+    "value": 150,
+    "range": [
+     100,
+     200
+    ],
+    "unit": "$bn of Treasuries sold by foreign official holders in March 2020",
+    "source": "Ahmed & Rebucci 2022 (about $300bn foreign sales, about half official; $150-200bn range); Fed custody holdings -$128bn in March 2020 (Central Banking summary of H.4.1, unverified)",
+    "confidence": "medium"
+   },
+   "fima_repo_facility": {
+    "value": 0,
+    "range": [
+     0,
+     60
+    ],
+    "unit": "usage, $bn (peak $1.4bn in 2020; about $60bn in March 2023 per press)",
+    "source": "Fed FIMA repo facility, announced 31 March 2020, standing since 28 July 2021 (press summary; not verified in a Fed release)",
+    "confidence": "low"
+   }
+  },
+  "monthly_official_ust_flow_sd_usd_bn": {
+   "value": 48,
+   "range": [
+    40,
+    56
+   ],
+   "unit": "sd of monthly valuation-adjusted foreign official Treasury flow, $bn",
+   "source": "Own estimate from major-foreign-holders history (55.4 for 2006-26, 53 for 2020-26, 47.5 for 2011-26)",
+   "confidence": "medium"
+  },
+  "china_secular_decline": {
+   "value": -80,
+   "range": [
+    -111,
+    -45
+   ],
+   "unit": "$bn per year, TIC-recorded China Treasury holdings (2023 -45, 2024 -58, 2025 -111, 2026 YTD -68 net purchases)",
+   "source": "Treasury TIC SLT Table 1/3; holdings fell from $1,073bn (Jul 2020) to $618bn (Jul 2026)",
+   "confidence": "high"
+  },
+  "foreign_net_purchases_us_lt_securities_bn": {
+   "y2023": {
+    "value": 1058,
+    "range": [
+     900,
+     1200
+    ],
+    "unit": "$bn",
+    "source": "Treasury TIC SLT Table 1 Grand Total",
+    "confidence": "high"
+   },
+   "y2024": {
+    "value": 1186,
+    "range": [
+     1000,
+     1300
+    ],
+    "unit": "$bn",
+    "source": "TIC SLT",
+    "confidence": "high"
+   },
+   "y2025": {
+    "value": 1619,
+    "range": [
+     1400,
+     1800
+    ],
+    "unit": "$bn (Treasuries 428, agency 56, corporate 392, equity 742)",
+    "source": "TIC SLT",
+    "confidence": "high"
+   },
+   "y2026_ytd_jul": {
+    "value": 977,
+    "range": [
+     900,
+     1100
+    ],
+    "unit": "$bn (Treasuries 174, agency 68, corporate 282, equity 453)",
+    "source": "TIC SLT",
+    "confidence": "high"
+   }
+  },
+  "us_treasury_premium": {
+   "value": 10,
+   "range": [
+    -8,
+    21
+   ],
+   "unit": "bp, 5-year U.S. Treasury premium vs hedged G10 government yields (2000-2016 average; 21bp pre-GFC, -8bp post-GFC, up to 90bp in the GFC)",
+   "source": "Du, Im & Schreger 2018 (NBER WP 23759) via abstract summary",
+   "confidence": "medium"
+  },
+  "qe_reference": {
+   "value": -17.5,
+   "range": [
+    -20.0,
+    -15.0
+   ],
+   "unit": "bp on the 10y per $1 trillion of 10y-equivalent QE (model target; announcement weight 0.5)",
+   "source": "econsim DESIGN/config (tp_duration_kappa 0.025, qe_announcement_weight 0.5); Gagnon et al. 2011",
+   "confidence": "medium"
+  }
+ },
+ "dollar": {
+  "kappa_real_rate_differential_by_bloc": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 7.3,
+     "range": [
+      4.5,
+      10.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "japan": {
+     "value": 7.3,
+     "range": [
+      4.5,
+      12.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "uk": {
+     "value": 5.5,
+     "range": [
+      2.0,
+      8.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "canada": {
+     "value": 3.7,
+     "range": [
+      1.0,
+      6.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "australia": {
+     "value": 5.5,
+     "range": [
+      3.0,
+      8.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "korea": {
+     "value": 5.5,
+     "range": [
+      3.0,
+      8.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "india": {
+     "value": 2.7,
+     "range": [
+      1.0,
+      5.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "mexico": {
+     "value": 1.8,
+     "range": [
+      0.0,
+      4.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "brazil": {
+     "value": 1.8,
+     "range": [
+      0.0,
+      4.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "china": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      2.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "opec_plus": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    },
+    "rest_of_world": {
+     "value": 3.7,
+     "range": [
+      2.0,
+      6.0
+     ],
+     "unit": "log points of the dollar target per 1pp (annual) of the US-minus-bloc real 2y differential, normalised so that the H.10-weighted average equals the existing econsim kappa of 4.0 (world-off calibration, bloc rates fixed)",
+     "source": "Engel 2016 (US real rate +1pp => dollar 3.6% stronger in the level regression, 2.6% beyond UIP); relative pattern from own monthly sensitivities to the US 2y (EA 2.9, JPY 6.9, CHF 4.4, KRW 2.1, AUD 1.6, GBP 1.0, CAD 0.3, INR 0.7, MXN -0.8, BRL -0.7 % per pp) cut for blocs whose own rates track the US"
+    }
+   },
+   "confidence": "low",
+   "note": "Relative pattern before normalisation: EA 4, JP 4, UK 3, CA 2, AU 3, KR 3, IN 1.5, MX 1, BR 1, CN 0, OPEC+ 0, RoW 2 (H.10-weighted mean 2.19, scale factor 1.83). With the world block on, bloc rates rise with the US rate (xi_j and bloc rules), so the effective broad response falls; check V5 and V6. Mexico and Brazil show no FX response to the US 2y because their own rates co-move with US rates (Mexico 12m beta about 1)."
+  },
+  "partial_adjustment_a_monthly": {
+   "value": 0.3,
+   "range": [
+    0.2,
+    0.4
+   ],
+   "unit": "share of the gap to target closed per month",
+   "source": "econsim fx_adjust 0.3 (kept): first-month response 1.2% to a permanent +1pp real differential at kappa=4; broad dollar monthly beta to US 2y is 1.6% (se 0.4), 2.3% in 2020-26",
+   "confidence": "medium"
+  },
+  "kappa_broad": {
+   "value": 4.0,
+   "range": [
+    3.0,
+    6.0
+   ],
+   "unit": "log points per pp (existing econsim default)",
+   "source": "Engel 2016; econsim config comment",
+   "confidence": "medium"
+  },
+  "risk_off_loading_gamma_pct_per_vix_pt": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 0.209,
+     "range": [
+      0.103,
+      0.3
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "japan": {
+     "value": -0.006,
+     "range": [
+      -0.051,
+      0.05
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "uk": {
+     "value": 0.182,
+     "range": [
+      0.168,
+      0.182
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "canada": {
+     "value": 0.231,
+     "range": [
+      0.153,
+      0.287
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "mexico": {
+     "value": 0.295,
+     "range": [
+      0.242,
+      0.345
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "india": {
+     "value": 0.148,
+     "range": [
+      0.052,
+      0.235
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "korea": {
+     "value": 0.271,
+     "range": [
+      0.154,
+      0.362
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "brazil": {
+     "value": 0.297,
+     "range": [
+      0.26,
+      0.328
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "australia": {
+     "value": 0.393,
+     "range": [
+      0.291,
+      0.475
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "china": {
+     "value": 0.043,
+     "range": [
+      0.038,
+      0.043
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "opec_plus": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.1
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    },
+    "rest_of_world": {
+     "value": 0.176,
+     "range": [
+      0.124,
+      0.218
+     ],
+     "unit": "% dollar appreciation per VIX point, applied to the risk-premium part of ln S (see global_financial_cycle)",
+     "source": "Own regressions (same as global_financial_cycle.dollar_pct_per_vix_point)"
+    }
+   },
+   "confidence": "high"
+  },
+  "risk_premium_persistence_rho_monthly": {
+   "value": 0.9,
+   "range": [
+    0.8,
+    0.95
+   ],
+   "unit": "AR(1) of the risk-off part of the dollar premium",
+   "source": "Own event study: broad dollar stays +3.6% for 6 months after a VIX spike and is +1.0% at 12 months while VIX is back to baseline in 3-4 months; Jiang et al.: reversal over 2-3 years",
+   "confidence": "medium"
+  },
+  "convenience_yield": {
+   "average_foreign_convenience_yield_pp": {
+    "value": 2.0,
+    "range": [
+     1.9,
+     2.5
+    ],
+    "unit": "pp per year on Treasuries held by foreigners",
+    "source": "Jiang, Krishnamurthy & Lustig 2021 (at least 2%; about 90% attributable to dollar denomination)",
+    "confidence": "high"
+   },
+   "basis_to_dollar_pct_per_10bp": {
+    "value": 1.2,
+    "range": [
+     1.02,
+     1.39
+    ],
+    "unit": "% dollar appreciation per 10bp widening of the 12m Treasury basis (quarterly)",
+    "source": "Jiang et al. 2021 (OLS 1.02%, IV 1.20-1.39%)",
+    "confidence": "high"
+   },
+   "one_sd_basis_shock": {
+    "value": 20,
+    "range": [
+     10,
+     30
+    ],
+    "unit": "bp widening of the annual Treasury basis, producing about +3% dollar over two quarters, then reversal over 2-3 years",
+    "source": "Jiang et al. 2021 (VAR)",
+    "confidence": "high"
+   },
+   "basis_ar1_quarterly": {
+    "value": 0.47,
+    "range": [
+     0.4,
+     0.55
+    ],
+    "unit": "AR(1) of the 12m Treasury basis, quarterly (monthly equivalent about 0.78)",
+    "source": "Jiang et al. 2021",
+    "confidence": "high"
+   },
+   "share_of_dollar_variance_explained": {
+    "value": 0.17,
+    "range": [
+     0.16,
+     0.28
+    ],
+    "unit": "basis innovations explain 17% of quarterly spot dollar variation; convenience-yield component 16-28% in the Campbell-Shiller decomposition",
+    "source": "Jiang et al. 2021",
+    "confidence": "high"
+   },
+   "risk_appetite_measure_to_broad_dollar_pct_per_sd": {
+    "value": 1.25,
+    "range": [
+     0.5,
+     2.0
+    ],
+    "unit": "% depreciation of the broad dollar when credit spreads fall one s.d., post-2007",
+    "source": "Lilley, Maggiori, Neiman & Schreger 2022 (GZ spread, end of sample)",
+    "confidence": "medium"
+   }
+  },
+  "uip_forward_premium_beta_12m": {
+   "advanced_pooled": {
+    "value": -0.16,
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "unit": "slope of 12m dollar change on (i_foreign - i_US); UIP = 1",
+    "source": "Own pooled regression 1999-2026 (se 0.45); Engel 2016 G6 aggregate 2.47 in excess-return form (i.e. Fama beta -1.47)",
+    "confidence": "medium"
+   },
+   "em_pooled": {
+    "value": -0.09,
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "unit": "same, MXN KRW INR BRL",
+    "source": "Own regression (se 0.21); Mexico -0.42 (se 0.23), Brazil -0.58 (0.34), Korea -1.27 (0.54)",
+    "confidence": "medium"
+   }
+  },
+  "h10_broad_weights_pct_2026": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 21.01,
+     "range": [
+      19.96,
+      21.01
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "china": {
+     "value": 10.89,
+     "range": [
+      10.89,
+      13.66
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "japan": {
+     "value": 5.18,
+     "range": [
+      5.18,
+      6.35
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "uk": {
+     "value": 5.25,
+     "range": [
+      4.85,
+      5.43
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "canada": {
+     "value": 12.77,
+     "range": [
+      12.77,
+      13.39
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "mexico": {
+     "value": 14.8,
+     "range": [
+      13.61,
+      14.8
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "india": {
+     "value": 3.35,
+     "range": [
+      2.89,
+      3.35
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "korea": {
+     "value": 3.62,
+     "range": [
+      3.27,
+      3.62
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "brazil": {
+     "value": 1.89,
+     "range": [
+      1.74,
+      1.91
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "australia": {
+     "value": 1.44,
+     "range": [
+      1.34,
+      1.44
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "opec_plus": {
+     "value": 1.99,
+     "range": [
+      1.99,
+      2.27
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    },
+    "rest_of_world": {
+     "value": 17.82,
+     "range": [
+      15.63,
+      17.82
+     ],
+     "unit": "% of the Federal Reserve broad dollar index",
+     "source": "Federal Reserve H.10 trade weights as of 2 February 2026 (checked against the Fed page); range over 2026, 2022, 2019 weights; opec_plus = Saudi Arabia 0.46 + Russia 0.09 + Malaysia 1.44 (without Malaysia 0.55); rest_of_world = Argentina, Chile, Colombia, Hong Kong, Indonesia, Israel, Philippines, Sweden, Singapore, Switzerland, Taiwan, Thailand, Vietnam"
+    }
+   },
+   "confidence": "high"
+  },
+  "broad_index_from_blocs": {
+   "value": 1.13,
+   "range": [
+    1.05,
+    1.2
+   ],
+   "unit": "slope of monthly change in the H.10 broad index on the weighted sum of the ten named bilateral changes (80.2% of weight); R2 0.99 (2007-2026)",
+   "source": "Own check; the other 17.8% (Asian and European non-bloc currencies) co-moves with the named ones",
+   "confidence": "high"
+  },
+  "dollar_response_to_us_2y_pct_per_pp": {
+   "value": 1.6,
+   "range": [
+    0.8,
+    2.5
+   ],
+   "unit": "% broad dollar per +1pp monthly change in the US 2y yield (with VIX control); AFE 2.5, EME 0.8; 2020-26 2.3",
+   "source": "Own regression 2007-2026 (se 0.4)",
+   "confidence": "high"
+  },
+  "us_originated_risk_off_dollar": {
+   "value": -3.3,
+   "range": [
+    -4.0,
+    -2.5
+   ],
+   "unit": "% broad dollar, 2-21 April 2025 (VIX +12, 10y +22bp, JPY +6.3%, CHF +8.9% vs USD)",
+   "source": "Own episode table (FRED); the dollar fell while VIX rose",
+   "confidence": "high",
+   "note": "Daily dollar-VIX beta by year: 0.00-0.12 %/pt; 2025: 0.006; 2026: 0.077"
+  }
+ },
+ "spillbacks": {
+  "us_mp_slowdown_share_from_spillbacks": {
+   "value": 0.5,
+   "range": [
+    0.25,
+    0.5
+   ],
+   "unit": "share of the US activity slowdown after a contractionary US monetary shock that comes from foreign responses (\"up to half\")",
+   "source": "Breitenlechner, Georgiadis & Schumann 2021 (GRU WP 2021-003): industrial production about 50%, consumer prices up to half",
+   "confidence": "medium",
+   "note": "Channels: global equity prices => US household wealth => consumption (elasticity 5-10%); lower foreign sales => Tobin q => investment. Net trade contributes nothing (exports and imports fall alike). Via advanced economies, not EMs."
+  },
+  "us_gdp_level_per_1pct_china_gdp_shortfall": {
+   "value": -0.17,
+   "range": [
+    -0.35,
+    -0.07
+   ],
+   "unit": "% US GDP level per 1% shortfall of China GDP",
+   "source": "Ahmed et al. 2019 (IFDP 1260): SVAR -1.25% for -8.5% (0.15); SIGMA trade-only -0.75% for -4% and -1.0% for -8.5% (0.19-0.12); with financial spillovers about -1.1% and -2.9% (0.28, 0.34); Cashin-Mohaddes-Raissi 2016: -0.07pp growth elasticity",
+   "confidence": "medium"
+  },
+  "china_hard_landing_financial_effects": {
+   "broad_dollar_mild_pct": {
+    "value": 7,
+    "range": [
+     5,
+     9
+    ],
+    "unit": "% over about two years for China GDP -4%",
+    "source": "Ahmed et al. 2019 Fig. 12 text",
+    "confidence": "medium"
+   },
+   "broad_dollar_severe_pct": {
+    "value": 15,
+    "range": [
+     12,
+     18
+    ],
+    "unit": "% for China GDP -8.5%",
+    "source": "Ahmed et al. 2019",
+    "confidence": "medium"
+   },
+   "embi_spread_severe_bp": {
+    "value": 350,
+    "range": [
+     250,
+     450
+    ],
+    "unit": "bp peak",
+    "source": "Ahmed et al. 2019",
+    "confidence": "medium"
+   },
+   "us_long_yield": {
+    "value": -1,
+    "range": [
+     -1,
+     -1
+    ],
+    "unit": "sign only: US long-term yields fall (flight to safety dominates Chinese reserve sales)",
+    "source": "Ahmed et al. 2019",
+    "confidence": "medium"
+   }
+  },
+  "china_dollar_pct_per_1pct_china_gdp_shortfall": {
+   "value": 1.75,
+   "range": [
+    1.5,
+    2.0
+   ],
+   "unit": "% broad dollar per 1% China GDP shortfall (7% for -4%, 15% for -8.5%)",
+   "source": "Ahmed et al. 2019",
+   "confidence": "medium"
+  },
+  "china_event_study_2015_16": {
+   "value": 0.75,
+   "range": [
+    0.5,
+    1.0
+   ],
+   "unit": "% rise of the broad dollar around China events; world equities -3 to -4.5%; VIX up",
+   "source": "Ahmed et al. 2019 Table 6",
+   "confidence": "medium"
+  },
+  "em_slowdown_to_advanced_growth": {
+   "value": 0.25,
+   "range": [
+    0.15,
+    0.35
+   ],
+   "unit": "pp lower AE growth per 1pp EM growth slowdown (trade channel)",
+   "source": "IMF blog 2014 as quoted in a search summary; not verified against the source",
+   "confidence": "low"
+  },
+  "ecb_tightening_to_us": {
+   "value": 0.0,
+   "range": [
+    -0.1,
+    0.1
+   ],
+   "unit": "% US GDP per 100bp pure ECB monetary shock (no significant spillover); US yields edge down",
+   "source": "Ca Zorzi et al. 2020 (ECB WP 2407): spillovers to prices small in both directions, Fed->EA larger than ECB->US; Jarocinski 2022 (JIE): pure ECB shocks do not spill to US financial conditions, ECB rate surprises that move US yields are mostly information effects",
+   "confidence": "low",
+   "note": "No verified numerical IRF is available in text; both papers report figures only."
+  },
+  "us_net_exports_gdp_pct_per_1pct_dollar_depreciation": {
+   "value": 0.15,
+   "range": [
+    0.05,
+    0.2
+   ],
+   "unit": "% of US GDP (real net exports) after 2-3 years per 1% fall of the broad dollar; exports +0.7%, imports -0.4%",
+   "source": "Ammer, De Pooter, Erceg & Kamin 2016 (IFDP Notes), Table 1",
+   "confidence": "medium",
+   "note": "Sign flips for appreciation; a +10% dollar => about -1.5% of GDP after 2-3 years on these elasticities (upper end)"
+  },
+  "us_gdp_response_to_10y_yield_fall_25bp": {
+   "value": 0.5,
+   "range": [
+    0.4,
+    0.6
+   ],
+   "unit": "% US GDP per 25bp fall in the 10y yield (domestic demand); foreign GDP +0.25% net (financial channel +0.25, exchange rate -0.05, demand +0.05); dollar -1%; foreign 10y -10..-12bp",
+   "source": "Ammer et al. 2016; Fischer 2016 speech",
+   "confidence": "medium"
+  },
+  "dollar_to_world_trade": {
+   "value": -0.7,
+   "range": [
+    -0.8,
+    -0.6
+   ],
+   "unit": "% rest-of-world trade volume within a year per +1% dollar",
+   "source": "Gopinath et al. as reported in Gourinchas, Rey & Sauzet 2019",
+   "confidence": "medium"
+  }
+ },
+ "cross_border": {
+  "aggregate_iip_2026Q2": {
+   "assets_tn": {
+    "value": 46.97,
+    "range": [
+     46.9,
+     47.0
+    ],
+    "unit": "$tn",
+    "source": "BEA ITA/IIP 2026Q2 release (24 Sep 2026); FRED IIPUSASSQ",
+    "confidence": "high"
+   },
+   "liabilities_tn": {
+    "value": 69.39,
+    "range": [
+     69.3,
+     69.5
+    ],
+    "unit": "$tn",
+    "source": "BEA 2026Q2",
+    "confidence": "high"
+   },
+   "niip_tn": {
+    "value": -22.42,
+    "range": [
+     -22.5,
+     -22.3
+    ],
+    "unit": "$tn (-68.9% of annualised GDP $32.56tn)",
+    "source": "BEA 2026Q2; FRED IIPUSNETIQ",
+    "confidence": "high"
+   },
+   "direct_investment_market_value": {
+    "assets_tn": {
+     "value": 15.23,
+     "range": [
+      15.2,
+      15.3
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPDIREAMVQ",
+     "confidence": "high"
+    },
+    "liabilities_tn": {
+     "value": 15.61,
+     "range": [
+      15.6,
+      15.7
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPDIRELMVQ",
+     "confidence": "high"
+    }
+   },
+   "portfolio": {
+    "assets_tn": {
+     "value": 21.06,
+     "range": [
+      21.0,
+      21.1
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPPORTAQ",
+     "confidence": "high"
+    },
+    "liabilities_tn": {
+     "value": 40.92,
+     "range": [
+      40.9,
+      41.0
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPPORTLQ",
+     "confidence": "high"
+    }
+   },
+   "other_investment": {
+    "assets_tn": {
+     "value": 7.13,
+     "range": [
+      7.1,
+      7.2
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPOTHEAQ",
+     "confidence": "high"
+    },
+    "liabilities_tn": {
+     "value": 10.64,
+     "range": [
+      10.6,
+      10.7
+     ],
+     "unit": "$tn",
+     "source": "FRED IIPOTHELQ",
+     "confidence": "high"
+    }
+   },
+   "reserves_and_derivatives_residual": {
+    "assets_tn": {
+     "value": 3.54,
+     "range": [
+      3.4,
+      3.7
+     ],
+     "unit": "$tn (residual: reserve assets incl. gold at market, gross derivatives)",
+     "source": "computed",
+     "confidence": "medium"
+    },
+    "liabilities_tn": {
+     "value": 2.22,
+     "range": [
+      2.0,
+      2.4
+     ],
+     "unit": "$tn (residual: gross derivatives)",
+     "source": "computed",
+     "confidence": "medium"
+    }
+   }
+  },
+  "foreign_holdings_of_us_securities_bn_2025_06": {
+   "total": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 9109.5,
+      "range": [
+       8198.6,
+       10020.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "china": {
+      "value": 1278.6,
+      "range": [
+       1150.8,
+       1406.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "japan": {
+      "value": 2883.0,
+      "range": [
+       2594.7,
+       3171.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "uk": {
+      "value": 3461.1,
+      "range": [
+       3115.0,
+       3807.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "canada": {
+      "value": 2897.7,
+      "range": [
+       2607.9,
+       3187.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "mexico": {
+      "value": 234.9,
+      "range": [
+       211.4,
+       258.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "india": {
+      "value": 256.8,
+      "range": [
+       231.1,
+       282.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "korea": {
+      "value": 804.1,
+      "range": [
+       723.7,
+       884.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "brazil": {
+      "value": 243.2,
+      "range": [
+       218.9,
+       267.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "australia": {
+      "value": 804.4,
+      "range": [
+       724.0,
+       884.8
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "opec_plus": {
+      "value": 1370.7,
+      "range": [
+       1233.6,
+       1507.7
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "rest_of_world": {
+      "value": 11982.7,
+      "range": [
+       10784.5,
+       13181.0
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     }
+    },
+    "confidence": "medium"
+   },
+   "equities": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 4927.6,
+      "range": [
+       4434.8,
+       5420.3
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "china": {
+      "value": 344.5,
+      "range": [
+       310.0,
+       378.9
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "japan": {
+      "value": 1168.7,
+      "range": [
+       1051.8,
+       1285.6
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "uk": {
+      "value": 2056.0,
+      "range": [
+       1850.4,
+       2261.6
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "canada": {
+      "value": 2063.2,
+      "range": [
+       1856.9,
+       2269.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "mexico": {
+      "value": 121.8,
+      "range": [
+       109.7,
+       134.0
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "india": {
+      "value": 28.7,
+      "range": [
+       25.9,
+       31.6
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "korea": {
+      "value": 591.7,
+      "range": [
+       532.6,
+       650.9
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "brazil": {
+      "value": 24.9,
+      "range": [
+       22.4,
+       27.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "australia": {
+      "value": 693.6,
+      "range": [
+       624.2,
+       762.9
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "opec_plus": {
+      "value": 906.1,
+      "range": [
+       815.5,
+       996.7
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "rest_of_world": {
+      "value": 6908.0,
+      "range": [
+       6217.2,
+       7598.8
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     }
+    },
+    "confidence": "medium"
+   },
+   "lt_treasury": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 1523.9,
+      "range": [
+       1371.5,
+       1676.3
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "china": {
+      "value": 656.5,
+      "range": [
+       590.9,
+       722.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "japan": {
+      "value": 1024.0,
+      "range": [
+       921.6,
+       1126.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "uk": {
+      "value": 768.3,
+      "range": [
+       691.5,
+       845.1
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "canada": {
+      "value": 405.4,
+      "range": [
+       364.9,
+       446.0
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "mexico": {
+      "value": 75.9,
+      "range": [
+       68.3,
+       83.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "india": {
+      "value": 211.1,
+      "range": [
+       190.0,
+       232.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "korea": {
+      "value": 119.5,
+      "range": [
+       107.6,
+       131.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "brazil": {
+      "value": 211.4,
+      "range": [
+       190.2,
+       232.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "australia": {
+      "value": 53.1,
+      "range": [
+       47.8,
+       58.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "opec_plus": {
+      "value": 252.4,
+      "range": [
+       227.2,
+       277.7
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "rest_of_world": {
+      "value": 2353.2,
+      "range": [
+       2117.9,
+       2588.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     }
+    },
+    "confidence": "medium"
+   },
+   "st_debt": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 504.4,
+      "range": [
+       454.0,
+       554.9
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "china": {
+      "value": 75.1,
+      "range": [
+       67.6,
+       82.6
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "japan": {
+      "value": 124.9,
+      "range": [
+       112.4,
+       137.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "uk": {
+      "value": 92.9,
+      "range": [
+       83.6,
+       102.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "canada": {
+      "value": 39.4,
+      "range": [
+       35.5,
+       43.4
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "mexico": {
+      "value": 19.2,
+      "range": [
+       17.3,
+       21.1
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "india": {
+      "value": 16.0,
+      "range": [
+       14.4,
+       17.6
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "korea": {
+      "value": 8.0,
+      "range": [
+       7.2,
+       8.8
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "brazil": {
+      "value": 4.7,
+      "range": [
+       4.2,
+       5.1
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "australia": {
+      "value": 10.5,
+      "range": [
+       9.4,
+       11.5
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "opec_plus": {
+      "value": 112.0,
+      "range": [
+       100.8,
+       123.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     },
+     "rest_of_world": {
+      "value": 633.8,
+      "range": [
+       570.4,
+       697.2
+      ],
+      "unit": "$bn market value, end-June 2025",
+      "source": "Treasury SHL survey preliminary tables (Feb 2026), aggregated to blocs; custodian effects reduced but not eliminated"
+     }
+    },
+    "confidence": "medium"
+   },
+   "lt_agency": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 193.9,
+      "range": [
+       174.5,
+       213.3
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "china": {
+      "value": 185.9,
+      "range": [
+       167.4,
+       204.5
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "japan": {
+      "value": 250.3,
+      "range": [
+       225.3,
+       275.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "uk": {
+      "value": 55.4,
+      "range": [
+       49.9,
+       60.9
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "canada": {
+      "value": 159.4,
+      "range": [
+       143.5,
+       175.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "mexico": {
+      "value": 6.4,
+      "range": [
+       5.8,
+       7.0
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "india": {
+      "value": 0.0,
+      "range": [
+       0.0,
+       0.0
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "korea": {
+      "value": 34.4,
+      "range": [
+       31.0,
+       37.8
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "brazil": {
+      "value": 0.0,
+      "range": [
+       0.0,
+       0.0
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "australia": {
+      "value": 6.7,
+      "range": [
+       6.0,
+       7.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "opec_plus": {
+      "value": 29.0,
+      "range": [
+       26.1,
+       31.9
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "rest_of_world": {
+      "value": 411.3,
+      "range": [
+       370.1,
+       452.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     }
+    },
+    "confidence": "medium"
+   },
+   "lt_corporate": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 1954.2,
+      "range": [
+       1758.8,
+       2149.7
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "china": {
+      "value": 16.5,
+      "range": [
+       14.8,
+       18.2
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "japan": {
+      "value": 315.1,
+      "range": [
+       283.5,
+       346.6
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "uk": {
+      "value": 488.5,
+      "range": [
+       439.7,
+       537.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "canada": {
+      "value": 230.2,
+      "range": [
+       207.2,
+       253.2
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "mexico": {
+      "value": 11.2,
+      "range": [
+       10.1,
+       12.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "india": {
+      "value": 0.7,
+      "range": [
+       0.7,
+       0.8
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "korea": {
+      "value": 50.4,
+      "range": [
+       45.4,
+       55.5
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "brazil": {
+      "value": 2.1,
+      "range": [
+       1.9,
+       2.3
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "australia": {
+      "value": 40.4,
+      "range": [
+       36.4,
+       44.5
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "opec_plus": {
+      "value": 66.0,
+      "range": [
+       59.4,
+       72.6
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     },
+     "rest_of_world": {
+      "value": 1642.1,
+      "range": [
+       1477.9,
+       1806.4
+      ],
+      "unit": "$bn",
+      "source": "Treasury SHL"
+     }
+    },
+    "confidence": "medium"
+   }
+  },
+  "us_holdings_of_foreign_securities_bn_2025_12": {
+   "total": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 4665.1,
+      "range": [
+       4198.6,
+       5131.6
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "china": {
+      "value": 317.7,
+      "range": [
+       285.9,
+       349.5
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "japan": {
+      "value": 1483.1,
+      "range": [
+       1334.8,
+       1631.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "uk": {
+      "value": 2007.2,
+      "range": [
+       1806.5,
+       2207.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "canada": {
+      "value": 1886.4,
+      "range": [
+       1697.7,
+       2075.0
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "mexico": {
+      "value": 183.2,
+      "range": [
+       164.9,
+       201.5
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "india": {
+      "value": 390.5,
+      "range": [
+       351.4,
+       429.5
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "korea": {
+      "value": 384.2,
+      "range": [
+       345.8,
+       422.6
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "brazil": {
+      "value": 190.1,
+      "range": [
+       171.1,
+       209.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "australia": {
+      "value": 477.6,
+      "range": [
+       429.8,
+       525.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "opec_plus": {
+      "value": 203.7,
+      "range": [
+       183.4,
+       224.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "rest_of_world": {
+      "value": 7088.1,
+      "range": [
+       6379.3,
+       7796.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     }
+    },
+    "confidence": "medium"
+   },
+   "equity": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 3785.9,
+      "range": [
+       3407.3,
+       4164.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "china": {
+      "value": 300.1,
+      "range": [
+       270.1,
+       330.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "japan": {
+      "value": 1267.0,
+      "range": [
+       1140.3,
+       1393.7
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "uk": {
+      "value": 1541.9,
+      "range": [
+       1387.7,
+       1696.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "canada": {
+      "value": 1277.9,
+      "range": [
+       1150.1,
+       1405.7
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "mexico": {
+      "value": 90.4,
+      "range": [
+       81.4,
+       99.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "india": {
+      "value": 379.6,
+      "range": [
+       341.6,
+       417.5
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "korea": {
+      "value": 360.0,
+      "range": [
+       324.0,
+       396.0
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "brazil": {
+      "value": 149.4,
+      "range": [
+       134.5,
+       164.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "australia": {
+      "value": 300.6,
+      "range": [
+       270.5,
+       330.7
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "opec_plus": {
+      "value": 131.0,
+      "range": [
+       117.9,
+       144.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "rest_of_world": {
+      "value": 5662.6,
+      "range": [
+       5096.3,
+       6228.8
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     }
+    },
+    "confidence": "medium"
+   },
+   "lt_debt": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 787.4,
+      "range": [
+       708.6,
+       866.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "china": {
+      "value": 17.4,
+      "range": [
+       15.6,
+       19.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "japan": {
+      "value": 193.5,
+      "range": [
+       174.2,
+       212.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "uk": {
+      "value": 424.0,
+      "range": [
+       381.6,
+       466.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "canada": {
+      "value": 481.7,
+      "range": [
+       433.5,
+       529.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "mexico": {
+      "value": 92.7,
+      "range": [
+       83.4,
+       101.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "india": {
+      "value": 10.9,
+      "range": [
+       9.8,
+       12.0
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "korea": {
+      "value": 23.6,
+      "range": [
+       21.2,
+       25.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "brazil": {
+      "value": 40.5,
+      "range": [
+       36.5,
+       44.6
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "australia": {
+      "value": 136.7,
+      "range": [
+       123.0,
+       150.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "opec_plus": {
+      "value": 63.9,
+      "range": [
+       57.5,
+       70.3
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "rest_of_world": {
+      "value": 1335.5,
+      "range": [
+       1202.0,
+       1469.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     }
+    },
+    "confidence": "medium"
+   },
+   "st_debt": {
+    "by_bloc": {
+     "euro_area": {
+      "value": 91.9,
+      "range": [
+       82.7,
+       101.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "china": {
+      "value": 0.2,
+      "range": [
+       0.2,
+       0.3
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "japan": {
+      "value": 22.6,
+      "range": [
+       20.3,
+       24.9
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "uk": {
+      "value": 41.3,
+      "range": [
+       37.1,
+       45.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "canada": {
+      "value": 126.7,
+      "range": [
+       114.0,
+       139.4
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "mexico": {
+      "value": 0.1,
+      "range": [
+       0.1,
+       0.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "india": {
+      "value": 0.0,
+      "range": [
+       0.0,
+       0.0
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "korea": {
+      "value": 0.7,
+      "range": [
+       0.6,
+       0.7
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "brazil": {
+      "value": 0.1,
+      "range": [
+       0.1,
+       0.1
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "australia": {
+      "value": 40.3,
+      "range": [
+       36.3,
+       44.3
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "opec_plus": {
+      "value": 8.8,
+      "range": [
+       7.9,
+       9.7
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     },
+     "rest_of_world": {
+      "value": 90.0,
+      "range": [
+       81.0,
+       99.0
+      ],
+      "unit": "$bn market value, end-December 2025",
+      "source": "Treasury SHC preliminary results (31 Aug 2026), aggregated to blocs"
+     }
+    },
+    "confidence": "medium"
+   }
+  },
+  "us_direct_investment_abroad_bn_2025_hist_cost": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 2750.5,
+     "range": [
+      2475.4,
+      3025.5
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "china": {
+     "value": 120.5,
+     "range": [
+      108.5,
+      132.6
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "japan": {
+     "value": 74.3,
+     "range": [
+      66.8,
+      81.7
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "uk": {
+     "value": 1114.7,
+     "range": [
+      1003.2,
+      1226.2
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "canada": {
+     "value": 488.1,
+     "range": [
+      439.3,
+      536.9
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "mexico": {
+     "value": 168.8,
+     "range": [
+      152.0,
+      185.7
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "india": {
+     "value": 68.7,
+     "range": [
+      61.8,
+      75.5
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "korea": {
+     "value": 37.4,
+     "range": [
+      33.7,
+      41.2
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "brazil": {
+     "value": 90.2,
+     "range": [
+      81.2,
+      99.2
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "australia": {
+     "value": 190.4,
+     "range": [
+      171.4,
+      209.5
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "opec_plus": {
+     "value": 98.4,
+     "range": [
+      88.6,
+      108.3
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    },
+    "rest_of_world": {
+     "value": 1933.7,
+     "range": [
+      1740.3,
+      2127.1
+     ],
+     "unit": "$bn historical cost",
+     "source": "BEA direct investment by country and industry 2025 (21 July 2026), aggregated; euro area is mostly holding companies in NL, LU, IE (conduits)"
+    }
+   },
+   "confidence": "medium"
+  },
+  "fdi_in_united_states_bn_2025_hist_cost": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 2380.6,
+     "range": [
+      2142.6,
+      2618.7
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "china": {
+     "value": 19.0,
+     "range": [
+      17.1,
+      20.9
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "japan": {
+     "value": 776.3,
+     "range": [
+      698.7,
+      854.0
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "uk": {
+     "value": 738.3,
+     "range": [
+      664.5,
+      812.2
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "canada": {
+     "value": 747.3,
+     "range": [
+      672.6,
+      822.1
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "mexico": {
+     "value": 48.7,
+     "range": [
+      43.9,
+      53.6
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "india": {
+     "value": 6.2,
+     "range": [
+      5.6,
+      6.8
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "korea": {
+     "value": 95.2,
+     "range": [
+      85.7,
+      104.7
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "brazil": {
+     "value": 5.5,
+     "range": [
+      4.9,
+      6.0
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "australia": {
+     "value": 109.4,
+     "range": [
+      98.4,
+      120.3
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "opec_plus": {
+     "value": 42.4,
+     "range": [
+      38.2,
+      46.6
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    },
+    "rest_of_world": {
+     "value": 895.4,
+     "range": [
+      805.8,
+      984.9
+     ],
+     "unit": "$bn historical cost, by country of foreign parent",
+     "source": "BEA 2025; UBO basis differs (Japan 827, Canada 820, Germany 706)"
+    }
+   },
+   "confidence": "medium"
+  },
+  "us_direct_investment_income_bn_2025": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 296.1,
+     "range": [
+      266.5,
+      325.7
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "china": {
+     "value": 9.0,
+     "range": [
+      8.1,
+      9.9
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "japan": {
+     "value": 12.8,
+     "range": [
+      11.5,
+      14.0
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "uk": {
+     "value": 67.4,
+     "range": [
+      60.7,
+      74.1
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "canada": {
+     "value": 26.8,
+     "range": [
+      24.1,
+      29.5
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "mexico": {
+     "value": 15.3,
+     "range": [
+      13.7,
+      16.8
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "india": {
+     "value": 10.1,
+     "range": [
+      9.1,
+      11.1
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "korea": {
+     "value": 3.6,
+     "range": [
+      3.3,
+      4.0
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "brazil": {
+     "value": 6.1,
+     "range": [
+      5.5,
+      6.7
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "australia": {
+     "value": 9.9,
+     "range": [
+      8.9,
+      10.9
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "opec_plus": {
+     "value": 15.0,
+     "range": [
+      13.5,
+      16.5
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "rest_of_world": {
+     "value": 188.1,
+     "range": [
+      169.2,
+      206.9
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    }
+   },
+   "confidence": "medium"
+  },
+  "fdi_income_in_us_bn_2025": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 119.6,
+     "range": [
+      107.6,
+      131.5
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "china": {
+     "value": 0.7,
+     "range": [
+      0.6,
+      0.8
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "japan": {
+     "value": 36.5,
+     "range": [
+      32.9,
+      40.2
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "uk": {
+     "value": 33.7,
+     "range": [
+      30.4,
+      37.1
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "canada": {
+     "value": 39.5,
+     "range": [
+      35.5,
+      43.4
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "mexico": {
+     "value": 6.6,
+     "range": [
+      6.0,
+      7.3
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "india": {
+     "value": 1.1,
+     "range": [
+      1.0,
+      1.3
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "korea": {
+     "value": 5.9,
+     "range": [
+      5.3,
+      6.4
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "brazil": {
+     "value": 0.5,
+     "range": [
+      0.5,
+      0.6
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "australia": {
+     "value": 7.6,
+     "range": [
+      6.8,
+      8.4
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "opec_plus": {
+     "value": 0.3,
+     "range": [
+      0.3,
+      0.4
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    },
+    "rest_of_world": {
+     "value": 58.0,
+     "range": [
+      52.2,
+      63.8
+     ],
+     "unit": "$bn",
+     "source": "BEA 2025"
+    }
+   },
+   "confidence": "medium"
+  },
+  "us_bank_cross_border_claims_bn_2026q1": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 510.3,
+     "range": [
+      459.3,
+      561.3
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "china": {
+     "value": 14.2,
+     "range": [
+      12.8,
+      15.6
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "japan": {
+     "value": 352.9,
+     "range": [
+      317.6,
+      388.2
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "uk": {
+     "value": 1216.0,
+     "range": [
+      1094.4,
+      1337.6
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "canada": {
+     "value": 434.9,
+     "range": [
+      391.4,
+      478.4
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "mexico": {
+     "value": 49.2,
+     "range": [
+      44.3,
+      54.1
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "india": {
+     "value": 20.5,
+     "range": [
+      18.4,
+      22.6
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "korea": {
+     "value": 16.2,
+     "range": [
+      14.6,
+      17.8
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "brazil": {
+     "value": 86.2,
+     "range": [
+      77.6,
+      94.8
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "australia": {
+     "value": 108.7,
+     "range": [
+      97.8,
+      119.6
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "opec_plus": {
+     "value": 56.6,
+     "range": [
+      50.9,
+      62.3
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    },
+    "rest_of_world": {
+     "value": 1582.0,
+     "range": [
+      1423.8,
+      1740.2
+     ],
+     "unit": "$bn",
+     "source": "BIS locational banking statistics, US-located banks, all instruments"
+    }
+   },
+   "confidence": "medium"
+  },
+  "us_bank_cross_border_liabilities_bn_2026q1": {
+   "by_bloc": {
+    "euro_area": {
+     "value": 1119.0,
+     "range": [
+      1007.1,
+      1230.9
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "china": {
+     "value": 104.2,
+     "range": [
+      93.8,
+      114.6
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "japan": {
+     "value": 414.7,
+     "range": [
+      373.2,
+      456.2
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "uk": {
+     "value": 1454.5,
+     "range": [
+      1309.0,
+      1600.0
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "canada": {
+     "value": 327.5,
+     "range": [
+      294.8,
+      360.3
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "mexico": {
+     "value": 112.4,
+     "range": [
+      101.2,
+      123.6
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "india": {
+     "value": 45.1,
+     "range": [
+      40.6,
+      49.6
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "korea": {
+     "value": 43.1,
+     "range": [
+      38.8,
+      47.4
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "brazil": {
+     "value": 21.6,
+     "range": [
+      19.4,
+      23.8
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "australia": {
+     "value": 133.0,
+     "range": [
+      119.7,
+      146.3
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "opec_plus": {
+     "value": 157.5,
+     "range": [
+      141.8,
+      173.2
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    },
+    "rest_of_world": {
+     "value": 1738.1,
+     "range": [
+      1564.3,
+      1911.9
+     ],
+     "unit": "$bn",
+     "source": "BIS LBS"
+    }
+   },
+   "confidence": "medium"
+  },
+  "market_to_historical_cost_ratio_fdi": {
+   "assets": {
+    "value": 1.94,
+    "range": [
+     1.8,
+     2.2
+    ],
+    "unit": "IIP market value (2025Q4 $13.82tn) / BEA historical cost (2025 $7.14tn)",
+    "source": "FRED IIPDIREAMVQ; BEA",
+    "confidence": "high"
+   },
+   "liabilities": {
+    "value": 2.47,
+    "range": [
+     2.3,
+     2.7
+    ],
+    "unit": "IIP market value ($14.48tn) / historical cost ($5.86tn)",
+    "source": "FRED IIPDIRELMVQ; BEA",
+    "confidence": "high"
+   }
+  },
+  "implied_annual_yield_on_iip_positions_pct": {
+   "assets_4q_avg_2025q3_2026q2": {
+    "value": 3.8,
+    "range": [
+     3.6,
+     4.1
+    ],
+    "unit": "% (4 x quarterly primary income receipts / lagged assets; mean of last 4 quarters)",
+    "source": "FRED IEAXII, IIPUSASSQ",
+    "confidence": "high"
+   },
+   "liabilities_4q_avg": {
+    "value": 2.55,
+    "range": [
+     2.4,
+     2.7
+    ],
+    "unit": "% (payments / lagged liabilities)",
+    "source": "FRED IEAMII, IIPUSLIAQ",
+    "confidence": "high"
+   },
+   "gap_pp": {
+    "value": 1.27,
+    "range": [
+     1.1,
+     1.5
+    ],
+    "unit": "pp (exorbitant privilege in yield terms; 0.6-1.9 over 2006-2026; Gourinchas-Rey-Govillot: about 2%/yr real excess return 1952-2016)",
+    "source": "own computation; Gourinchas, Rey & Sauzet 2019",
+    "confidence": "high"
+   },
+   "liability_yield_slope_on_10y": {
+    "value": 0.39,
+    "range": [
+     0.2,
+     0.6
+    ],
+    "unit": "pp of liability yield per pp of the 10y yield (quarterly, 2003-2026; assets 0.26)",
+    "source": "Own regression",
+    "confidence": "medium"
+   }
+  },
+  "foreign_currency_share": {
+   "us_foreign_debt_securities_usd_denominated": {
+    "value": 0.77,
+    "range": [
+     0.72,
+     0.8
+    ],
+    "unit": "share of US-held foreign debt that is USD-denominated (2024)",
+    "source": "Treasury SHC 2024 report, Exhibit 12 (2007-2024 range 72.9-79.6%)",
+    "confidence": "high"
+   },
+   "us_foreign_equity_foreign_currency": {
+    "value": 0.9,
+    "range": [
+     0.85,
+     0.95
+    ],
+    "unit": "share (depositary receipts are about 9% of holdings)",
+    "source": "Treasury SHC 2024 report (9% depositary receipts)",
+    "confidence": "medium"
+   },
+   "us_fdi_abroad_foreign_currency": {
+    "value": 1.0,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "share",
+    "source": "assumption (affiliate values are in local currency)",
+    "confidence": "low"
+   },
+   "us_total_assets_foreign_currency": {
+    "value": 0.68,
+    "range": [
+     0.6,
+     0.75
+    ],
+    "unit": "share of US external assets in foreign currency (equities 0.9 x 15.2tn + debt 0.23 x 4.0tn + FDI x 15.2tn + other 0.3 x 7.1tn)/46.97tn",
+    "source": "computed; consistent with Lane & Milesi-Ferretti style estimates (unverified)",
+    "confidence": "medium"
+   },
+   "us_liabilities_foreign_currency": {
+    "value": 0.03,
+    "range": [
+     0.01,
+     0.06
+    ],
+    "unit": "share (about 18% of foreign-held US corporate debt is non-USD, euro about 14%; Treasuries and equities are USD; other investment liabilities assumed 10% non-USD)",
+    "source": "Treasury SHL 2025 key takeaways and Exhibit 10",
+    "confidence": "medium"
+   }
+  },
+  "niip_valuation_sensitivity": {
+   "dollar_plus_10pct_tn": {
+    "value": -3.0,
+    "range": [
+     -3.5,
+     -2.5
+    ],
+    "unit": "$tn change in NIIP for a uniform +10% dollar (about 9% of GDP)",
+    "source": "computed: 10% x foreign-currency assets 31.9tn less 10% x foreign-currency liabilities 1.5tn",
+    "confidence": "medium"
+   },
+   "global_equity_minus10pct_tn": {
+    "value": 0.5,
+    "range": [
+     0.3,
+     0.9
+    ],
+    "unit": "$tn change in NIIP for a 10% fall in all equity values in USD terms (US is net short equity: owes 35.5tn incl. FDI, owns 30.4tn)",
+    "source": "computed from SHL/SHC/IIP",
+    "confidence": "medium"
+   },
+   "us_equity_minus10pct_tn": {
+    "value": 3.55,
+    "range": [
+     3.0,
+     4.0
+    ],
+    "unit": "$tn change in NIIP for a 10% fall in US equity and FDI liabilities only",
+    "source": "computed",
+    "confidence": "medium"
+   },
+   "quarterly_valuation_residual_sd_tn": {
+    "value": 0.61,
+    "range": [
+     0.5,
+     0.7
+    ],
+    "unit": "$tn, sd of (change in NIIP - current account), 2010-2026 (2.6% of GDP)",
+    "source": "Own computation from FRED",
+    "confidence": "high"
+   }
+  }
+ },
+ "validation_targets": {
+  "V01": {
+   "description": "Advanced foreign GDP after +100bp US tightening",
+   "value": -0.5,
+   "range": [
+    -1.0,
+    -0.25
+   ],
+   "unit": "% of GDP level",
+   "horizon": "36 months",
+   "source": "Iacoviello & Navarro 2019"
+  },
+  "V02": {
+   "description": "Emerging foreign GDP after +100bp US tightening",
+   "value": -0.8,
+   "range": [
+    -1.5,
+    -0.4
+   ],
+   "unit": "% of GDP level",
+   "horizon": "36 months",
+   "source": "Iacoviello & Navarro 2019"
+  },
+  "V03": {
+   "description": "US GDP after +100bp US tightening",
+   "value": -0.7,
+   "range": [
+    -1.0,
+    -0.4
+   ],
+   "unit": "% of GDP level",
+   "horizon": "24 months",
+   "source": "Iacoviello & Navarro 2019"
+  },
+  "V04": {
+   "description": "Foreign / US trough GDP ratio (advanced; emerging about 1)",
+   "value": 0.7,
+   "range": [
+    0.25,
+    1.0
+   ],
+   "unit": "ratio",
+   "horizon": "trough",
+   "source": "Georgiadis 2016 Table 2"
+  },
+  "V05": {
+   "description": "Dollar vs advanced currencies after +100bp",
+   "value": 5.0,
+   "range": [
+    2.0,
+    10.0
+   ],
+   "unit": "% dollar appreciation",
+   "horizon": "24 months",
+   "source": "Kalemli-Ozcan 2019 (6%); Ammer et al. 2016"
+  },
+  "V06": {
+   "description": "Dollar vs emerging currencies after +100bp",
+   "value": 8.0,
+   "range": [
+    2.0,
+    16.0
+   ],
+   "unit": "% dollar appreciation",
+   "horizon": "24 months",
+   "source": "Kalemli-Ozcan 2019 (15.7% unconditional)"
+  },
+  "V07": {
+   "description": "Advanced policy rates after +100bp: impact then month 24",
+   "value": [
+    0.3,
+    -0.3
+   ],
+   "range": [
+    -0.5,
+    0.5
+   ],
+   "unit": "pp",
+   "horizon": "impact; 24 months",
+   "source": "Degasperi-Hong-Ricco 2021; Miranda-Agrippino & Rey 2020"
+  },
+  "V08": {
+   "description": "Emerging policy rates after +100bp",
+   "value": 0.5,
+   "range": [
+    0.2,
+    1.0
+   ],
+   "unit": "pp",
+   "horizon": "12-24 months",
+   "source": "Iacoviello & Navarro 2019"
+  },
+  "V09": {
+   "description": "Emerging 12m government-rate differential vs US per +1pp US policy",
+   "value": 2.5,
+   "range": [
+    1.5,
+    3.0
+   ],
+   "unit": "pp",
+   "horizon": "9 months",
+   "source": "Kalemli-Ozcan 2019"
+  },
+  "V10": {
+   "description": "US equity after +100bp",
+   "value": -8.0,
+   "range": [
+    -12.0,
+    -5.0
+   ],
+   "unit": "%",
+   "horizon": "impact",
+   "source": "Miranda-Agrippino & Rey 2020"
+  },
+  "V11": {
+   "description": "Foreign 10y vs US 10y (EA 0.67, UK 0.81, CA 0.71, AU 0.87, KR 0.61, MX 0.99, JP 0.23)",
+   "value": 0.7,
+   "range": [
+    0.2,
+    1.0
+   ],
+   "unit": "beta of 12m changes",
+   "horizon": "12 months",
+   "source": "own regressions"
+  },
+  "V12": {
+   "description": "EM cross-border bank loans relative to DM after +100bp FFR",
+   "value": -8.0,
+   "range": [
+    -12.0,
+    -3.0
+   ],
+   "unit": "pp",
+   "horizon": "same quarter",
+   "source": "Brauning & Ivashina 2020"
+  },
+  "V13": {
+   "description": "Dollar in a VIX spike: broad dollar per +10 VIX points (monthly); +2.9% after a 14-point jump, +3.6% at 6m, +1.0% at 12m; yen 0 to -3% for 3m",
+   "value": 1.7,
+   "range": [
+    1.2,
+    2.2
+   ],
+   "unit": "% per 10 VIX points",
+   "horizon": "1-12 months",
+   "source": "own regression and event study"
+  },
+  "V14": {
+   "description": "Dollar in US-originated risk-off (2-21 April 2025; 10y +22bp)",
+   "value": -3.3,
+   "range": [
+    -4.0,
+    -2.5
+   ],
+   "unit": "% broad dollar",
+   "horizon": "3 weeks",
+   "source": "own episode table"
+  },
+  "V15": {
+   "description": "$100bn net official purchase of Treasuries (2026 size): 10y yield, first year / long run",
+   "value": [
+    -8.0,
+    -4.0
+   ],
+   "range": [
+    -21.0,
+    -2.0
+   ],
+   "unit": "bp",
+   "horizon": "12 months; long run",
+   "source": "Beltran et al. 2013; Warnock & Warnock 2009 rescaled"
+  },
+  "V16": {
+   "description": "Official Treasury holdings after +10% broad dollar (cumulative 6m)",
+   "value": -80.0,
+   "range": [
+    -120.0,
+    -50.0
+   ],
+   "unit": "$bn",
+   "horizon": "6 months",
+   "source": "own regression"
+  },
+  "V17": {
+   "description": "US GDP for a 1% China GDP shortfall",
+   "value": -0.17,
+   "range": [
+    -0.35,
+    -0.07
+   ],
+   "unit": "% of US GDP level",
+   "horizon": "1-3 years",
+   "source": "Ahmed et al. 2019; Cashin et al. 2016"
+  },
+  "V18": {
+   "description": "Spillback share of US slowdown after US tightening (world-on / world-off US GDP response ratio up to 2.0)",
+   "value": 0.5,
+   "range": [
+    0.25,
+    0.5
+   ],
+   "unit": "share",
+   "horizon": "1-2 years",
+   "source": "Breitenlechner et al. 2021"
+  },
+  "V19": {
+   "description": "US GDP for a +100bp pure ECB shock",
+   "value": 0.0,
+   "range": [
+    -0.1,
+    0.1
+   ],
+   "unit": "%",
+   "horizon": "1-2 years",
+   "source": "Jarocinski 2022; Ca Zorzi et al. 2020"
+  },
+  "V20": {
+   "description": "US real net exports per 1% dollar depreciation",
+   "value": 0.15,
+   "range": [
+    0.05,
+    0.2
+   ],
+   "unit": "% of GDP",
+   "horizon": "2-3 years",
+   "source": "Ammer et al. 2016"
+  },
+  "V21": {
+   "description": "Foreign share of marketable Treasuries (official 11.6% of GDP; 40.8% of foreign)",
+   "value": 29.4,
+   "range": [
+    28.0,
+    31.0
+   ],
+   "unit": "%",
+   "horizon": "state",
+   "source": "TIC and MSPD July 2026"
+  },
+  "V22": {
+   "description": "NIIP; primary income balance",
+   "value": [
+    -68.9,
+    -0.14
+   ],
+   "range": [
+    [
+     -72,
+     -65
+    ],
+    [
+     -0.4,
+     0.1
+    ]
+   ],
+   "unit": "% of annualised GDP",
+   "horizon": "state",
+   "source": "BEA 2026Q2"
+  },
+  "V23": {
+   "description": "Return gap on external positions (assets 3.8%, liabilities 2.55%)",
+   "value": 1.27,
+   "range": [
+    1.1,
+    1.5
+   ],
+   "unit": "pp",
+   "horizon": "state",
+   "source": "FRED IEAXII/IEAMII, IIPUSASSQ/LIAQ"
+  },
+  "V24": {
+   "description": "NIIP valuation for a uniform +10% dollar",
+   "value": -3.0,
+   "range": [
+    -3.5,
+    -2.5
+   ],
+   "unit": "$tn",
+   "horizon": "instant",
+   "source": "computed"
+  },
+  "V25": {
+   "description": "Monthly sd of valuation-adjusted official Treasury flow",
+   "value": 48.0,
+   "range": [
+    40.0,
+    56.0
+   ],
+   "unit": "$bn",
+   "horizon": "state",
+   "source": "own estimate"
+  },
+  "dollar_vix_moments_to_match": {
+   "broad_dollar_monthly_sd_pct": {
+    "value": 1.77,
+    "range": [
+     1.6,
+     1.9
+    ],
+    "unit": "%",
+    "source": "own"
+   },
+   "corr_dollar_vix_change": {
+    "value": 0.53,
+    "range": [
+     0.47,
+     0.56
+    ],
+    "unit": "correlation (R2 0.25-0.31)",
+    "source": "own"
+   },
+   "prob_vix_jump_ge10_per_month": {
+    "value": 0.044,
+    "range": [
+     0.029,
+     0.044
+    ],
+    "unit": "probability",
+    "source": "own"
+   },
+   "broad_dollar_beta_us2y": {
+    "value": 1.64,
+    "range": [
+     1.15,
+     2.3
+    ],
+    "unit": "% per pp",
+    "source": "own"
+   }
+  }
+ }
+}

@@ -1,0 +1,11 @@
+{
+  "world_block_enabled": false,
+  "import_price_elasticity": 0.2,
+  "import_elasticity_lr": 0.6,
+  "fin_factor_rho": 0.98,
+  "fin_factor_sigma": 0.0,
+  "fin_jump_intensity": 0.0,
+  "fin_jump_mean": 0.0,
+  "fin_jump_sd": 0.0,
+  "erp_fin_loading": 0.0
+}

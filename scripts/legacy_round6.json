@@ -1,0 +1,27 @@
+{
+  "burn_in_nominal_neutral": false,
+  "ui_cap_wage_indexed": false,
+  "entry_wage_indexed": false,
+  "wage_indexed_thresholds": false,
+  "snap_asset_limit": 3000.0,
+  "snap_asset_end": 3000.0,
+  "debt_target_slope": 0.0,
+  "fiscal_rule_strength": 1.0,
+  "housing_first_budget": false,
+  "early_retiree_pia_factor": 0.0,
+  "first_buy_continuous_employment": false,
+  "burn_in_freeze_foreclosures": false,
+  "rent_floor_indexed": false,
+  "windfall_sector_mix": [
+    0.0,
+    0.1,
+    0.45,
+    0.2,
+    0.1,
+    0.1,
+    0.0,
+    0.05
+  ],
+  "fx_rate_sensitivity": 3.0,
+  "u_star_max": 0.048
+}

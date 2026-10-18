@@ -1,0 +1,5 @@
+{
+  "demand_logit": true,
+  "demand_elasticity": 4.5,
+  "demand_rechoice_prob": 0.03
+}

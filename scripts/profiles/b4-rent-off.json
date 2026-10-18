@@ -1,0 +1,8 @@
+{
+  "housing_buy_rate_semi": 0.0,
+  "housing_vacant_sell_reanchor": false,
+  "housing_vacant_sell_ms_elast": 1.0,
+  "housing_rental_gap_sell_semi": 0.0,
+  "housing_expiry_let_gap_semi": 0.0,
+  "housing_uc_theta": 0.75
+}

@@ -1,0 +1,97 @@
+# Preset re-measurement at 4561051 (joint calibration 4, step 3: PbR3F0 defaults, the obs_r_star_est rename and the server warm-up default 24)
+# Command: the website's preset-measurement script (not published): one POST /api/compare per preset and seed, 10,000 households, 6 seeds, 24 months, against the final server
+# Server: econsim-server built from j4 at 4561051 (tree b4ce1a6b1193d7fcc3ca4e72153fafc18a64c9f0), RAYON_NUM_THREADS=2, ECONSIM_COMPARE_CONCURRENCY=1, ECONSIM_CACHE_MB=0 (results do not depend on the thread count).
+# Each line: shocked minus baseline over the same 6 seeds, at month 3, 6, 12 and 24 after the shock.
+# unemployment is pp; policy, 10y, mortgage and business-loan rates are bp; GDP, house price, new mortgages and dollar are %; CPI and core are pp of year-on-year.
+# Warm-up: 0 (control: ECONSIM_WARMUP_MONTHS=0, the pre-J4 compare path) on the same binary.
+# Model: j4 head 4561051: PbR3F0 defaults (adopted), F1, P2, DC90, tariff pass-through.
+
+Oil +50%  (10000 households, 6 seeds)
+  m3  CPI +1.13pp  core +0.06pp  GDP -0.48%  u +0.02pp  policy +0bp  10y +1bp  mortgage +1bp  business loan +0bp  house px +0.02%  new mtg +0.46%  $ nominal -0.51%  $ real +0.58%
+  m6  CPI +1.09pp  core +0.13pp  GDP -0.35%  u +0.02pp  policy +8bp  10y +3bp  mortgage +3bp  business loan +4bp  house px +0.11%  new mtg -1.82%  $ nominal -1.40%  $ real -0.35%
+  m12 CPI +1.07pp  core +0.26pp  GDP -0.09%  u -0.33pp  policy +25bp  10y +11bp  mortgage +11bp  business loan +17bp  house px +0.47%  new mtg +5.16%  $ nominal -2.35%  $ real -1.30%
+  m24 CPI -0.62pp  core -0.14pp  GDP -0.76%  u +0.11pp  policy +29bp  10y +13bp  mortgage +13bp  business loan +30bp  house px +0.21%  new mtg -7.68%  $ nominal +0.76%  $ real +1.20%
+
+Oil +100%  (10000 households, 6 seeds)
+  m3  CPI +2.23pp  core +0.10pp  GDP -1.14%  u -0.05pp  policy +4bp  10y +2bp  mortgage +2bp  business loan +1bp  house px +0.06%  new mtg +0.53%  $ nominal -0.93%  $ real +1.20%
+  m6  CPI +2.20pp  core +0.31pp  GDP -0.87%  u -0.05pp  policy +13bp  10y +8bp  mortgage +8bp  business loan +10bp  house px +0.26%  new mtg -0.89%  $ nominal -2.69%  $ real -0.60%
+  m12 CPI +2.10pp  core +0.60pp  GDP -0.17%  u -0.57pp  policy +46bp  10y +26bp  mortgage +26bp  business loan +32bp  house px +0.78%  new mtg +1.06%  $ nominal -4.37%  $ real -2.37%
+  m24 CPI -1.10pp  core -0.26pp  GDP -1.35%  u +0.60pp  policy +42bp  10y +25bp  mortgage +25bp  business loan +35bp  house px -0.00%  new mtg -8.13%  $ nominal +0.95%  $ real +1.91%
+
+2y term premium +100bp  (10000 households, 6 seeds)
+  m3  CPI -0.03pp  core -0.02pp  GDP -0.41%  u +0.16pp  policy +0bp  10y +1bp  mortgage +1bp  business loan +69bp  house px -0.00%  new mtg +0.26%  $ nominal +2.49%  $ real +2.46%
+  m6  CPI -0.05pp  core -0.06pp  GDP -0.87%  u +0.51pp  policy -4bp  10y -1bp  mortgage -1bp  business loan +59bp  house px -0.02%  new mtg +2.48%  $ nominal +2.83%  $ real +2.77%
+  m12 CPI -0.10pp  core -0.10pp  GDP -0.77%  u +0.52pp  policy -25bp  10y -8bp  mortgage -8bp  business loan +33bp  house px +0.06%  new mtg -1.28%  $ nominal +1.91%  $ real +1.79%
+  m24 CPI -0.05pp  core -0.03pp  GDP -0.37%  u -0.19pp  policy -29bp  10y -9bp  mortgage -9bp  business loan -0bp  house px +0.45%  new mtg -5.31%  $ nominal +0.28%  $ real +0.12%
+
+10y term premium +100bp  (10000 households, 6 seeds)
+  m3  CPI +0.01pp  core +0.00pp  GDP -0.20%  u +0.04pp  policy +0bp  10y +90bp  mortgage +89bp  business loan +23bp  house px -0.33%  new mtg -9.81%  $ nominal +0.00%  $ real +0.01%
+  m6  CPI +0.03pp  core +0.01pp  GDP -0.20%  u +0.29pp  policy -4bp  10y +74bp  mortgage +74bp  business loan +16bp  house px -1.07%  new mtg -11.65%  $ nominal -0.09%  $ real -0.06%
+  m12 CPI +0.03pp  core +0.02pp  GDP -0.51%  u +0.50pp  policy -13bp  10y +50bp  mortgage +50bp  business loan +6bp  house px -2.61%  new mtg -6.82%  $ nominal -0.30%  $ real -0.28%
+  m24 CPI +0.00pp  core +0.05pp  GDP -0.52%  u +0.10pp  policy -13bp  10y +25bp  mortgage +25bp  business loan +3bp  house px -3.45%  new mtg -4.08%  $ nominal -0.47%  $ real -0.44%
+
+30y term premium +100bp  (10000 households, 6 seeds)
+  m3  CPI -0.00pp  core +0.01pp  GDP +0.00%  u +0.06pp  policy +0bp  10y +45bp  mortgage +45bp  business loan -0bp  house px -0.13%  new mtg -4.53%  $ nominal +0.00%  $ real -0.00%
+  m6  CPI -0.02pp  core -0.01pp  GDP -0.03%  u -0.04pp  policy +0bp  10y +37bp  mortgage +38bp  business loan +0bp  house px -0.49%  new mtg -8.03%  $ nominal -0.02%  $ real -0.05%
+  m12 CPI +0.04pp  core +0.02pp  GDP -0.23%  u +0.22pp  policy -13bp  10y +24bp  mortgage +24bp  business loan -7bp  house px -1.24%  new mtg +0.32%  $ nominal -0.18%  $ real -0.16%
+  m24 CPI -0.06pp  core -0.01pp  GDP -0.44%  u +0.04pp  policy +4bp  10y +17bp  mortgage +17bp  business loan +6bp  house px -1.83%  new mtg -2.93%  $ nominal +0.04%  $ real +0.01%
+
+Policy rate +100bp (12m)  (10000 households, 6 seeds)
+  m3  CPI -0.03pp  core -0.02pp  GDP -0.34%  u +0.07pp  policy +75bp  10y +26bp  mortgage +26bp  business loan +33bp  house px -0.07%  new mtg -1.60%  $ nominal +2.16%  $ real +2.14%
+  m6  CPI -0.08pp  core -0.06pp  GDP -0.62%  u +0.39pp  policy +42bp  10y +18bp  mortgage +18bp  business loan +21bp  house px -0.28%  new mtg -1.19%  $ nominal +1.80%  $ real +1.74%
+  m12 CPI -0.07pp  core -0.09pp  GDP -0.63%  u +0.35pp  policy +8bp  10y +6bp  mortgage +6bp  business loan +6bp  house px -0.64%  new mtg -3.90%  $ nominal +0.82%  $ real +0.76%
+  m24 CPI -0.06pp  core -0.01pp  GDP -0.16%  u -0.13pp  policy -8bp  10y -1bp  mortgage -1bp  business loan -11bp  house px -0.57%  new mtg -5.51%  $ nominal -0.16%  $ real -0.29%
+
+Policy rate +200bp (12m)  (10000 households, 6 seeds)
+  m3  CPI -0.05pp  core -0.06pp  GDP -0.88%  u +0.24pp  policy +150bp  10y +48bp  mortgage +48bp  business loan +64bp  house px -0.15%  new mtg -4.61%  $ nominal +4.13%  $ real +4.10%
+  m6  CPI -0.09pp  core -0.10pp  GDP -1.06%  u +0.57pp  policy +79bp  10y +33bp  mortgage +33bp  business loan +40bp  house px -0.51%  new mtg -8.72%  $ nominal +3.58%  $ real +3.52%
+  m12 CPI -0.15pp  core -0.15pp  GDP -1.13%  u +0.50pp  policy +21bp  10y +13bp  mortgage +13bp  business loan +18bp  house px -1.16%  new mtg -2.75%  $ nominal +1.66%  $ real +1.53%
+  m24 CPI -0.02pp  core +0.03pp  GDP -0.19%  u +0.00pp  policy -17bp  10y -4bp  mortgage -4bp  business loan -11bp  house px -1.19%  new mtg -0.17%  $ nominal -0.24%  $ real -0.41%
+
+Volcker: 10% for 24m  (10000 households, 6 seeds)
+  m3  CPI -0.14pp  core -0.16pp  GDP -1.37%  u +0.65pp  policy +708bp  10y +149bp  mortgage +149bp  business loan +452bp  house px -0.49%  new mtg -17.64%  $ nominal +16.59%  $ real +16.12%
+  m6  CPI -0.33pp  core -0.39pp  GDP -2.97%  u +1.93pp  policy +729bp  10y +156bp  mortgage +157bp  business loan +475bp  house px -1.75%  new mtg -28.03%  $ nominal +23.89%  $ real +22.99%
+  m12 CPI -0.67pp  core -0.79pp  GDP -5.60%  u +3.66pp  policy +750bp  10y +150bp  mortgage +151bp  business loan +476bp  house px -4.95%  new mtg -27.73%  $ nominal +26.62%  $ real +25.18%
+  m24 CPI -0.34pp  core -0.32pp  GDP -7.76%  u +4.60pp  policy +771bp  10y +98bp  mortgage +98bp  business loan +297bp  house px -9.58%  new mtg -26.55%  $ nominal +17.48%  $ real +15.94%
+
+QE Treasuries 1% GDP/m x 12 (10y)  (10000 households, 6 seeds)
+  m3  CPI +0.01pp  core +0.01pp  GDP +0.10%  u -0.10pp  policy +0bp  10y -50bp  mortgage -50bp  business loan -18bp  house px +0.15%  new mtg +3.94%  $ nominal -0.25%  $ real -0.25%
+  m6  CPI +0.01pp  core +0.03pp  GDP +0.15%  u -0.17pp  policy +8bp  10y -57bp  mortgage -57bp  business loan -18bp  house px +0.52%  new mtg +8.45%  $ nominal -0.29%  $ real -0.27%
+  m12 CPI +0.05pp  core +0.04pp  GDP +0.33%  u -0.34pp  policy +13bp  10y -66bp  mortgage -66bp  business loan -22bp  house px +1.81%  new mtg +16.09%  $ nominal -0.30%  $ real -0.24%
+  m24 CPI -0.06pp  core -0.01pp  GDP +0.31%  u -0.25pp  policy +42bp  10y -45bp  mortgage -45bp  business loan +4bp  house px +4.02%  new mtg +5.77%  $ nominal +0.69%  $ real +0.72%
+
+MBS QE 0.5% GDP/m x 12  (10000 households, 6 seeds)
+  m3  CPI -0.00pp  core -0.00pp  GDP +0.01%  u +0.00pp  policy +0bp  10y +0bp  mortgage -5bp  business loan +0bp  house px +0.00%  new mtg +0.82%  $ nominal +0.00%  $ real -0.00%
+  m6  CPI +0.00pp  core +0.01pp  GDP +0.02%  u -0.03pp  policy +0bp  10y -1bp  mortgage -13bp  business loan -2bp  house px +0.04%  new mtg +2.07%  $ nominal -0.03%  $ real -0.03%
+  m12 CPI +0.02pp  core -0.02pp  GDP +0.02%  u +0.01pp  policy +0bp  10y +0bp  mortgage -27bp  business loan +1bp  house px +0.37%  new mtg +2.15%  $ nominal +0.04%  $ real +0.07%
+  m24 CPI -0.02pp  core +0.01pp  GDP -0.39%  u -0.17pp  policy +8bp  10y +3bp  mortgage -27bp  business loan +10bp  house px +1.43%  new mtg +6.21%  $ nominal +0.23%  $ real +0.25%
+
+Helicopter $2,000 x 3  (10000 households, 6 seeds)
+  m3  CPI +0.22pp  core +0.13pp  GDP +2.35%  u -0.69pp  policy +4bp  10y -4bp  mortgage -4bp  business loan -6bp  house px -0.02%  new mtg +2.09%  $ nominal +0.00%  $ real +0.22%
+  m6  CPI +0.21pp  core +0.12pp  GDP +1.85%  u -1.68pp  policy +25bp  10y +4bp  mortgage +4bp  business loan +1bp  house px +0.04%  new mtg +2.70%  $ nominal +0.33%  $ real +0.54%
+  m12 CPI +0.23pp  core +0.14pp  GDP +0.65%  u -0.62pp  policy +54bp  10y +19bp  mortgage +19bp  business loan +30bp  house px -0.04%  new mtg -0.73%  $ nominal +1.31%  $ real +1.58%
+  m24 CPI -0.01pp  core +0.07pp  GDP -0.33%  u +0.16pp  policy +4bp  10y +4bp  mortgage +4bp  business loan +8bp  house px -0.31%  new mtg -4.74%  $ nominal +0.21%  $ real +0.43%
+
+Gov. spending +5% x 12  (10000 households, 6 seeds)
+  m3  CPI +0.03pp  core +0.04pp  GDP +0.45%  u -0.18pp  policy +0bp  10y -0bp  mortgage -0bp  business loan -2bp  house px +0.00%  new mtg +0.63%  $ nominal -0.01%  $ real +0.02%
+  m6  CPI +0.06pp  core +0.07pp  GDP +0.72%  u -0.62pp  policy +8bp  10y +3bp  mortgage +3bp  business loan -1bp  house px -0.02%  new mtg +0.02%  $ nominal +0.09%  $ real +0.15%
+  m12 CPI +0.14pp  core +0.10pp  GDP +0.96%  u -0.82pp  policy +29bp  10y +11bp  mortgage +11bp  business loan +13bp  house px -0.04%  new mtg -0.14%  $ nominal +0.70%  $ real +0.88%
+  m24 CPI +0.03pp  core +0.03pp  GDP -0.57%  u +0.30pp  policy +0bp  10y +5bp  mortgage +5bp  business loan +11bp  house px -0.47%  new mtg -1.74%  $ nominal +0.33%  $ real +0.52%
+
+Import tariff 10%  (10000 households, 6 seeds)
+  m3  CPI +0.25pp  core +0.27pp  GDP -0.02%  u -0.05pp  policy +8bp  10y +1bp  mortgage +1bp  business loan +5bp  house px +0.01%  new mtg +0.24%  $ nominal +0.04%  $ real +0.28%
+  m6  CPI +0.46pp  core +0.50pp  GDP -0.13%  u +0.02pp  policy +13bp  10y +4bp  mortgage +4bp  business loan +9bp  house px -0.01%  new mtg -0.65%  $ nominal +0.10%  $ real +0.55%
+  m12 CPI +0.76pp  core +0.80pp  GDP -0.37%  u +0.23pp  policy +38bp  10y +20bp  mortgage +20bp  business loan +34bp  house px -0.13%  new mtg +3.18%  $ nominal +0.60%  $ real +1.38%
+  m24 CPI +0.26pp  core +0.34pp  GDP -0.50%  u +0.17pp  policy +50bp  10y +27bp  mortgage +27bp  business loan +37bp  house px -0.83%  new mtg -6.45%  $ nominal +0.94%  $ real +2.00%
+
+Tech boom (72 months)  (10000 households, 6 seeds)
+  m3  CPI -0.00pp  core +0.01pp  GDP +0.05%  u -0.08pp  policy +0bp  10y +0bp  mortgage +0bp  business loan -1bp  house px +0.04%  new mtg +0.52%  $ nominal +0.00%  $ real -0.00%
+  m6  CPI -0.01pp  core -0.01pp  GDP +0.12%  u +0.04pp  policy +0bp  10y -1bp  mortgage -1bp  business loan -5bp  house px +0.05%  new mtg +0.02%  $ nominal +0.02%  $ real +0.00%
+  m12 CPI -0.01pp  core -0.03pp  GDP +0.13%  u -0.03pp  policy +0bp  10y -1bp  mortgage -1bp  business loan -3bp  house px +0.03%  new mtg +0.87%  $ nominal -0.01%  $ real -0.01%
+  m24 CPI +0.04pp  core +0.07pp  GDP +0.48%  u +0.08pp  policy -13bp  10y -5bp  mortgage -5bp  business loan -7bp  house px +0.27%  new mtg -6.50%  $ nominal -0.33%  $ real -0.29%
+
+LTV cap 80%  (10000 households, 6 seeds)
+  m3  CPI +0.00pp  core +0.00pp  GDP -0.07%  u -0.01pp  policy +0bp  10y +0bp  mortgage +0bp  business loan -0bp  house px +0.04%  new mtg -7.95%  $ nominal -0.00%  $ real +0.00%
+  m6  CPI +0.01pp  core +0.01pp  GDP -0.03%  u +0.01pp  policy +0bp  10y -1bp  mortgage -1bp  business loan -2bp  house px -0.05%  new mtg -7.11%  $ nominal -0.01%  $ real +0.00%
+  m12 CPI +0.02pp  core +0.01pp  GDP -0.13%  u -0.03pp  policy +0bp  10y +1bp  mortgage +1bp  business loan +2bp  house px -0.17%  new mtg -10.14%  $ nominal +0.01%  $ real +0.03%
+  m24 CPI -0.05pp  core -0.02pp  GDP -0.32%  u +0.04pp  policy +0bp  10y +1bp  mortgage +1bp  business loan +6bp  house px -0.18%  new mtg -9.93%  $ nominal +0.00%  $ real -0.02%

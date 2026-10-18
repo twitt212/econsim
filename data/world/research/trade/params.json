@@ -1,0 +1,6256 @@
+{
+ "_meta": {
+  "title": "Trade and prices block: parameters for linking 12 blocs to the US",
+  "written": "2026-10-11",
+  "researcher_area": "trade",
+  "units": "USD billions unless stated; shares as fractions (0-1) unless unit says percent; elasticities are positive magnitudes unless stated; rates per month where stated",
+  "baseline_year": 2024,
+  "comparison_year": 2025,
+  "status_tags": {
+   "read": "read in the primary text or data file in this session",
+   "secondary": "reported by a search/fetch summary of the source",
+   "own": "computed by me from public data (script in scripts/)",
+   "assumed": "design assumption, no direct source",
+   "unverified": "could not confirm"
+  },
+  "bloc_order": [
+   "EA",
+   "CN",
+   "JP",
+   "UK",
+   "CA",
+   "MX",
+   "IN",
+   "KR",
+   "BR",
+   "AU",
+   "OPEC+",
+   "RoW"
+  ],
+  "sector_order": [
+   "Energy",
+   "Food",
+   "Durables",
+   "Nondurables",
+   "Tech",
+   "Leisure",
+   "HealthEdu",
+   "OtherServices",
+   "Construction"
+  ],
+  "companion_files": [
+   "REPORT text is returned in the handback message (the Write tool refused to create REPORT.md for a subagent)",
+   "data/SOURCES.md or data/SOURCES.txt"
+  ]
+ },
+ "bloc_definitions": {
+  "EA": {
+   "members": [
+    "AUT",
+    "BEL",
+    "HRV",
+    "CYP",
+    "EST",
+    "FIN",
+    "FRA",
+    "DEU",
+    "GRC",
+    "IRL",
+    "ITA",
+    "LVA",
+    "LTU",
+    "LUX",
+    "MLT",
+    "NLD",
+    "PRT",
+    "SVK",
+    "SVN",
+    "ESP"
+   ],
+   "note": "EA20 (2023-2025). Ireland is 19% of EA goods imports to the US (2024) and 32% of US services exports to EA."
+  },
+  "CN": {
+   "members": [
+    "CHN"
+   ],
+   "note": "Mainland only; Hong Kong, Macau and Taiwan are in RoW."
+  },
+  "JP": {
+   "members": [
+    "JPN"
+   ]
+  },
+  "UK": {
+   "members": [
+    "GBR"
+   ]
+  },
+  "CA": {
+   "members": [
+    "CAN"
+   ]
+  },
+  "MX": {
+   "members": [
+    "MEX"
+   ]
+  },
+  "IN": {
+   "members": [
+    "IND"
+   ]
+  },
+  "KR": {
+   "members": [
+    "KOR"
+   ]
+  },
+  "BR": {
+   "members": [
+    "BRA"
+   ]
+  },
+  "AU": {
+   "members": [
+    "AUS"
+   ]
+  },
+  "OPEC+": {
+   "members": [
+    "DZA",
+    "COG",
+    "GNQ",
+    "GAB",
+    "IRN",
+    "IRQ",
+    "KWT",
+    "LBY",
+    "NGA",
+    "SAU",
+    "ARE",
+    "VEN",
+    "AZE",
+    "BHR",
+    "BRN",
+    "KAZ",
+    "MYS",
+    "OMN",
+    "RUS",
+    "SDN",
+    "SSD"
+   ],
+   "note": "Composition from world/research/blocs/data/opecplus_composition_2024.csv. Malaysia (US goods imports $52bn in 2024) is 49% of the bloc's exports to the US: use ex-Malaysia for trade links.",
+   "ex_malaysia_brunei_totals_2024_usd_bn": {
+    "goods_X": 60.6,
+    "goods_M": 53.6,
+    "note": "services (BEA): Malaysia X 4.0, M 2.4; Brunei X 0.09, M 0.08 must also be removed"
+   }
+  },
+  "RoW": {
+   "members": "all other economies"
+  }
+ },
+ "us_trade_by_bloc": {
+  "2023": {
+   "unit": "USD bn (goods: Census basis; services: BEA Table 2.2); pct_* in percent",
+   "source": "Census Exhibit 13 (bea_trad1326.xlsx), BEA Table 2.2 (July 2026 release), NIPA GDP; script build_bilateral.py",
+   "status": "read/own",
+   "by_bloc": {
+    "EA": {
+     "goods_X": 333.894,
+     "services_X": 237.235,
+     "total_X": 571.13,
+     "goods_M": 509.048,
+     "services_M": 160.557,
+     "total_M": 669.604,
+     "balance": -98.475,
+     "X_pct_gdp": 2.053,
+     "M_pct_gdp": 2.406,
+     "trade_pct_gdp": 4.459,
+     "X_share_us_exports_pct": 18.589,
+     "M_share_us_imports_pct": 17.533,
+     "share_of_us_total_trade_pct": 18.004
+    },
+    "CN": {
+     "goods_X": 147.626,
+     "services_X": 47.61,
+     "total_X": 195.236,
+     "goods_M": 427.234,
+     "services_M": 19.624,
+     "total_M": 446.858,
+     "balance": -251.622,
+     "X_pct_gdp": 0.702,
+     "M_pct_gdp": 1.606,
+     "trade_pct_gdp": 2.308,
+     "X_share_us_exports_pct": 6.355,
+     "M_share_us_imports_pct": 11.701,
+     "share_of_us_total_trade_pct": 9.317
+    },
+    "JP": {
+     "goods_X": 75.77,
+     "services_X": 47.221,
+     "total_X": 122.991,
+     "goods_M": 147.197,
+     "services_M": 34.87,
+     "total_M": 182.067,
+     "balance": -59.076,
+     "X_pct_gdp": 0.442,
+     "M_pct_gdp": 0.654,
+     "trade_pct_gdp": 1.096,
+     "X_share_us_exports_pct": 4.003,
+     "M_share_us_imports_pct": 4.767,
+     "share_of_us_total_trade_pct": 4.427
+    },
+    "UK": {
+     "goods_X": 75.046,
+     "services_X": 91.566,
+     "total_X": 166.612,
+     "goods_M": 64.166,
+     "services_M": 81.501,
+     "total_M": 145.667,
+     "balance": 20.945,
+     "X_pct_gdp": 0.599,
+     "M_pct_gdp": 0.523,
+     "trade_pct_gdp": 1.122,
+     "X_share_us_exports_pct": 5.423,
+     "M_share_us_imports_pct": 3.814,
+     "share_of_us_total_trade_pct": 4.531
+    },
+    "CA": {
+     "goods_X": 354.408,
+     "services_X": 86.867,
+     "total_X": 441.275,
+     "goods_M": 418.006,
+     "services_M": 58.805,
+     "total_M": 476.811,
+     "balance": -35.536,
+     "X_pct_gdp": 1.586,
+     "M_pct_gdp": 1.714,
+     "trade_pct_gdp": 3.299,
+     "X_share_us_exports_pct": 14.363,
+     "M_share_us_imports_pct": 12.485,
+     "share_of_us_total_trade_pct": 13.322
+    },
+    "MX": {
+     "goods_X": 324.426,
+     "services_X": 47.022,
+     "total_X": 371.448,
+     "goods_M": 472.899,
+     "services_M": 40.418,
+     "total_M": 513.317,
+     "balance": -141.869,
+     "X_pct_gdp": 1.335,
+     "M_pct_gdp": 1.845,
+     "trade_pct_gdp": 3.18,
+     "X_share_us_exports_pct": 12.09,
+     "M_share_us_imports_pct": 13.441,
+     "share_of_us_total_trade_pct": 12.839
+    },
+    "IN": {
+     "goods_X": 40.556,
+     "services_X": 36.487,
+     "total_X": 77.042,
+     "goods_M": 83.544,
+     "services_M": 38.05,
+     "total_M": 121.594,
+     "balance": -44.551,
+     "X_pct_gdp": 0.277,
+     "M_pct_gdp": 0.437,
+     "trade_pct_gdp": 0.714,
+     "X_share_us_exports_pct": 2.508,
+     "M_share_us_imports_pct": 3.184,
+     "share_of_us_total_trade_pct": 2.882
+    },
+    "KR": {
+     "goods_X": 64.944,
+     "services_X": 26.277,
+     "total_X": 91.221,
+     "goods_M": 116.305,
+     "services_M": 13.643,
+     "total_M": 129.948,
+     "balance": -38.728,
+     "X_pct_gdp": 0.328,
+     "M_pct_gdp": 0.467,
+     "trade_pct_gdp": 0.795,
+     "X_share_us_exports_pct": 2.969,
+     "M_share_us_imports_pct": 3.403,
+     "share_of_us_total_trade_pct": 3.209
+    },
+    "BR": {
+     "goods_X": 44.479,
+     "services_X": 23.782,
+     "total_X": 68.261,
+     "goods_M": 39.058,
+     "services_M": 6.115,
+     "total_M": 45.173,
+     "balance": 23.088,
+     "X_pct_gdp": 0.245,
+     "M_pct_gdp": 0.162,
+     "trade_pct_gdp": 0.408,
+     "X_share_us_exports_pct": 2.222,
+     "M_share_us_imports_pct": 1.183,
+     "share_of_us_total_trade_pct": 1.646
+    },
+    "AU": {
+     "goods_X": 33.617,
+     "services_X": 25.272,
+     "total_X": 58.889,
+     "goods_M": 15.921,
+     "services_M": 10.467,
+     "total_M": 26.388,
+     "balance": 32.502,
+     "X_pct_gdp": 0.212,
+     "M_pct_gdp": 0.095,
+     "trade_pct_gdp": 0.306,
+     "X_share_us_exports_pct": 1.917,
+     "M_share_us_imports_pct": 0.691,
+     "share_of_us_total_trade_pct": 1.237
+    },
+    "OPEC+": {
+     "goods_X": 76.123,
+     "services_X": 41.824,
+     "total_X": 117.947,
+     "goods_M": 102.991,
+     "services_M": 21.675,
+     "total_M": 124.666,
+     "balance": -6.719,
+     "X_pct_gdp": 0.424,
+     "M_pct_gdp": 0.448,
+     "trade_pct_gdp": 0.872,
+     "X_share_us_exports_pct": 3.839,
+     "M_share_us_imports_pct": 3.264,
+     "share_of_us_total_trade_pct": 3.521
+    },
+    "RoW": {
+     "goods_X": 451.05,
+     "services_X": 339.238,
+     "total_X": 790.288,
+     "goods_M": 680.184,
+     "services_M": 256.761,
+     "total_M": 936.945,
+     "balance": -146.658,
+     "X_pct_gdp": 2.84,
+     "M_pct_gdp": 3.367,
+     "trade_pct_gdp": 6.207,
+     "X_share_us_exports_pct": 25.723,
+     "M_share_us_imports_pct": 24.534,
+     "share_of_us_total_trade_pct": 25.064
+    }
+   }
+  },
+  "2024": {
+   "unit": "USD bn (goods: Census basis; services: BEA Table 2.2); pct_* in percent",
+   "source": "Census Exhibit 13 (bea_trad1326.xlsx), BEA Table 2.2 (July 2026 release), NIPA GDP; script build_bilateral.py",
+   "status": "read/own",
+   "by_bloc": {
+    "EA": {
+     "goods_X": 334.485,
+     "services_X": 266.392,
+     "total_X": 600.877,
+     "goods_M": 538.875,
+     "services_M": 176.933,
+     "total_M": 715.808,
+     "balance": -114.931,
+     "X_pct_gdp": 2.045,
+     "M_pct_gdp": 2.436,
+     "trade_pct_gdp": 4.481,
+     "X_share_us_exports_pct": 18.662,
+     "M_share_us_imports_pct": 17.487,
+     "share_of_us_total_trade_pct": 18.005
+    },
+    "CN": {
+     "goods_X": 143.272,
+     "services_X": 54.474,
+     "total_X": 197.746,
+     "goods_M": 440.319,
+     "services_M": 22.26,
+     "total_M": 462.579,
+     "balance": -264.834,
+     "X_pct_gdp": 0.673,
+     "M_pct_gdp": 1.574,
+     "trade_pct_gdp": 2.247,
+     "X_share_us_exports_pct": 6.142,
+     "M_share_us_imports_pct": 11.301,
+     "share_of_us_total_trade_pct": 9.03
+    },
+    "JP": {
+     "goods_X": 78.863,
+     "services_X": 49.445,
+     "total_X": 128.308,
+     "goods_M": 147.116,
+     "services_M": 39.832,
+     "total_M": 186.948,
+     "balance": -58.64,
+     "X_pct_gdp": 0.437,
+     "M_pct_gdp": 0.636,
+     "trade_pct_gdp": 1.073,
+     "X_share_us_exports_pct": 3.985,
+     "M_share_us_imports_pct": 4.567,
+     "share_of_us_total_trade_pct": 4.311
+    },
+    "UK": {
+     "goods_X": 79.508,
+     "services_X": 100.106,
+     "total_X": 179.614,
+     "goods_M": 68.218,
+     "services_M": 91.539,
+     "total_M": 159.757,
+     "balance": 19.856,
+     "X_pct_gdp": 0.611,
+     "M_pct_gdp": 0.544,
+     "trade_pct_gdp": 1.155,
+     "X_share_us_exports_pct": 5.579,
+     "M_share_us_imports_pct": 3.903,
+     "share_of_us_total_trade_pct": 4.641
+    },
+    "CA": {
+     "goods_X": 350.606,
+     "services_X": 90.538,
+     "total_X": 441.144,
+     "goods_M": 411.772,
+     "services_M": 61.504,
+     "total_M": 473.276,
+     "balance": -32.132,
+     "X_pct_gdp": 1.501,
+     "M_pct_gdp": 1.611,
+     "trade_pct_gdp": 3.112,
+     "X_share_us_exports_pct": 13.701,
+     "M_share_us_imports_pct": 11.562,
+     "share_of_us_total_trade_pct": 12.504
+    },
+    "MX": {
+     "goods_X": 334.492,
+     "services_X": 51.132,
+     "total_X": 385.624,
+     "goods_M": 503.11,
+     "services_M": 40.647,
+     "total_M": 543.757,
+     "balance": -158.133,
+     "X_pct_gdp": 1.312,
+     "M_pct_gdp": 1.851,
+     "trade_pct_gdp": 3.163,
+     "X_share_us_exports_pct": 11.977,
+     "M_share_us_imports_pct": 13.284,
+     "share_of_us_total_trade_pct": 12.709
+    },
+    "IN": {
+     "goods_X": 41.581,
+     "services_X": 41.787,
+     "total_X": 83.368,
+     "goods_M": 87.285,
+     "services_M": 43.111,
+     "total_M": 130.396,
+     "balance": -47.028,
+     "X_pct_gdp": 0.284,
+     "M_pct_gdp": 0.444,
+     "trade_pct_gdp": 0.728,
+     "X_share_us_exports_pct": 2.589,
+     "M_share_us_imports_pct": 3.186,
+     "share_of_us_total_trade_pct": 2.923
+    },
+    "KR": {
+     "goods_X": 65.771,
+     "services_X": 27.451,
+     "total_X": 93.222,
+     "goods_M": 131.457,
+     "services_M": 14.582,
+     "total_M": 146.039,
+     "balance": -52.817,
+     "X_pct_gdp": 0.317,
+     "M_pct_gdp": 0.497,
+     "trade_pct_gdp": 0.814,
+     "X_share_us_exports_pct": 2.895,
+     "M_share_us_imports_pct": 3.568,
+     "share_of_us_total_trade_pct": 3.272
+    },
+    "BR": {
+     "goods_X": 49.013,
+     "services_X": 29.68,
+     "total_X": 78.693,
+     "goods_M": 42.314,
+     "services_M": 6.35,
+     "total_M": 48.664,
+     "balance": 30.029,
+     "X_pct_gdp": 0.268,
+     "M_pct_gdp": 0.166,
+     "trade_pct_gdp": 0.433,
+     "X_share_us_exports_pct": 2.444,
+     "M_share_us_imports_pct": 1.189,
+     "share_of_us_total_trade_pct": 1.742
+    },
+    "AU": {
+     "goods_X": 34.586,
+     "services_X": 25.938,
+     "total_X": 60.524,
+     "goods_M": 16.639,
+     "services_M": 11.088,
+     "total_M": 27.727,
+     "balance": 32.796,
+     "X_pct_gdp": 0.206,
+     "M_pct_gdp": 0.094,
+     "trade_pct_gdp": 0.3,
+     "X_share_us_exports_pct": 1.88,
+     "M_share_us_imports_pct": 0.677,
+     "share_of_us_total_trade_pct": 1.207
+    },
+    "OPEC+": {
+     "goods_X": 88.414,
+     "services_X": 43.663,
+     "total_X": 132.077,
+     "goods_M": 105.997,
+     "services_M": 22.628,
+     "total_M": 128.625,
+     "balance": 3.452,
+     "X_pct_gdp": 0.45,
+     "M_pct_gdp": 0.438,
+     "trade_pct_gdp": 0.887,
+     "X_share_us_exports_pct": 4.102,
+     "M_share_us_imports_pct": 3.142,
+     "share_of_us_total_trade_pct": 3.565
+    },
+    "RoW": {
+     "goods_X": 462.434,
+     "services_X": 376.071,
+     "total_X": 838.505,
+     "goods_M": 770.79,
+     "services_M": 298.887,
+     "total_M": 1069.677,
+     "balance": -231.172,
+     "X_pct_gdp": 2.854,
+     "M_pct_gdp": 3.641,
+     "trade_pct_gdp": 6.495,
+     "X_share_us_exports_pct": 26.043,
+     "M_share_us_imports_pct": 26.133,
+     "share_of_us_total_trade_pct": 26.093
+    }
+   }
+  },
+  "2025": {
+   "unit": "USD bn (goods: Census basis; services: BEA Table 2.2); pct_* in percent",
+   "source": "Census Exhibit 13 (bea_trad1326.xlsx), BEA Table 2.2 (July 2026 release), NIPA GDP; script build_bilateral.py",
+   "status": "read/own",
+   "by_bloc": {
+    "EA": {
+     "goods_X": 374.062,
+     "services_X": 292.291,
+     "total_X": 666.353,
+     "goods_M": 565.315,
+     "services_M": 192.952,
+     "total_M": 758.267,
+     "balance": -91.913,
+     "X_pct_gdp": 2.159,
+     "M_pct_gdp": 2.457,
+     "trade_pct_gdp": 4.616,
+     "X_share_us_exports_pct": 19.497,
+     "M_share_us_imports_pct": 17.533,
+     "share_of_us_total_trade_pct": 18.4
+    },
+    "CN": {
+     "goods_X": 105.978,
+     "services_X": 57.196,
+     "total_X": 163.174,
+     "goods_M": 308.652,
+     "services_M": 22.768,
+     "total_M": 331.42,
+     "balance": -168.246,
+     "X_pct_gdp": 0.529,
+     "M_pct_gdp": 1.074,
+     "trade_pct_gdp": 1.603,
+     "X_share_us_exports_pct": 4.774,
+     "M_share_us_imports_pct": 7.663,
+     "share_of_us_total_trade_pct": 6.388
+    },
+    "JP": {
+     "goods_X": 81.394,
+     "services_X": 53.804,
+     "total_X": 135.198,
+     "goods_M": 145.842,
+     "services_M": 41.187,
+     "total_M": 187.029,
+     "balance": -51.831,
+     "X_pct_gdp": 0.438,
+     "M_pct_gdp": 0.606,
+     "trade_pct_gdp": 1.044,
+     "X_share_us_exports_pct": 3.956,
+     "M_share_us_imports_pct": 4.325,
+     "share_of_us_total_trade_pct": 4.162
+    },
+    "UK": {
+     "goods_X": 97.394,
+     "services_X": 110.836,
+     "total_X": 208.23,
+     "goods_M": 64.784,
+     "services_M": 97.605,
+     "total_M": 162.389,
+     "balance": 45.84,
+     "X_pct_gdp": 0.675,
+     "M_pct_gdp": 0.526,
+     "trade_pct_gdp": 1.201,
+     "X_share_us_exports_pct": 6.093,
+     "M_share_us_imports_pct": 3.755,
+     "share_of_us_total_trade_pct": 4.787
+    },
+    "CA": {
+     "goods_X": 333.62,
+     "services_X": 92.252,
+     "total_X": 425.872,
+     "goods_M": 381.922,
+     "services_M": 64.545,
+     "total_M": 446.467,
+     "balance": -20.595,
+     "X_pct_gdp": 1.38,
+     "M_pct_gdp": 1.447,
+     "trade_pct_gdp": 2.827,
+     "X_share_us_exports_pct": 12.46,
+     "M_share_us_imports_pct": 10.324,
+     "share_of_us_total_trade_pct": 11.267
+    },
+    "MX": {
+     "goods_X": 337.282,
+     "services_X": 52.79,
+     "total_X": 390.072,
+     "goods_M": 534.315,
+     "services_M": 39.695,
+     "total_M": 574.01,
+     "balance": -183.938,
+     "X_pct_gdp": 1.264,
+     "M_pct_gdp": 1.86,
+     "trade_pct_gdp": 3.124,
+     "X_share_us_exports_pct": 11.413,
+     "M_share_us_imports_pct": 13.273,
+     "share_of_us_total_trade_pct": 12.452
+    },
+    "IN": {
+     "goods_X": 45.354,
+     "services_X": 42.855,
+     "total_X": 88.209,
+     "goods_M": 103.776,
+     "services_M": 47.587,
+     "total_M": 151.363,
+     "balance": -63.154,
+     "X_pct_gdp": 0.286,
+     "M_pct_gdp": 0.49,
+     "trade_pct_gdp": 0.776,
+     "X_share_us_exports_pct": 2.581,
+     "M_share_us_imports_pct": 3.5,
+     "share_of_us_total_trade_pct": 3.094
+    },
+    "KR": {
+     "goods_X": 69.069,
+     "services_X": 28.879,
+     "total_X": 97.948,
+     "goods_M": 125.546,
+     "services_M": 15.542,
+     "total_M": 141.088,
+     "balance": -43.14,
+     "X_pct_gdp": 0.317,
+     "M_pct_gdp": 0.457,
+     "trade_pct_gdp": 0.775,
+     "X_share_us_exports_pct": 2.866,
+     "M_share_us_imports_pct": 3.262,
+     "share_of_us_total_trade_pct": 3.087
+    },
+    "BR": {
+     "goods_X": 54.329,
+     "services_X": 34.446,
+     "total_X": 88.775,
+     "goods_M": 39.882,
+     "services_M": 7.012,
+     "total_M": 46.894,
+     "balance": 41.882,
+     "X_pct_gdp": 0.288,
+     "M_pct_gdp": 0.152,
+     "trade_pct_gdp": 0.44,
+     "X_share_us_exports_pct": 2.597,
+     "M_share_us_imports_pct": 1.084,
+     "share_of_us_total_trade_pct": 1.752
+    },
+    "AU": {
+     "goods_X": 33.706,
+     "services_X": 27.039,
+     "total_X": 60.745,
+     "goods_M": 28.953,
+     "services_M": 12.337,
+     "total_M": 41.29,
+     "balance": 19.455,
+     "X_pct_gdp": 0.197,
+     "M_pct_gdp": 0.134,
+     "trade_pct_gdp": 0.331,
+     "X_share_us_exports_pct": 1.777,
+     "M_share_us_imports_pct": 0.955,
+     "share_of_us_total_trade_pct": 1.318
+    },
+    "OPEC+": {
+     "goods_X": 96.221,
+     "services_X": 44.492,
+     "total_X": 140.713,
+     "goods_M": 109.02,
+     "services_M": 22.832,
+     "total_M": 131.852,
+     "balance": 8.861,
+     "X_pct_gdp": 0.456,
+     "M_pct_gdp": 0.427,
+     "trade_pct_gdp": 0.883,
+     "X_share_us_exports_pct": 4.117,
+     "M_share_us_imports_pct": 3.049,
+     "share_of_us_total_trade_pct": 3.52
+    },
+    "RoW": {
+     "goods_X": 551.483,
+     "services_X": 401.013,
+     "total_X": 952.496,
+     "goods_M": 1006.504,
+     "services_M": 346.171,
+     "total_M": 1352.675,
+     "balance": -400.179,
+     "X_pct_gdp": 3.086,
+     "M_pct_gdp": 4.383,
+     "trade_pct_gdp": 7.469,
+     "X_share_us_exports_pct": 27.869,
+     "M_share_us_imports_pct": 31.278,
+     "share_of_us_total_trade_pct": 29.773
+    }
+   }
+  }
+ },
+ "sector_shares": {
+  "description": "US imports from / exports to each bloc by model sector, 2024; goods sector shares from OECD BIMTS (CPA 2.1) scaled to Census totals, services from BEA Table 2.2; concordance in REPORT section 4.2 and scripts/concordance.py",
+  "source": "own: scripts/build_sector_matrix.py",
+  "status": "own",
+  "matrices": {
+   "imports_base_C26_in_Tech": {
+    "usd_bn_2024": {
+     "EA": {
+      "Energy": 11.32,
+      "Food": 31.9,
+      "Durables": 244.85,
+      "Nondurables": 215.03,
+      "Tech": 58.92,
+      "Leisure": 52.26,
+      "HealthEdu": 4.78,
+      "OtherServices": 96.44,
+      "Construction": 0.3,
+      "Total": 715.81
+     },
+     "CN": {
+      "Energy": 0.72,
+      "Food": 6.68,
+      "Durables": 206.54,
+      "Nondurables": 102.88,
+      "Tech": 124.58,
+      "Leisure": 2.78,
+      "HealthEdu": 0.21,
+      "OtherServices": 18.05,
+      "Construction": 0.14,
+      "Total": 462.58
+     },
+     "JP": {
+      "Energy": 0.28,
+      "Food": 1.6,
+      "Durables": 111.1,
+      "Nondurables": 19.42,
+      "Tech": 17.41,
+      "Leisure": 7.73,
+      "HealthEdu": 0.38,
+      "OtherServices": 29.02,
+      "Construction": 0.0,
+      "Total": 186.95
+     },
+     "UK": {
+      "Energy": 2.89,
+      "Food": 3.36,
+      "Durables": 39.21,
+      "Nondurables": 15.7,
+      "Tech": 17.16,
+      "Leisure": 16.55,
+      "HealthEdu": 2.08,
+      "OtherServices": 62.66,
+      "Construction": 0.15,
+      "Total": 159.76
+     },
+     "CA": {
+      "Energy": 127.05,
+      "Food": 45.08,
+      "Durables": 171.15,
+      "Nondurables": 58.48,
+      "Tech": 28.53,
+      "Leisure": 13.15,
+      "HealthEdu": 0.66,
+      "OtherServices": 28.45,
+      "Construction": 0.73,
+      "Total": 473.28
+     },
+     "MX": {
+      "Energy": 16.29,
+      "Food": 47.4,
+      "Durables": 318.41,
+      "Nondurables": 32.86,
+      "Tech": 89.53,
+      "Leisure": 26.67,
+      "HealthEdu": 1.73,
+      "OtherServices": 10.82,
+      "Construction": 0.05,
+      "Total": 543.76
+     },
+     "IN": {
+      "Energy": 3.83,
+      "Food": 5.88,
+      "Durables": 33.94,
+      "Nondurables": 31.95,
+      "Tech": 28.78,
+      "Leisure": 4.23,
+      "HealthEdu": 0.27,
+      "OtherServices": 21.5,
+      "Construction": 0.02,
+      "Total": 130.4
+     },
+     "KR": {
+      "Energy": 4.88,
+      "Food": 1.85,
+      "Durables": 85.44,
+      "Nondurables": 18.42,
+      "Tech": 22.4,
+      "Leisure": 3.63,
+      "HealthEdu": 0.25,
+      "OtherServices": 9.16,
+      "Construction": 0.0,
+      "Total": 146.04
+     },
+     "BR": {
+      "Energy": 8.25,
+      "Food": 7.44,
+      "Durables": 19.89,
+      "Nondurables": 6.12,
+      "Tech": 1.41,
+      "Leisure": 1.26,
+      "HealthEdu": 0.13,
+      "OtherServices": 4.15,
+      "Construction": 0.02,
+      "Total": 48.66
+     },
+     "AU": {
+      "Energy": 0.01,
+      "Food": 5.54,
+      "Durables": 7.83,
+      "Nondurables": 2.34,
+      "Tech": 2.81,
+      "Leisure": 2.32,
+      "HealthEdu": 0.3,
+      "OtherServices": 6.56,
+      "Construction": 0.03,
+      "Total": 27.73
+     },
+     "OPEC+": {
+      "Energy": 37.43,
+      "Food": 1.71,
+      "Durables": 24.7,
+      "Nondurables": 10.83,
+      "Tech": 32.52,
+      "Leisure": 9.07,
+      "HealthEdu": 0.49,
+      "OtherServices": 11.75,
+      "Construction": 0.11,
+      "Total": 128.62
+     },
+     "RoW": {
+      "Energy": 29.18,
+      "Food": 72.8,
+      "Durables": 264.5,
+      "Nondurables": 189.57,
+      "Tech": 236.14,
+      "Leisure": 75.11,
+      "HealthEdu": 5.39,
+      "OtherServices": 196.09,
+      "Construction": 0.9,
+      "Total": 1069.68
+     },
+     "ALL": {
+      "Energy": 242.14,
+      "Food": 231.24,
+      "Durables": 1527.56,
+      "Nondurables": 703.61,
+      "Tech": 660.2,
+      "Leisure": 214.76,
+      "HealthEdu": 16.66,
+      "OtherServices": 494.63,
+      "Construction": 2.45,
+      "Total": 4093.25
+     }
+    },
+    "row_shares_sector_mix_of_bloc_trade": {
+     "EA": {
+      "Energy": 0.0158,
+      "Food": 0.0446,
+      "Durables": 0.3421,
+      "Nondurables": 0.3004,
+      "Tech": 0.0823,
+      "Leisure": 0.073,
+      "HealthEdu": 0.0067,
+      "OtherServices": 0.1347,
+      "Construction": 0.0004
+     },
+     "CN": {
+      "Energy": 0.0016,
+      "Food": 0.0144,
+      "Durables": 0.4465,
+      "Nondurables": 0.2224,
+      "Tech": 0.2693,
+      "Leisure": 0.006,
+      "HealthEdu": 0.0005,
+      "OtherServices": 0.039,
+      "Construction": 0.0003
+     },
+     "JP": {
+      "Energy": 0.0015,
+      "Food": 0.0086,
+      "Durables": 0.5943,
+      "Nondurables": 0.1039,
+      "Tech": 0.0931,
+      "Leisure": 0.0414,
+      "HealthEdu": 0.002,
+      "OtherServices": 0.1552,
+      "Construction": 0.0
+     },
+     "UK": {
+      "Energy": 0.0181,
+      "Food": 0.021,
+      "Durables": 0.2454,
+      "Nondurables": 0.0983,
+      "Tech": 0.1074,
+      "Leisure": 0.1036,
+      "HealthEdu": 0.013,
+      "OtherServices": 0.3922,
+      "Construction": 0.0009
+     },
+     "CA": {
+      "Energy": 0.2684,
+      "Food": 0.0952,
+      "Durables": 0.3616,
+      "Nondurables": 0.1236,
+      "Tech": 0.0603,
+      "Leisure": 0.0278,
+      "HealthEdu": 0.0014,
+      "OtherServices": 0.0601,
+      "Construction": 0.0015
+     },
+     "MX": {
+      "Energy": 0.03,
+      "Food": 0.0872,
+      "Durables": 0.5856,
+      "Nondurables": 0.0604,
+      "Tech": 0.1647,
+      "Leisure": 0.049,
+      "HealthEdu": 0.0032,
+      "OtherServices": 0.0199,
+      "Construction": 0.0001
+     },
+     "IN": {
+      "Energy": 0.0294,
+      "Food": 0.0451,
+      "Durables": 0.2603,
+      "Nondurables": 0.2451,
+      "Tech": 0.2207,
+      "Leisure": 0.0324,
+      "HealthEdu": 0.0021,
+      "OtherServices": 0.1649,
+      "Construction": 0.0001
+     },
+     "KR": {
+      "Energy": 0.0334,
+      "Food": 0.0126,
+      "Durables": 0.5851,
+      "Nondurables": 0.1261,
+      "Tech": 0.1534,
+      "Leisure": 0.0248,
+      "HealthEdu": 0.0017,
+      "OtherServices": 0.0627,
+      "Construction": 0.0
+     },
+     "BR": {
+      "Energy": 0.1695,
+      "Food": 0.1528,
+      "Durables": 0.4088,
+      "Nondurables": 0.1258,
+      "Tech": 0.029,
+      "Leisure": 0.0259,
+      "HealthEdu": 0.0026,
+      "OtherServices": 0.0852,
+      "Construction": 0.0004
+     },
+     "AU": {
+      "Energy": 0.0003,
+      "Food": 0.1998,
+      "Durables": 0.2823,
+      "Nondurables": 0.0845,
+      "Tech": 0.1013,
+      "Leisure": 0.0835,
+      "HealthEdu": 0.0107,
+      "OtherServices": 0.2367,
+      "Construction": 0.0009
+     },
+     "OPEC+": {
+      "Energy": 0.291,
+      "Food": 0.0133,
+      "Durables": 0.1921,
+      "Nondurables": 0.0842,
+      "Tech": 0.2528,
+      "Leisure": 0.0706,
+      "HealthEdu": 0.0038,
+      "OtherServices": 0.0913,
+      "Construction": 0.0009
+     },
+     "RoW": {
+      "Energy": 0.0273,
+      "Food": 0.0681,
+      "Durables": 0.2473,
+      "Nondurables": 0.1772,
+      "Tech": 0.2208,
+      "Leisure": 0.0702,
+      "HealthEdu": 0.005,
+      "OtherServices": 0.1833,
+      "Construction": 0.0008
+     },
+     "ALL": {
+      "Energy": 0.0592,
+      "Food": 0.0565,
+      "Durables": 0.3732,
+      "Nondurables": 0.1719,
+      "Tech": 0.1613,
+      "Leisure": 0.0525,
+      "HealthEdu": 0.0041,
+      "OtherServices": 0.1208,
+      "Construction": 0.0006
+     }
+    },
+    "col_shares_bloc_share_of_sector": {
+     "EA": {
+      "Energy": 0.0468,
+      "Food": 0.1379,
+      "Durables": 0.1603,
+      "Nondurables": 0.3056,
+      "Tech": 0.0893,
+      "Leisure": 0.2433,
+      "HealthEdu": 0.287,
+      "OtherServices": 0.195,
+      "Construction": 0.1242
+     },
+     "CN": {
+      "Energy": 0.003,
+      "Food": 0.0289,
+      "Durables": 0.1352,
+      "Nondurables": 0.1462,
+      "Tech": 0.1887,
+      "Leisure": 0.013,
+      "HealthEdu": 0.0127,
+      "OtherServices": 0.0365,
+      "Construction": 0.0556
+     },
+     "JP": {
+      "Energy": 0.0012,
+      "Food": 0.0069,
+      "Durables": 0.0727,
+      "Nondurables": 0.0276,
+      "Tech": 0.0264,
+      "Leisure": 0.036,
+      "HealthEdu": 0.0226,
+      "OtherServices": 0.0587,
+      "Construction": 0.0004
+     },
+     "UK": {
+      "Energy": 0.012,
+      "Food": 0.0145,
+      "Durables": 0.0257,
+      "Nondurables": 0.0223,
+      "Tech": 0.026,
+      "Leisure": 0.0771,
+      "HealthEdu": 0.1246,
+      "OtherServices": 0.1267,
+      "Construction": 0.0609
+     },
+     "CA": {
+      "Energy": 0.5247,
+      "Food": 0.1949,
+      "Durables": 0.112,
+      "Nondurables": 0.0831,
+      "Tech": 0.0432,
+      "Leisure": 0.0612,
+      "HealthEdu": 0.0397,
+      "OtherServices": 0.0575,
+      "Construction": 0.2979
+     },
+     "MX": {
+      "Energy": 0.0673,
+      "Food": 0.205,
+      "Durables": 0.2084,
+      "Nondurables": 0.0467,
+      "Tech": 0.1356,
+      "Leisure": 0.1242,
+      "HealthEdu": 0.1038,
+      "OtherServices": 0.0219,
+      "Construction": 0.0204
+     },
+     "IN": {
+      "Energy": 0.0158,
+      "Food": 0.0254,
+      "Durables": 0.0222,
+      "Nondurables": 0.0454,
+      "Tech": 0.0436,
+      "Leisure": 0.0197,
+      "HealthEdu": 0.0162,
+      "OtherServices": 0.0435,
+      "Construction": 0.0061
+     },
+     "KR": {
+      "Energy": 0.0201,
+      "Food": 0.008,
+      "Durables": 0.0559,
+      "Nondurables": 0.0262,
+      "Tech": 0.0339,
+      "Leisure": 0.0169,
+      "HealthEdu": 0.0152,
+      "OtherServices": 0.0185,
+      "Construction": 0.002
+     },
+     "BR": {
+      "Energy": 0.0341,
+      "Food": 0.0322,
+      "Durables": 0.013,
+      "Nondurables": 0.0087,
+      "Tech": 0.0021,
+      "Leisure": 0.0059,
+      "HealthEdu": 0.0077,
+      "OtherServices": 0.0084,
+      "Construction": 0.0082
+     },
+     "AU": {
+      "Energy": 0.0,
+      "Food": 0.024,
+      "Durables": 0.0051,
+      "Nondurables": 0.0033,
+      "Tech": 0.0043,
+      "Leisure": 0.0108,
+      "HealthEdu": 0.0178,
+      "OtherServices": 0.0133,
+      "Construction": 0.0106
+     },
+     "OPEC+": {
+      "Energy": 0.1546,
+      "Food": 0.0074,
+      "Durables": 0.0162,
+      "Nondurables": 0.0154,
+      "Tech": 0.0493,
+      "Leisure": 0.0423,
+      "HealthEdu": 0.0291,
+      "OtherServices": 0.0237,
+      "Construction": 0.0465
+     },
+     "RoW": {
+      "Energy": 0.1205,
+      "Food": 0.3148,
+      "Durables": 0.1732,
+      "Nondurables": 0.2694,
+      "Tech": 0.3577,
+      "Leisure": 0.3497,
+      "HealthEdu": 0.3236,
+      "OtherServices": 0.3964,
+      "Construction": 0.3671
+     }
+    }
+   },
+   "imports_variant_C26_in_Durables": {
+    "usd_bn_2024": {
+     "EA": {
+      "Energy": 11.32,
+      "Food": 31.9,
+      "Durables": 275.53,
+      "Nondurables": 215.03,
+      "Tech": 28.25,
+      "Leisure": 52.26,
+      "HealthEdu": 4.78,
+      "OtherServices": 96.44,
+      "Construction": 0.3,
+      "Total": 715.81
+     },
+     "CN": {
+      "Energy": 0.72,
+      "Food": 6.68,
+      "Durables": 328.19,
+      "Nondurables": 102.88,
+      "Tech": 2.93,
+      "Leisure": 2.78,
+      "HealthEdu": 0.21,
+      "OtherServices": 18.05,
+      "Construction": 0.14,
+      "Total": 462.58
+     },
+     "JP": {
+      "Energy": 0.28,
+      "Food": 1.6,
+      "Durables": 125.35,
+      "Nondurables": 19.42,
+      "Tech": 3.16,
+      "Leisure": 7.73,
+      "HealthEdu": 0.38,
+      "OtherServices": 29.02,
+      "Construction": 0.0,
+      "Total": 186.95
+     },
+     "UK": {
+      "Energy": 2.89,
+      "Food": 3.36,
+      "Durables": 44.0,
+      "Nondurables": 15.7,
+      "Tech": 12.37,
+      "Leisure": 16.55,
+      "HealthEdu": 2.08,
+      "OtherServices": 62.66,
+      "Construction": 0.15,
+      "Total": 159.76
+     },
+     "CA": {
+      "Energy": 127.05,
+      "Food": 45.08,
+      "Durables": 180.4,
+      "Nondurables": 58.48,
+      "Tech": 19.28,
+      "Leisure": 13.15,
+      "HealthEdu": 0.66,
+      "OtherServices": 28.45,
+      "Construction": 0.73,
+      "Total": 473.28
+     },
+     "MX": {
+      "Energy": 16.29,
+      "Food": 47.4,
+      "Durables": 405.94,
+      "Nondurables": 32.86,
+      "Tech": 2.0,
+      "Leisure": 26.67,
+      "HealthEdu": 1.73,
+      "OtherServices": 10.82,
+      "Construction": 0.05,
+      "Total": 543.76
+     },
+     "IN": {
+      "Energy": 3.83,
+      "Food": 5.88,
+      "Durables": 45.38,
+      "Nondurables": 31.95,
+      "Tech": 17.34,
+      "Leisure": 4.23,
+      "HealthEdu": 0.27,
+      "OtherServices": 21.5,
+      "Construction": 0.02,
+      "Total": 130.4
+     },
+     "KR": {
+      "Energy": 4.88,
+      "Food": 1.85,
+      "Durables": 106.01,
+      "Nondurables": 18.42,
+      "Tech": 1.83,
+      "Leisure": 3.63,
+      "HealthEdu": 0.25,
+      "OtherServices": 9.16,
+      "Construction": 0.0,
+      "Total": 146.04
+     },
+     "BR": {
+      "Energy": 8.25,
+      "Food": 7.44,
+      "Durables": 20.3,
+      "Nondurables": 6.12,
+      "Tech": 1.0,
+      "Leisure": 1.26,
+      "HealthEdu": 0.13,
+      "OtherServices": 4.15,
+      "Construction": 0.02,
+      "Total": 48.66
+     },
+     "AU": {
+      "Energy": 0.01,
+      "Food": 5.54,
+      "Durables": 8.68,
+      "Nondurables": 2.34,
+      "Tech": 1.96,
+      "Leisure": 2.32,
+      "HealthEdu": 0.3,
+      "OtherServices": 6.56,
+      "Construction": 0.03,
+      "Total": 27.73
+     },
+     "OPEC+": {
+      "Energy": 37.43,
+      "Food": 1.71,
+      "Durables": 55.88,
+      "Nondurables": 10.83,
+      "Tech": 1.35,
+      "Leisure": 9.07,
+      "HealthEdu": 0.49,
+      "OtherServices": 11.75,
+      "Construction": 0.11,
+      "Total": 128.62
+     },
+     "RoW": {
+      "Energy": 29.18,
+      "Food": 72.8,
+      "Durables": 477.17,
+      "Nondurables": 189.57,
+      "Tech": 23.47,
+      "Leisure": 75.11,
+      "HealthEdu": 5.39,
+      "OtherServices": 196.09,
+      "Construction": 0.9,
+      "Total": 1069.68
+     },
+     "ALL": {
+      "Energy": 242.14,
+      "Food": 231.24,
+      "Durables": 2072.83,
+      "Nondurables": 703.61,
+      "Tech": 114.93,
+      "Leisure": 214.76,
+      "HealthEdu": 16.66,
+      "OtherServices": 494.63,
+      "Construction": 2.45,
+      "Total": 4093.25
+     }
+    },
+    "row_shares_sector_mix_of_bloc_trade": {
+     "EA": {
+      "Energy": 0.0158,
+      "Food": 0.0446,
+      "Durables": 0.3849,
+      "Nondurables": 0.3004,
+      "Tech": 0.0395,
+      "Leisure": 0.073,
+      "HealthEdu": 0.0067,
+      "OtherServices": 0.1347,
+      "Construction": 0.0004
+     },
+     "CN": {
+      "Energy": 0.0016,
+      "Food": 0.0144,
+      "Durables": 0.7095,
+      "Nondurables": 0.2224,
+      "Tech": 0.0063,
+      "Leisure": 0.006,
+      "HealthEdu": 0.0005,
+      "OtherServices": 0.039,
+      "Construction": 0.0003
+     },
+     "JP": {
+      "Energy": 0.0015,
+      "Food": 0.0086,
+      "Durables": 0.6705,
+      "Nondurables": 0.1039,
+      "Tech": 0.0169,
+      "Leisure": 0.0414,
+      "HealthEdu": 0.002,
+      "OtherServices": 0.1552,
+      "Construction": 0.0
+     },
+     "UK": {
+      "Energy": 0.0181,
+      "Food": 0.021,
+      "Durables": 0.2754,
+      "Nondurables": 0.0983,
+      "Tech": 0.0774,
+      "Leisure": 0.1036,
+      "HealthEdu": 0.013,
+      "OtherServices": 0.3922,
+      "Construction": 0.0009
+     },
+     "CA": {
+      "Energy": 0.2684,
+      "Food": 0.0952,
+      "Durables": 0.3812,
+      "Nondurables": 0.1236,
+      "Tech": 0.0407,
+      "Leisure": 0.0278,
+      "HealthEdu": 0.0014,
+      "OtherServices": 0.0601,
+      "Construction": 0.0015
+     },
+     "MX": {
+      "Energy": 0.03,
+      "Food": 0.0872,
+      "Durables": 0.7466,
+      "Nondurables": 0.0604,
+      "Tech": 0.0037,
+      "Leisure": 0.049,
+      "HealthEdu": 0.0032,
+      "OtherServices": 0.0199,
+      "Construction": 0.0001
+     },
+     "IN": {
+      "Energy": 0.0294,
+      "Food": 0.0451,
+      "Durables": 0.348,
+      "Nondurables": 0.2451,
+      "Tech": 0.133,
+      "Leisure": 0.0324,
+      "HealthEdu": 0.0021,
+      "OtherServices": 0.1649,
+      "Construction": 0.0001
+     },
+     "KR": {
+      "Energy": 0.0334,
+      "Food": 0.0126,
+      "Durables": 0.7259,
+      "Nondurables": 0.1261,
+      "Tech": 0.0125,
+      "Leisure": 0.0248,
+      "HealthEdu": 0.0017,
+      "OtherServices": 0.0627,
+      "Construction": 0.0
+     },
+     "BR": {
+      "Energy": 0.1695,
+      "Food": 0.1528,
+      "Durables": 0.4171,
+      "Nondurables": 0.1258,
+      "Tech": 0.0206,
+      "Leisure": 0.0259,
+      "HealthEdu": 0.0026,
+      "OtherServices": 0.0852,
+      "Construction": 0.0004
+     },
+     "AU": {
+      "Energy": 0.0003,
+      "Food": 0.1998,
+      "Durables": 0.313,
+      "Nondurables": 0.0845,
+      "Tech": 0.0705,
+      "Leisure": 0.0835,
+      "HealthEdu": 0.0107,
+      "OtherServices": 0.2367,
+      "Construction": 0.0009
+     },
+     "OPEC+": {
+      "Energy": 0.291,
+      "Food": 0.0133,
+      "Durables": 0.4344,
+      "Nondurables": 0.0842,
+      "Tech": 0.0105,
+      "Leisure": 0.0706,
+      "HealthEdu": 0.0038,
+      "OtherServices": 0.0913,
+      "Construction": 0.0009
+     },
+     "RoW": {
+      "Energy": 0.0273,
+      "Food": 0.0681,
+      "Durables": 0.4461,
+      "Nondurables": 0.1772,
+      "Tech": 0.0219,
+      "Leisure": 0.0702,
+      "HealthEdu": 0.005,
+      "OtherServices": 0.1833,
+      "Construction": 0.0008
+     },
+     "ALL": {
+      "Energy": 0.0592,
+      "Food": 0.0565,
+      "Durables": 0.5064,
+      "Nondurables": 0.1719,
+      "Tech": 0.0281,
+      "Leisure": 0.0525,
+      "HealthEdu": 0.0041,
+      "OtherServices": 0.1208,
+      "Construction": 0.0006
+     }
+    },
+    "col_shares_bloc_share_of_sector": {
+     "EA": {
+      "Energy": 0.0468,
+      "Food": 0.1379,
+      "Durables": 0.1329,
+      "Nondurables": 0.3056,
+      "Tech": 0.2458,
+      "Leisure": 0.2433,
+      "HealthEdu": 0.287,
+      "OtherServices": 0.195,
+      "Construction": 0.1242
+     },
+     "CN": {
+      "Energy": 0.003,
+      "Food": 0.0289,
+      "Durables": 0.1583,
+      "Nondurables": 0.1462,
+      "Tech": 0.0255,
+      "Leisure": 0.013,
+      "HealthEdu": 0.0127,
+      "OtherServices": 0.0365,
+      "Construction": 0.0556
+     },
+     "JP": {
+      "Energy": 0.0012,
+      "Food": 0.0069,
+      "Durables": 0.0605,
+      "Nondurables": 0.0276,
+      "Tech": 0.0275,
+      "Leisure": 0.036,
+      "HealthEdu": 0.0226,
+      "OtherServices": 0.0587,
+      "Construction": 0.0004
+     },
+     "UK": {
+      "Energy": 0.012,
+      "Food": 0.0145,
+      "Durables": 0.0212,
+      "Nondurables": 0.0223,
+      "Tech": 0.1076,
+      "Leisure": 0.0771,
+      "HealthEdu": 0.1246,
+      "OtherServices": 0.1267,
+      "Construction": 0.0609
+     },
+     "CA": {
+      "Energy": 0.5247,
+      "Food": 0.1949,
+      "Durables": 0.087,
+      "Nondurables": 0.0831,
+      "Tech": 0.1677,
+      "Leisure": 0.0612,
+      "HealthEdu": 0.0397,
+      "OtherServices": 0.0575,
+      "Construction": 0.2979
+     },
+     "MX": {
+      "Energy": 0.0673,
+      "Food": 0.205,
+      "Durables": 0.1958,
+      "Nondurables": 0.0467,
+      "Tech": 0.0174,
+      "Leisure": 0.1242,
+      "HealthEdu": 0.1038,
+      "OtherServices": 0.0219,
+      "Construction": 0.0204
+     },
+     "IN": {
+      "Energy": 0.0158,
+      "Food": 0.0254,
+      "Durables": 0.0219,
+      "Nondurables": 0.0454,
+      "Tech": 0.1509,
+      "Leisure": 0.0197,
+      "HealthEdu": 0.0162,
+      "OtherServices": 0.0435,
+      "Construction": 0.0061
+     },
+     "KR": {
+      "Energy": 0.0201,
+      "Food": 0.008,
+      "Durables": 0.0511,
+      "Nondurables": 0.0262,
+      "Tech": 0.0159,
+      "Leisure": 0.0169,
+      "HealthEdu": 0.0152,
+      "OtherServices": 0.0185,
+      "Construction": 0.002
+     },
+     "BR": {
+      "Energy": 0.0341,
+      "Food": 0.0322,
+      "Durables": 0.0098,
+      "Nondurables": 0.0087,
+      "Tech": 0.0087,
+      "Leisure": 0.0059,
+      "HealthEdu": 0.0077,
+      "OtherServices": 0.0084,
+      "Construction": 0.0082
+     },
+     "AU": {
+      "Energy": 0.0,
+      "Food": 0.024,
+      "Durables": 0.0042,
+      "Nondurables": 0.0033,
+      "Tech": 0.017,
+      "Leisure": 0.0108,
+      "HealthEdu": 0.0178,
+      "OtherServices": 0.0133,
+      "Construction": 0.0106
+     },
+     "OPEC+": {
+      "Energy": 0.1546,
+      "Food": 0.0074,
+      "Durables": 0.027,
+      "Nondurables": 0.0154,
+      "Tech": 0.0117,
+      "Leisure": 0.0423,
+      "HealthEdu": 0.0291,
+      "OtherServices": 0.0237,
+      "Construction": 0.0465
+     },
+     "RoW": {
+      "Energy": 0.1205,
+      "Food": 0.3148,
+      "Durables": 0.2302,
+      "Nondurables": 0.2694,
+      "Tech": 0.2042,
+      "Leisure": 0.3497,
+      "HealthEdu": 0.3236,
+      "OtherServices": 0.3964,
+      "Construction": 0.3671
+     }
+    }
+   },
+   "exports_base_C26_in_Tech": {
+    "usd_bn_2024": {
+     "EA": {
+      "Energy": 75.2,
+      "Food": 11.81,
+      "Durables": 121.99,
+      "Nondurables": 90.33,
+      "Tech": 76.46,
+      "Leisure": 32.47,
+      "HealthEdu": 2.64,
+      "OtherServices": 189.73,
+      "Construction": 0.25,
+      "Total": 600.88
+     },
+     "CN": {
+      "Energy": 17.06,
+      "Food": 24.39,
+      "Durables": 49.5,
+      "Nondurables": 30.79,
+      "Tech": 26.11,
+      "Leisure": 11.06,
+      "HealthEdu": 14.89,
+      "OtherServices": 23.66,
+      "Construction": 0.3,
+      "Total": 197.75
+     },
+     "JP": {
+      "Energy": 12.63,
+      "Food": 12.52,
+      "Durables": 26.62,
+      "Nondurables": 18.14,
+      "Tech": 17.14,
+      "Leisure": 7.97,
+      "HealthEdu": 0.81,
+      "OtherServices": 32.28,
+      "Construction": 0.2,
+      "Total": 128.31
+     },
+     "UK": {
+      "Energy": 14.47,
+      "Food": 1.71,
+      "Durables": 43.33,
+      "Nondurables": 11.95,
+      "Tech": 25.97,
+      "Leisure": 15.7,
+      "HealthEdu": 0.94,
+      "OtherServices": 65.35,
+      "Construction": 0.19,
+      "Total": 179.61
+     },
+     "CA": {
+      "Energy": 34.87,
+      "Food": 35.31,
+      "Durables": 192.61,
+      "Nondurables": 70.79,
+      "Tech": 30.82,
+      "Leisure": 21.36,
+      "HealthEdu": 2.1,
+      "OtherServices": 52.71,
+      "Construction": 0.58,
+      "Total": 441.14
+     },
+     "MX": {
+      "Energy": 42.06,
+      "Food": 37.51,
+      "Durables": 158.35,
+      "Nondurables": 67.8,
+      "Tech": 33.14,
+      "Leisure": 25.37,
+      "HealthEdu": 0.89,
+      "OtherServices": 20.33,
+      "Construction": 0.18,
+      "Total": 385.62
+     },
+     "IN": {
+      "Energy": 12.58,
+      "Food": 1.79,
+      "Durables": 15.18,
+      "Nondurables": 8.41,
+      "Tech": 9.38,
+      "Leisure": 9.85,
+      "HealthEdu": 14.02,
+      "OtherServices": 12.11,
+      "Construction": 0.05,
+      "Total": 83.37
+     },
+     "KR": {
+      "Energy": 20.11,
+      "Food": 8.48,
+      "Durables": 20.11,
+      "Nondurables": 9.58,
+      "Tech": 11.44,
+      "Leisure": 6.87,
+      "HealthEdu": 2.29,
+      "OtherServices": 13.54,
+      "Construction": 0.79,
+      "Total": 93.22
+     },
+     "BR": {
+      "Energy": 9.8,
+      "Food": 0.71,
+      "Durables": 20.91,
+      "Nondurables": 13.96,
+      "Tech": 11.34,
+      "Leisure": 8.78,
+      "HealthEdu": 1.16,
+      "OtherServices": 12.02,
+      "Construction": 0.0,
+      "Total": 78.69
+     },
+     "AU": {
+      "Energy": 1.15,
+      "Food": 1.67,
+      "Durables": 21.2,
+      "Nondurables": 6.2,
+      "Tech": 9.8,
+      "Leisure": 6.77,
+      "HealthEdu": 0.32,
+      "OtherServices": 13.41,
+      "Construction": 0.02,
+      "Total": 60.52
+     },
+     "OPEC+": {
+      "Energy": 6.01,
+      "Food": 6.38,
+      "Durables": 46.11,
+      "Nondurables": 12.43,
+      "Tech": 21.51,
+      "Leisure": 4.36,
+      "HealthEdu": 3.95,
+      "OtherServices": 31.3,
+      "Construction": 0.03,
+      "Total": 132.08
+     },
+     "RoW": {
+      "Energy": 94.39,
+      "Food": 47.17,
+      "Durables": 175.77,
+      "Nondurables": 79.65,
+      "Tech": 96.65,
+      "Leisure": 53.3,
+      "HealthEdu": 14.27,
+      "OtherServices": 276.75,
+      "Construction": 0.57,
+      "Total": 838.5
+     },
+     "ALL": {
+      "Energy": 340.34,
+      "Food": 189.46,
+      "Durables": 891.68,
+      "Nondurables": 420.03,
+      "Tech": 369.76,
+      "Leisure": 203.85,
+      "HealthEdu": 58.27,
+      "OtherServices": 743.18,
+      "Construction": 3.13,
+      "Total": 3219.7
+     }
+    },
+    "row_shares_sector_mix_of_bloc_trade": {
+     "EA": {
+      "Energy": 0.1252,
+      "Food": 0.0197,
+      "Durables": 0.203,
+      "Nondurables": 0.1503,
+      "Tech": 0.1272,
+      "Leisure": 0.054,
+      "HealthEdu": 0.0044,
+      "OtherServices": 0.3157,
+      "Construction": 0.0004
+     },
+     "CN": {
+      "Energy": 0.0863,
+      "Food": 0.1233,
+      "Durables": 0.2503,
+      "Nondurables": 0.1557,
+      "Tech": 0.132,
+      "Leisure": 0.0559,
+      "HealthEdu": 0.0753,
+      "OtherServices": 0.1197,
+      "Construction": 0.0015
+     },
+     "JP": {
+      "Energy": 0.0985,
+      "Food": 0.0976,
+      "Durables": 0.2074,
+      "Nondurables": 0.1414,
+      "Tech": 0.1336,
+      "Leisure": 0.0621,
+      "HealthEdu": 0.0063,
+      "OtherServices": 0.2516,
+      "Construction": 0.0015
+     },
+     "UK": {
+      "Energy": 0.0806,
+      "Food": 0.0095,
+      "Durables": 0.2412,
+      "Nondurables": 0.0665,
+      "Tech": 0.1446,
+      "Leisure": 0.0874,
+      "HealthEdu": 0.0052,
+      "OtherServices": 0.3638,
+      "Construction": 0.001
+     },
+     "CA": {
+      "Energy": 0.079,
+      "Food": 0.08,
+      "Durables": 0.4366,
+      "Nondurables": 0.1605,
+      "Tech": 0.0699,
+      "Leisure": 0.0484,
+      "HealthEdu": 0.0048,
+      "OtherServices": 0.1195,
+      "Construction": 0.0013
+     },
+     "MX": {
+      "Energy": 0.1091,
+      "Food": 0.0973,
+      "Durables": 0.4106,
+      "Nondurables": 0.1758,
+      "Tech": 0.0859,
+      "Leisure": 0.0658,
+      "HealthEdu": 0.0023,
+      "OtherServices": 0.0527,
+      "Construction": 0.0005
+     },
+     "IN": {
+      "Energy": 0.1509,
+      "Food": 0.0214,
+      "Durables": 0.1821,
+      "Nondurables": 0.1009,
+      "Tech": 0.1125,
+      "Leisure": 0.1181,
+      "HealthEdu": 0.1682,
+      "OtherServices": 0.1452,
+      "Construction": 0.0006
+     },
+     "KR": {
+      "Energy": 0.2157,
+      "Food": 0.091,
+      "Durables": 0.2158,
+      "Nondurables": 0.1027,
+      "Tech": 0.1228,
+      "Leisure": 0.0737,
+      "HealthEdu": 0.0246,
+      "OtherServices": 0.1452,
+      "Construction": 0.0085
+     },
+     "BR": {
+      "Energy": 0.1246,
+      "Food": 0.0091,
+      "Durables": 0.2658,
+      "Nondurables": 0.1773,
+      "Tech": 0.1441,
+      "Leisure": 0.1116,
+      "HealthEdu": 0.0148,
+      "OtherServices": 0.1528,
+      "Construction": 0.0
+     },
+     "AU": {
+      "Energy": 0.0189,
+      "Food": 0.0275,
+      "Durables": 0.3503,
+      "Nondurables": 0.1025,
+      "Tech": 0.1619,
+      "Leisure": 0.1119,
+      "HealthEdu": 0.0052,
+      "OtherServices": 0.2215,
+      "Construction": 0.0003
+     },
+     "OPEC+": {
+      "Energy": 0.0455,
+      "Food": 0.0483,
+      "Durables": 0.3491,
+      "Nondurables": 0.0941,
+      "Tech": 0.1628,
+      "Leisure": 0.033,
+      "HealthEdu": 0.0299,
+      "OtherServices": 0.237,
+      "Construction": 0.0002
+     },
+     "RoW": {
+      "Energy": 0.1126,
+      "Food": 0.0563,
+      "Durables": 0.2096,
+      "Nondurables": 0.095,
+      "Tech": 0.1153,
+      "Leisure": 0.0636,
+      "HealthEdu": 0.017,
+      "OtherServices": 0.33,
+      "Construction": 0.0007
+     },
+     "ALL": {
+      "Energy": 0.1057,
+      "Food": 0.0588,
+      "Durables": 0.2769,
+      "Nondurables": 0.1305,
+      "Tech": 0.1148,
+      "Leisure": 0.0633,
+      "HealthEdu": 0.0181,
+      "OtherServices": 0.2308,
+      "Construction": 0.001
+     }
+    },
+    "col_shares_bloc_share_of_sector": {
+     "EA": {
+      "Energy": 0.221,
+      "Food": 0.0623,
+      "Durables": 0.1368,
+      "Nondurables": 0.2151,
+      "Tech": 0.2068,
+      "Leisure": 0.1593,
+      "HealthEdu": 0.0452,
+      "OtherServices": 0.2553,
+      "Construction": 0.0785
+     },
+     "CN": {
+      "Energy": 0.0501,
+      "Food": 0.1287,
+      "Durables": 0.0555,
+      "Nondurables": 0.0733,
+      "Tech": 0.0706,
+      "Leisure": 0.0542,
+      "HealthEdu": 0.2554,
+      "OtherServices": 0.0318,
+      "Construction": 0.0951
+     },
+     "JP": {
+      "Energy": 0.0371,
+      "Food": 0.0661,
+      "Durables": 0.0298,
+      "Nondurables": 0.0432,
+      "Tech": 0.0463,
+      "Leisure": 0.0391,
+      "HealthEdu": 0.0139,
+      "OtherServices": 0.0434,
+      "Construction": 0.0628
+     },
+     "UK": {
+      "Energy": 0.0425,
+      "Food": 0.0091,
+      "Durables": 0.0486,
+      "Nondurables": 0.0285,
+      "Tech": 0.0702,
+      "Leisure": 0.077,
+      "HealthEdu": 0.0161,
+      "OtherServices": 0.0879,
+      "Construction": 0.0596
+     },
+     "CA": {
+      "Energy": 0.1024,
+      "Food": 0.1864,
+      "Durables": 0.216,
+      "Nondurables": 0.1685,
+      "Tech": 0.0833,
+      "Leisure": 0.1048,
+      "HealthEdu": 0.0361,
+      "OtherServices": 0.0709,
+      "Construction": 0.1837
+     },
+     "MX": {
+      "Energy": 0.1236,
+      "Food": 0.198,
+      "Durables": 0.1776,
+      "Nondurables": 0.1614,
+      "Tech": 0.0896,
+      "Leisure": 0.1244,
+      "HealthEdu": 0.0153,
+      "OtherServices": 0.0274,
+      "Construction": 0.0561
+     },
+     "IN": {
+      "Energy": 0.037,
+      "Food": 0.0094,
+      "Durables": 0.017,
+      "Nondurables": 0.02,
+      "Tech": 0.0254,
+      "Leisure": 0.0483,
+      "HealthEdu": 0.2407,
+      "OtherServices": 0.0163,
+      "Construction": 0.0163
+     },
+     "KR": {
+      "Energy": 0.0591,
+      "Food": 0.0448,
+      "Durables": 0.0226,
+      "Nondurables": 0.0228,
+      "Tech": 0.0309,
+      "Leisure": 0.0337,
+      "HealthEdu": 0.0394,
+      "OtherServices": 0.0182,
+      "Construction": 0.2526
+     },
+     "BR": {
+      "Energy": 0.0288,
+      "Food": 0.0038,
+      "Durables": 0.0235,
+      "Nondurables": 0.0332,
+      "Tech": 0.0307,
+      "Leisure": 0.0431,
+      "HealthEdu": 0.0199,
+      "OtherServices": 0.0162,
+      "Construction": 0.0003
+     },
+     "AU": {
+      "Energy": 0.0034,
+      "Food": 0.0088,
+      "Durables": 0.0238,
+      "Nondurables": 0.0148,
+      "Tech": 0.0265,
+      "Leisure": 0.0332,
+      "HealthEdu": 0.0054,
+      "OtherServices": 0.018,
+      "Construction": 0.0051
+     },
+     "OPEC+": {
+      "Energy": 0.0177,
+      "Food": 0.0337,
+      "Durables": 0.0517,
+      "Nondurables": 0.0296,
+      "Tech": 0.0582,
+      "Leisure": 0.0214,
+      "HealthEdu": 0.0678,
+      "OtherServices": 0.0421,
+      "Construction": 0.0086
+     },
+     "RoW": {
+      "Energy": 0.2773,
+      "Food": 0.249,
+      "Durables": 0.1971,
+      "Nondurables": 0.1896,
+      "Tech": 0.2614,
+      "Leisure": 0.2614,
+      "HealthEdu": 0.2449,
+      "OtherServices": 0.3724,
+      "Construction": 0.1812
+     }
+    }
+   },
+   "exports_variant_C26_in_Durables": {
+    "usd_bn_2024": {
+     "EA": {
+      "Energy": 75.2,
+      "Food": 11.81,
+      "Durables": 153.63,
+      "Nondurables": 90.33,
+      "Tech": 44.82,
+      "Leisure": 32.47,
+      "HealthEdu": 2.64,
+      "OtherServices": 189.73,
+      "Construction": 0.25,
+      "Total": 600.88
+     },
+     "CN": {
+      "Energy": 17.06,
+      "Food": 24.39,
+      "Durables": 70.55,
+      "Nondurables": 30.79,
+      "Tech": 5.05,
+      "Leisure": 11.06,
+      "HealthEdu": 14.89,
+      "OtherServices": 23.66,
+      "Construction": 0.3,
+      "Total": 197.75
+     },
+     "JP": {
+      "Energy": 12.63,
+      "Food": 12.52,
+      "Durables": 34.97,
+      "Nondurables": 18.14,
+      "Tech": 8.79,
+      "Leisure": 7.97,
+      "HealthEdu": 0.81,
+      "OtherServices": 32.28,
+      "Construction": 0.2,
+      "Total": 128.31
+     },
+     "UK": {
+      "Energy": 14.47,
+      "Food": 1.71,
+      "Durables": 49.34,
+      "Nondurables": 11.95,
+      "Tech": 19.96,
+      "Leisure": 15.7,
+      "HealthEdu": 0.94,
+      "OtherServices": 65.35,
+      "Construction": 0.19,
+      "Total": 179.61
+     },
+     "CA": {
+      "Energy": 34.87,
+      "Food": 35.31,
+      "Durables": 207.78,
+      "Nondurables": 70.79,
+      "Tech": 15.65,
+      "Leisure": 21.36,
+      "HealthEdu": 2.1,
+      "OtherServices": 52.71,
+      "Construction": 0.58,
+      "Total": 441.14
+     },
+     "MX": {
+      "Energy": 42.06,
+      "Food": 37.51,
+      "Durables": 186.59,
+      "Nondurables": 67.8,
+      "Tech": 4.9,
+      "Leisure": 25.37,
+      "HealthEdu": 0.89,
+      "OtherServices": 20.33,
+      "Construction": 0.18,
+      "Total": 385.62
+     },
+     "IN": {
+      "Energy": 12.58,
+      "Food": 1.79,
+      "Durables": 18.6,
+      "Nondurables": 8.41,
+      "Tech": 5.96,
+      "Leisure": 9.85,
+      "HealthEdu": 14.02,
+      "OtherServices": 12.11,
+      "Construction": 0.05,
+      "Total": 83.37
+     },
+     "KR": {
+      "Energy": 20.11,
+      "Food": 8.48,
+      "Durables": 27.27,
+      "Nondurables": 9.58,
+      "Tech": 4.29,
+      "Leisure": 6.87,
+      "HealthEdu": 2.29,
+      "OtherServices": 13.54,
+      "Construction": 0.79,
+      "Total": 93.22
+     },
+     "BR": {
+      "Energy": 9.8,
+      "Food": 0.71,
+      "Durables": 24.42,
+      "Nondurables": 13.96,
+      "Tech": 7.83,
+      "Leisure": 8.78,
+      "HealthEdu": 1.16,
+      "OtherServices": 12.02,
+      "Construction": 0.0,
+      "Total": 78.69
+     },
+     "AU": {
+      "Energy": 1.15,
+      "Food": 1.67,
+      "Durables": 25.41,
+      "Nondurables": 6.2,
+      "Tech": 5.59,
+      "Leisure": 6.77,
+      "HealthEdu": 0.32,
+      "OtherServices": 13.41,
+      "Construction": 0.02,
+      "Total": 60.52
+     },
+     "OPEC+": {
+      "Energy": 6.01,
+      "Food": 6.38,
+      "Durables": 63.39,
+      "Nondurables": 12.43,
+      "Tech": 4.23,
+      "Leisure": 4.36,
+      "HealthEdu": 3.95,
+      "OtherServices": 31.3,
+      "Construction": 0.03,
+      "Total": 132.08
+     },
+     "RoW": {
+      "Energy": 94.39,
+      "Food": 47.17,
+      "Durables": 236.72,
+      "Nondurables": 79.65,
+      "Tech": 35.7,
+      "Leisure": 53.3,
+      "HealthEdu": 14.27,
+      "OtherServices": 276.75,
+      "Construction": 0.57,
+      "Total": 838.5
+     },
+     "ALL": {
+      "Energy": 340.34,
+      "Food": 189.46,
+      "Durables": 1098.68,
+      "Nondurables": 420.03,
+      "Tech": 162.76,
+      "Leisure": 203.85,
+      "HealthEdu": 58.27,
+      "OtherServices": 743.18,
+      "Construction": 3.13,
+      "Total": 3219.7
+     }
+    },
+    "row_shares_sector_mix_of_bloc_trade": {
+     "EA": {
+      "Energy": 0.1252,
+      "Food": 0.0197,
+      "Durables": 0.2557,
+      "Nondurables": 0.1503,
+      "Tech": 0.0746,
+      "Leisure": 0.054,
+      "HealthEdu": 0.0044,
+      "OtherServices": 0.3157,
+      "Construction": 0.0004
+     },
+     "CN": {
+      "Energy": 0.0863,
+      "Food": 0.1233,
+      "Durables": 0.3568,
+      "Nondurables": 0.1557,
+      "Tech": 0.0255,
+      "Leisure": 0.0559,
+      "HealthEdu": 0.0753,
+      "OtherServices": 0.1197,
+      "Construction": 0.0015
+     },
+     "JP": {
+      "Energy": 0.0985,
+      "Food": 0.0976,
+      "Durables": 0.2725,
+      "Nondurables": 0.1414,
+      "Tech": 0.0685,
+      "Leisure": 0.0621,
+      "HealthEdu": 0.0063,
+      "OtherServices": 0.2516,
+      "Construction": 0.0015
+     },
+     "UK": {
+      "Energy": 0.0806,
+      "Food": 0.0095,
+      "Durables": 0.2747,
+      "Nondurables": 0.0665,
+      "Tech": 0.1111,
+      "Leisure": 0.0874,
+      "HealthEdu": 0.0052,
+      "OtherServices": 0.3638,
+      "Construction": 0.001
+     },
+     "CA": {
+      "Energy": 0.079,
+      "Food": 0.08,
+      "Durables": 0.471,
+      "Nondurables": 0.1605,
+      "Tech": 0.0355,
+      "Leisure": 0.0484,
+      "HealthEdu": 0.0048,
+      "OtherServices": 0.1195,
+      "Construction": 0.0013
+     },
+     "MX": {
+      "Energy": 0.1091,
+      "Food": 0.0973,
+      "Durables": 0.4839,
+      "Nondurables": 0.1758,
+      "Tech": 0.0127,
+      "Leisure": 0.0658,
+      "HealthEdu": 0.0023,
+      "OtherServices": 0.0527,
+      "Construction": 0.0005
+     },
+     "IN": {
+      "Energy": 0.1509,
+      "Food": 0.0214,
+      "Durables": 0.2231,
+      "Nondurables": 0.1009,
+      "Tech": 0.0715,
+      "Leisure": 0.1181,
+      "HealthEdu": 0.1682,
+      "OtherServices": 0.1452,
+      "Construction": 0.0006
+     },
+     "KR": {
+      "Energy": 0.2157,
+      "Food": 0.091,
+      "Durables": 0.2926,
+      "Nondurables": 0.1027,
+      "Tech": 0.046,
+      "Leisure": 0.0737,
+      "HealthEdu": 0.0246,
+      "OtherServices": 0.1452,
+      "Construction": 0.0085
+     },
+     "BR": {
+      "Energy": 0.1246,
+      "Food": 0.0091,
+      "Durables": 0.3104,
+      "Nondurables": 0.1773,
+      "Tech": 0.0995,
+      "Leisure": 0.1116,
+      "HealthEdu": 0.0148,
+      "OtherServices": 0.1528,
+      "Construction": 0.0
+     },
+     "AU": {
+      "Energy": 0.0189,
+      "Food": 0.0275,
+      "Durables": 0.4199,
+      "Nondurables": 0.1025,
+      "Tech": 0.0923,
+      "Leisure": 0.1119,
+      "HealthEdu": 0.0052,
+      "OtherServices": 0.2215,
+      "Construction": 0.0003
+     },
+     "OPEC+": {
+      "Energy": 0.0455,
+      "Food": 0.0483,
+      "Durables": 0.4799,
+      "Nondurables": 0.0941,
+      "Tech": 0.032,
+      "Leisure": 0.033,
+      "HealthEdu": 0.0299,
+      "OtherServices": 0.237,
+      "Construction": 0.0002
+     },
+     "RoW": {
+      "Energy": 0.1126,
+      "Food": 0.0563,
+      "Durables": 0.2823,
+      "Nondurables": 0.095,
+      "Tech": 0.0426,
+      "Leisure": 0.0636,
+      "HealthEdu": 0.017,
+      "OtherServices": 0.33,
+      "Construction": 0.0007
+     },
+     "ALL": {
+      "Energy": 0.1057,
+      "Food": 0.0588,
+      "Durables": 0.3412,
+      "Nondurables": 0.1305,
+      "Tech": 0.0506,
+      "Leisure": 0.0633,
+      "HealthEdu": 0.0181,
+      "OtherServices": 0.2308,
+      "Construction": 0.001
+     }
+    },
+    "col_shares_bloc_share_of_sector": {
+     "EA": {
+      "Energy": 0.221,
+      "Food": 0.0623,
+      "Durables": 0.1398,
+      "Nondurables": 0.2151,
+      "Tech": 0.2754,
+      "Leisure": 0.1593,
+      "HealthEdu": 0.0452,
+      "OtherServices": 0.2553,
+      "Construction": 0.0785
+     },
+     "CN": {
+      "Energy": 0.0501,
+      "Food": 0.1287,
+      "Durables": 0.0642,
+      "Nondurables": 0.0733,
+      "Tech": 0.031,
+      "Leisure": 0.0542,
+      "HealthEdu": 0.2554,
+      "OtherServices": 0.0318,
+      "Construction": 0.0951
+     },
+     "JP": {
+      "Energy": 0.0371,
+      "Food": 0.0661,
+      "Durables": 0.0318,
+      "Nondurables": 0.0432,
+      "Tech": 0.054,
+      "Leisure": 0.0391,
+      "HealthEdu": 0.0139,
+      "OtherServices": 0.0434,
+      "Construction": 0.0628
+     },
+     "UK": {
+      "Energy": 0.0425,
+      "Food": 0.0091,
+      "Durables": 0.0449,
+      "Nondurables": 0.0285,
+      "Tech": 0.1227,
+      "Leisure": 0.077,
+      "HealthEdu": 0.0161,
+      "OtherServices": 0.0879,
+      "Construction": 0.0596
+     },
+     "CA": {
+      "Energy": 0.1024,
+      "Food": 0.1864,
+      "Durables": 0.1891,
+      "Nondurables": 0.1685,
+      "Tech": 0.0962,
+      "Leisure": 0.1048,
+      "HealthEdu": 0.0361,
+      "OtherServices": 0.0709,
+      "Construction": 0.1837
+     },
+     "MX": {
+      "Energy": 0.1236,
+      "Food": 0.198,
+      "Durables": 0.1698,
+      "Nondurables": 0.1614,
+      "Tech": 0.0301,
+      "Leisure": 0.1244,
+      "HealthEdu": 0.0153,
+      "OtherServices": 0.0274,
+      "Construction": 0.0561
+     },
+     "IN": {
+      "Energy": 0.037,
+      "Food": 0.0094,
+      "Durables": 0.0169,
+      "Nondurables": 0.02,
+      "Tech": 0.0366,
+      "Leisure": 0.0483,
+      "HealthEdu": 0.2407,
+      "OtherServices": 0.0163,
+      "Construction": 0.0163
+     },
+     "KR": {
+      "Energy": 0.0591,
+      "Food": 0.0448,
+      "Durables": 0.0248,
+      "Nondurables": 0.0228,
+      "Tech": 0.0263,
+      "Leisure": 0.0337,
+      "HealthEdu": 0.0394,
+      "OtherServices": 0.0182,
+      "Construction": 0.2526
+     },
+     "BR": {
+      "Energy": 0.0288,
+      "Food": 0.0038,
+      "Durables": 0.0222,
+      "Nondurables": 0.0332,
+      "Tech": 0.0481,
+      "Leisure": 0.0431,
+      "HealthEdu": 0.0199,
+      "OtherServices": 0.0162,
+      "Construction": 0.0003
+     },
+     "AU": {
+      "Energy": 0.0034,
+      "Food": 0.0088,
+      "Durables": 0.0231,
+      "Nondurables": 0.0148,
+      "Tech": 0.0343,
+      "Leisure": 0.0332,
+      "HealthEdu": 0.0054,
+      "OtherServices": 0.018,
+      "Construction": 0.0051
+     },
+     "OPEC+": {
+      "Energy": 0.0177,
+      "Food": 0.0337,
+      "Durables": 0.0577,
+      "Nondurables": 0.0296,
+      "Tech": 0.026,
+      "Leisure": 0.0214,
+      "HealthEdu": 0.0678,
+      "OtherServices": 0.0421,
+      "Construction": 0.0086
+     },
+     "RoW": {
+      "Energy": 0.2773,
+      "Food": 0.249,
+      "Durables": 0.2155,
+      "Nondurables": 0.1896,
+      "Tech": 0.2193,
+      "Leisure": 0.2614,
+      "HealthEdu": 0.2449,
+      "OtherServices": 0.3724,
+      "Construction": 0.1812
+     }
+    }
+   }
+  }
+ },
+ "bloc_goods_matrix": {
+  "unit": "USD bn, 2024, exporter in rows, importer in columns, includes US as first bloc",
+  "source": "OECD BIMTS (balanced), scripts/build_bloc_matrix.py",
+  "status": "read/own",
+  "matrix_2024": {
+   "US": {
+    "US": 0.0,
+    "EA": 340.37,
+    "CN": 147.36,
+    "JP": 78.71,
+    "UK": 90.05,
+    "CA": 281.43,
+    "MX": 279.51,
+    "IN": 38.44,
+    "KR": 66.44,
+    "BR": 44.91,
+    "AU": 33.93,
+    "OPEC+": 88.49,
+    "RoW": 464.9
+   },
+   "EA": {
+    "US": 531.04,
+    "EA": 2331.98,
+    "CN": 214.15,
+    "JP": 63.19,
+    "UK": 268.76,
+    "CA": 50.06,
+    "MX": 53.87,
+    "IN": 41.66,
+    "KR": 54.97,
+    "BR": 40.22,
+    "AU": 35.89,
+    "OPEC+": 193.06,
+    "RoW": 1358.73
+   },
+   "CN": {
+    "US": 485.31,
+    "EA": 462.28,
+    "CN": 87.49,
+    "JP": 156.75,
+    "UK": 93.74,
+    "CA": 60.58,
+    "MX": 114.72,
+    "IN": 124.36,
+    "KR": 142.13,
+    "BR": 70.4,
+    "AU": 72.86,
+    "OPEC+": 432.76,
+    "RoW": 1417.89
+   },
+   "JP": {
+    "US": 145.21,
+    "EA": 62.91,
+    "CN": 143.27,
+    "JP": 0.0,
+    "UK": 14.86,
+    "CA": 14.6,
+    "MX": 16.37,
+    "IN": 18.26,
+    "KR": 47.07,
+    "BR": 5.1,
+    "AU": 16.49,
+    "OPEC+": 44.75,
+    "RoW": 239.64
+   },
+   "UK": {
+    "US": 72.5,
+    "EA": 171.97,
+    "CN": 28.76,
+    "JP": 7.76,
+    "UK": 7.68,
+    "CA": 7.25,
+    "MX": 2.63,
+    "IN": 6.96,
+    "KR": 4.6,
+    "BR": 3.49,
+    "AU": 5.41,
+    "OPEC+": 26.32,
+    "RoW": 107.7
+   },
+   "CA": {
+    "US": 417.44,
+    "EA": 24.8,
+    "CN": 33.04,
+    "JP": 11.27,
+    "UK": 22.24,
+    "CA": 3.14,
+    "MX": 9.84,
+    "IN": 5.26,
+    "KR": 5.94,
+    "BR": 2.26,
+    "AU": 2.41,
+    "OPEC+": 7.15,
+    "RoW": 34.6
+   },
+   "MX": {
+    "US": 507.79,
+    "EA": 24.43,
+    "CN": 14.78,
+    "JP": 5.13,
+    "UK": 5.05,
+    "CA": 31.49,
+    "MX": 0.0,
+    "IN": 3.22,
+    "KR": 6.48,
+    "BR": 5.48,
+    "AU": 2.31,
+    "OPEC+": 4.58,
+    "RoW": 37.26
+   },
+   "IN": {
+    "US": 85.61,
+    "EA": 68.64,
+    "CN": 16.44,
+    "JP": 5.93,
+    "UK": 14.31,
+    "CA": 5.47,
+    "MX": 7.62,
+    "IN": 4.32,
+    "KR": 5.91,
+    "BR": 6.81,
+    "AU": 7.6,
+    "OPEC+": 77.36,
+    "RoW": 142.28
+   },
+   "KR": {
+    "US": 130.41,
+    "EA": 52.7,
+    "CN": 166.36,
+    "JP": 30.14,
+    "UK": 7.01,
+    "CA": 11.63,
+    "MX": 20.04,
+    "IN": 19.22,
+    "KR": 0.0,
+    "BR": 5.26,
+    "AU": 15.87,
+    "OPEC+": 33.88,
+    "RoW": 262.63
+   },
+   "BR": {
+    "US": 42.04,
+    "EA": 44.93,
+    "CN": 99.93,
+    "JP": 7.05,
+    "UK": 3.64,
+    "CA": 7.07,
+    "MX": 10.06,
+    "IN": 5.22,
+    "KR": 6.15,
+    "BR": 0.27,
+    "AU": 0.82,
+    "OPEC+": 26.86,
+    "RoW": 98.12
+   },
+   "AU": {
+    "US": 16.09,
+    "EA": 10.36,
+    "CN": 127.45,
+    "JP": 48.69,
+    "UK": 8.08,
+    "CA": 2.12,
+    "MX": 0.65,
+    "IN": 15.73,
+    "KR": 27.87,
+    "BR": 1.29,
+    "AU": 0.34,
+    "OPEC+": 15.65,
+    "RoW": 77.01
+   },
+   "OPEC+": {
+    "US": 101.99,
+    "EA": 243.39,
+    "CN": 403.98,
+    "JP": 95.06,
+    "UK": 25.37,
+    "CA": 7.87,
+    "MX": 13.66,
+    "IN": 199.84,
+    "KR": 93.14,
+    "BR": 21.35,
+    "AU": 16.55,
+    "OPEC+": 247.45,
+    "RoW": 621.6
+   },
+   "RoW": {
+    "US": 766.19,
+    "EA": 1411.46,
+    "CN": 848.46,
+    "JP": 182.57,
+    "UK": 202.36,
+    "CA": 65.19,
+    "MX": 77.22,
+    "IN": 173.82,
+    "KR": 142.69,
+    "BR": 63.44,
+    "AU": 69.76,
+    "OPEC+": 456.68,
+    "RoW": 1722.46
+   }
+  },
+  "export_shares_2024": {
+   "US": {
+    "US": 0.0,
+    "EA": 0.1741,
+    "CN": 0.0754,
+    "JP": 0.0403,
+    "UK": 0.0461,
+    "CA": 0.144,
+    "MX": 0.143,
+    "IN": 0.0197,
+    "KR": 0.034,
+    "BR": 0.023,
+    "AU": 0.0174,
+    "OPEC+": 0.0453,
+    "RoW": 0.2379
+   },
+   "EA": {
+    "US": 0.1014,
+    "EA": 0.4452,
+    "CN": 0.0409,
+    "JP": 0.0121,
+    "UK": 0.0513,
+    "CA": 0.0096,
+    "MX": 0.0103,
+    "IN": 0.008,
+    "KR": 0.0105,
+    "BR": 0.0077,
+    "AU": 0.0069,
+    "OPEC+": 0.0369,
+    "RoW": 0.2594
+   },
+   "CN": {
+    "US": 0.1304,
+    "EA": 0.1242,
+    "CN": 0.0235,
+    "JP": 0.0421,
+    "UK": 0.0252,
+    "CA": 0.0163,
+    "MX": 0.0308,
+    "IN": 0.0334,
+    "KR": 0.0382,
+    "BR": 0.0189,
+    "AU": 0.0196,
+    "OPEC+": 0.1163,
+    "RoW": 0.381
+   },
+   "JP": {
+    "US": 0.1889,
+    "EA": 0.0819,
+    "CN": 0.1864,
+    "JP": 0.0,
+    "UK": 0.0193,
+    "CA": 0.019,
+    "MX": 0.0213,
+    "IN": 0.0238,
+    "KR": 0.0612,
+    "BR": 0.0066,
+    "AU": 0.0215,
+    "OPEC+": 0.0582,
+    "RoW": 0.3118
+   },
+   "UK": {
+    "US": 0.16,
+    "EA": 0.3796,
+    "CN": 0.0635,
+    "JP": 0.0171,
+    "UK": 0.0169,
+    "CA": 0.016,
+    "MX": 0.0058,
+    "IN": 0.0154,
+    "KR": 0.0102,
+    "BR": 0.0077,
+    "AU": 0.0119,
+    "OPEC+": 0.0581,
+    "RoW": 0.2377
+   },
+   "CA": {
+    "US": 0.7205,
+    "EA": 0.0428,
+    "CN": 0.057,
+    "JP": 0.0194,
+    "UK": 0.0384,
+    "CA": 0.0054,
+    "MX": 0.017,
+    "IN": 0.0091,
+    "KR": 0.0103,
+    "BR": 0.0039,
+    "AU": 0.0042,
+    "OPEC+": 0.0123,
+    "RoW": 0.0597
+   },
+   "MX": {
+    "US": 0.7836,
+    "EA": 0.0377,
+    "CN": 0.0228,
+    "JP": 0.0079,
+    "UK": 0.0078,
+    "CA": 0.0486,
+    "MX": 0.0,
+    "IN": 0.005,
+    "KR": 0.01,
+    "BR": 0.0085,
+    "AU": 0.0036,
+    "OPEC+": 0.0071,
+    "RoW": 0.0575
+   },
+   "IN": {
+    "US": 0.191,
+    "EA": 0.1531,
+    "CN": 0.0367,
+    "JP": 0.0132,
+    "UK": 0.0319,
+    "CA": 0.0122,
+    "MX": 0.017,
+    "IN": 0.0096,
+    "KR": 0.0132,
+    "BR": 0.0152,
+    "AU": 0.0169,
+    "OPEC+": 0.1726,
+    "RoW": 0.3174
+   },
+   "KR": {
+    "US": 0.1727,
+    "EA": 0.0698,
+    "CN": 0.2203,
+    "JP": 0.0399,
+    "UK": 0.0093,
+    "CA": 0.0154,
+    "MX": 0.0265,
+    "IN": 0.0255,
+    "KR": 0.0,
+    "BR": 0.007,
+    "AU": 0.021,
+    "OPEC+": 0.0449,
+    "RoW": 0.3478
+   },
+   "BR": {
+    "US": 0.1194,
+    "EA": 0.1276,
+    "CN": 0.2838,
+    "JP": 0.02,
+    "UK": 0.0103,
+    "CA": 0.0201,
+    "MX": 0.0286,
+    "IN": 0.0148,
+    "KR": 0.0175,
+    "BR": 0.0008,
+    "AU": 0.0023,
+    "OPEC+": 0.0763,
+    "RoW": 0.2786
+   },
+   "AU": {
+    "US": 0.0458,
+    "EA": 0.0295,
+    "CN": 0.3628,
+    "JP": 0.1386,
+    "UK": 0.023,
+    "CA": 0.006,
+    "MX": 0.0018,
+    "IN": 0.0448,
+    "KR": 0.0793,
+    "BR": 0.0037,
+    "AU": 0.001,
+    "OPEC+": 0.0445,
+    "RoW": 0.2192
+   },
+   "OPEC+": {
+    "US": 0.0488,
+    "EA": 0.1164,
+    "CN": 0.1932,
+    "JP": 0.0455,
+    "UK": 0.0121,
+    "CA": 0.0038,
+    "MX": 0.0065,
+    "IN": 0.0956,
+    "KR": 0.0445,
+    "BR": 0.0102,
+    "AU": 0.0079,
+    "OPEC+": 0.1183,
+    "RoW": 0.2972
+   },
+   "RoW": {
+    "US": 0.1239,
+    "EA": 0.2283,
+    "CN": 0.1372,
+    "JP": 0.0295,
+    "UK": 0.0327,
+    "CA": 0.0105,
+    "MX": 0.0125,
+    "IN": 0.0281,
+    "KR": 0.0231,
+    "BR": 0.0103,
+    "AU": 0.0113,
+    "OPEC+": 0.0739,
+    "RoW": 0.2786
+   }
+  },
+  "import_shares_2024": {
+   "US": {
+    "US": 0.0,
+    "EA": 0.0648,
+    "CN": 0.0632,
+    "JP": 0.1137,
+    "UK": 0.118,
+    "CA": 0.5136,
+    "MX": 0.4611,
+    "IN": 0.0586,
+    "KR": 0.1101,
+    "BR": 0.1662,
+    "AU": 0.1211,
+    "OPEC+": 0.0535,
+    "RoW": 0.0706
+   },
+   "EA": {
+    "US": 0.1608,
+    "EA": 0.4442,
+    "CN": 0.0919,
+    "JP": 0.0913,
+    "UK": 0.3522,
+    "CA": 0.0914,
+    "MX": 0.0889,
+    "IN": 0.0635,
+    "KR": 0.0911,
+    "BR": 0.1488,
+    "AU": 0.1281,
+    "OPEC+": 0.1167,
+    "RoW": 0.2063
+   },
+   "CN": {
+    "US": 0.147,
+    "EA": 0.088,
+    "CN": 0.0375,
+    "JP": 0.2264,
+    "UK": 0.1228,
+    "CA": 0.1106,
+    "MX": 0.1892,
+    "IN": 0.1895,
+    "KR": 0.2356,
+    "BR": 0.2605,
+    "AU": 0.26,
+    "OPEC+": 0.2615,
+    "RoW": 0.2153
+   },
+   "JP": {
+    "US": 0.044,
+    "EA": 0.012,
+    "CN": 0.0614,
+    "JP": 0.0,
+    "UK": 0.0195,
+    "CA": 0.0267,
+    "MX": 0.027,
+    "IN": 0.0278,
+    "KR": 0.078,
+    "BR": 0.0189,
+    "AU": 0.0588,
+    "OPEC+": 0.027,
+    "RoW": 0.0364
+   },
+   "UK": {
+    "US": 0.022,
+    "EA": 0.0328,
+    "CN": 0.0123,
+    "JP": 0.0112,
+    "UK": 0.0101,
+    "CA": 0.0132,
+    "MX": 0.0043,
+    "IN": 0.0106,
+    "KR": 0.0076,
+    "BR": 0.0129,
+    "AU": 0.0193,
+    "OPEC+": 0.0159,
+    "RoW": 0.0164
+   },
+   "CA": {
+    "US": 0.1264,
+    "EA": 0.0047,
+    "CN": 0.0142,
+    "JP": 0.0163,
+    "UK": 0.0291,
+    "CA": 0.0057,
+    "MX": 0.0162,
+    "IN": 0.008,
+    "KR": 0.0098,
+    "BR": 0.0084,
+    "AU": 0.0086,
+    "OPEC+": 0.0043,
+    "RoW": 0.0053
+   },
+   "MX": {
+    "US": 0.1538,
+    "EA": 0.0047,
+    "CN": 0.0063,
+    "JP": 0.0074,
+    "UK": 0.0066,
+    "CA": 0.0575,
+    "MX": 0.0,
+    "IN": 0.0049,
+    "KR": 0.0107,
+    "BR": 0.0203,
+    "AU": 0.0082,
+    "OPEC+": 0.0028,
+    "RoW": 0.0057
+   },
+   "IN": {
+    "US": 0.0259,
+    "EA": 0.0131,
+    "CN": 0.007,
+    "JP": 0.0086,
+    "UK": 0.0188,
+    "CA": 0.01,
+    "MX": 0.0126,
+    "IN": 0.0066,
+    "KR": 0.0098,
+    "BR": 0.0252,
+    "AU": 0.0271,
+    "OPEC+": 0.0467,
+    "RoW": 0.0216
+   },
+   "KR": {
+    "US": 0.0395,
+    "EA": 0.01,
+    "CN": 0.0714,
+    "JP": 0.0435,
+    "UK": 0.0092,
+    "CA": 0.0212,
+    "MX": 0.0331,
+    "IN": 0.0293,
+    "KR": 0.0,
+    "BR": 0.0195,
+    "AU": 0.0566,
+    "OPEC+": 0.0205,
+    "RoW": 0.0399
+   },
+   "BR": {
+    "US": 0.0127,
+    "EA": 0.0086,
+    "CN": 0.0429,
+    "JP": 0.0102,
+    "UK": 0.0048,
+    "CA": 0.0129,
+    "MX": 0.0166,
+    "IN": 0.008,
+    "KR": 0.0102,
+    "BR": 0.001,
+    "AU": 0.0029,
+    "OPEC+": 0.0162,
+    "RoW": 0.0149
+   },
+   "AU": {
+    "US": 0.0049,
+    "EA": 0.002,
+    "CN": 0.0547,
+    "JP": 0.0703,
+    "UK": 0.0106,
+    "CA": 0.0039,
+    "MX": 0.0011,
+    "IN": 0.024,
+    "KR": 0.0462,
+    "BR": 0.0048,
+    "AU": 0.0012,
+    "OPEC+": 0.0095,
+    "RoW": 0.0117
+   },
+   "OPEC+": {
+    "US": 0.0309,
+    "EA": 0.0464,
+    "CN": 0.1733,
+    "JP": 0.1373,
+    "UK": 0.0332,
+    "CA": 0.0144,
+    "MX": 0.0225,
+    "IN": 0.3045,
+    "KR": 0.1544,
+    "BR": 0.079,
+    "AU": 0.0591,
+    "OPEC+": 0.1495,
+    "RoW": 0.0944
+   },
+   "RoW": {
+    "US": 0.2321,
+    "EA": 0.2688,
+    "CN": 0.3639,
+    "JP": 0.2637,
+    "UK": 0.2652,
+    "CA": 0.119,
+    "MX": 0.1274,
+    "IN": 0.2648,
+    "KR": 0.2365,
+    "BR": 0.2347,
+    "AU": 0.2489,
+    "OPEC+": 0.2759,
+    "RoW": 0.2616
+   }
+  },
+  "gvar_trade_weights_2023_24": {
+   "US": {
+    "US": 0.0,
+    "EA": 0.1667,
+    "CN": 0.1212,
+    "JP": 0.0432,
+    "UK": 0.031,
+    "CA": 0.1379,
+    "MX": 0.1499,
+    "IN": 0.0237,
+    "KR": 0.0369,
+    "BR": 0.0162,
+    "AU": 0.0094,
+    "OPEC+": 0.0357,
+    "RoW": 0.2281
+   },
+   "EA": {
+    "US": 0.1467,
+    "EA": 0.0,
+    "CN": 0.1152,
+    "JP": 0.0219,
+    "UK": 0.0767,
+    "CA": 0.013,
+    "MX": 0.0134,
+    "IN": 0.0187,
+    "KR": 0.0185,
+    "BR": 0.0143,
+    "AU": 0.008,
+    "OPEC+": 0.0779,
+    "RoW": 0.4755
+   },
+   "CN": {
+    "US": 0.108,
+    "EA": 0.1167,
+    "CN": 0.0,
+    "JP": 0.0524,
+    "UK": 0.0209,
+    "CA": 0.0163,
+    "MX": 0.0213,
+    "IN": 0.0241,
+    "KR": 0.0522,
+    "BR": 0.029,
+    "AU": 0.0359,
+    "OPEC+": 0.1429,
+    "RoW": 0.3802
+   },
+   "JP": {
+    "US": 0.15,
+    "EA": 0.0866,
+    "CN": 0.2045,
+    "JP": 0.0,
+    "UK": 0.0151,
+    "CA": 0.0179,
+    "MX": 0.0146,
+    "IN": 0.0156,
+    "KR": 0.0519,
+    "BR": 0.0085,
+    "AU": 0.0478,
+    "OPEC+": 0.1025,
+    "RoW": 0.2852
+   },
+   "UK": {
+    "US": 0.1328,
+    "EA": 0.3735,
+    "CN": 0.1003,
+    "JP": 0.0186,
+    "UK": 0.0,
+    "CA": 0.0207,
+    "MX": 0.0062,
+    "IN": 0.0187,
+    "KR": 0.01,
+    "BR": 0.0059,
+    "AU": 0.0097,
+    "OPEC+": 0.0485,
+    "RoW": 0.2552
+   },
+   "CA": {
+    "US": 0.6287,
+    "EA": 0.0673,
+    "CN": 0.0835,
+    "JP": 0.0235,
+    "UK": 0.022,
+    "CA": 0.0,
+    "MX": 0.0365,
+    "IN": 0.0094,
+    "KR": 0.0146,
+    "BR": 0.0085,
+    "AU": 0.0041,
+    "OPEC+": 0.0139,
+    "RoW": 0.0878
+   },
+   "MX": {
+    "US": 0.6305,
+    "EA": 0.0638,
+    "CN": 0.1005,
+    "JP": 0.0177,
+    "UK": 0.0061,
+    "CA": 0.0337,
+    "MX": 0.0,
+    "IN": 0.0086,
+    "KR": 0.0206,
+    "BR": 0.0128,
+    "AU": 0.0024,
+    "OPEC+": 0.0147,
+    "RoW": 0.0887
+   },
+   "IN": {
+    "US": 0.1127,
+    "EA": 0.1009,
+    "CN": 0.1283,
+    "JP": 0.0213,
+    "UK": 0.0207,
+    "CA": 0.0098,
+    "MX": 0.0097,
+    "IN": 0.0,
+    "KR": 0.0228,
+    "BR": 0.0112,
+    "AU": 0.0215,
+    "OPEC+": 0.2514,
+    "RoW": 0.2898
+   },
+   "KR": {
+    "US": 0.1427,
+    "EA": 0.0814,
+    "CN": 0.2267,
+    "JP": 0.0578,
+    "UK": 0.009,
+    "CA": 0.0124,
+    "MX": 0.0189,
+    "IN": 0.0186,
+    "KR": 0.0,
+    "BR": 0.0083,
+    "AU": 0.0345,
+    "OPEC+": 0.0989,
+    "RoW": 0.2907
+   },
+   "BR": {
+    "US": 0.1367,
+    "EA": 0.1377,
+    "CN": 0.2751,
+    "JP": 0.0206,
+    "UK": 0.0117,
+    "CA": 0.0158,
+    "MX": 0.0258,
+    "IN": 0.0198,
+    "KR": 0.018,
+    "BR": 0.0,
+    "AU": 0.0039,
+    "OPEC+": 0.0758,
+    "RoW": 0.2592
+   },
+   "AU": {
+    "US": 0.0752,
+    "EA": 0.0728,
+    "CN": 0.3221,
+    "JP": 0.1098,
+    "UK": 0.0181,
+    "CA": 0.0072,
+    "MX": 0.0045,
+    "IN": 0.0361,
+    "KR": 0.0712,
+    "BR": 0.0036,
+    "AU": 0.0,
+    "OPEC+": 0.0496,
+    "RoW": 0.2297
+   },
+   "OPEC+": {
+    "US": 0.0563,
+    "EA": 0.1394,
+    "CN": 0.2525,
+    "JP": 0.0465,
+    "UK": 0.0178,
+    "CA": 0.0048,
+    "MX": 0.0055,
+    "IN": 0.0834,
+    "KR": 0.0402,
+    "BR": 0.0141,
+    "AU": 0.0098,
+    "OPEC+": 0.0,
+    "RoW": 0.3296
+   },
+   "RoW": {
+    "US": 0.128,
+    "EA": 0.3032,
+    "CN": 0.2394,
+    "JP": 0.0461,
+    "UK": 0.0334,
+    "CA": 0.0108,
+    "MX": 0.0118,
+    "IN": 0.0343,
+    "KR": 0.0421,
+    "BR": 0.0172,
+    "AU": 0.0161,
+    "OPEC+": 0.1174,
+    "RoW": 0.0
+   }
+  },
+  "openness_2024": {
+   "US": {
+    "gdp_usd_bn_2024": 29298.0,
+    "goods_X_extra_bn": 1954.54,
+    "goods_M_extra_bn": 3301.62,
+    "X_pct_gdp": 6.67,
+    "M_pct_gdp": 11.27,
+    "X_to_US_pct_gdp": 0.0,
+    "M_from_US_pct_gdp": 0.0,
+    "share_of_X_going_to_US_pct": 0.0
+   },
+   "EA": {
+    "gdp_usd_bn_2024": 16488.1,
+    "goods_X_extra_bn": 2905.6,
+    "goods_M_extra_bn": 2918.24,
+    "X_pct_gdp": 17.62,
+    "M_pct_gdp": 17.7,
+    "X_to_US_pct_gdp": 3.22,
+    "M_from_US_pct_gdp": 2.06,
+    "share_of_X_going_to_US_pct": 18.28
+   },
+   "CN": {
+    "gdp_usd_bn_2024": 18729.7,
+    "goods_X_extra_bn": 3633.78,
+    "goods_M_extra_bn": 2243.98,
+    "X_pct_gdp": 19.4,
+    "M_pct_gdp": 11.98,
+    "X_to_US_pct_gdp": 2.59,
+    "M_from_US_pct_gdp": 0.79,
+    "share_of_X_going_to_US_pct": 13.36
+   },
+   "JP": {
+    "gdp_usd_bn_2024": 4190.0,
+    "goods_X_extra_bn": 768.53,
+    "goods_M_extra_bn": 692.25,
+    "X_pct_gdp": 18.34,
+    "M_pct_gdp": 16.52,
+    "X_to_US_pct_gdp": 3.47,
+    "M_from_US_pct_gdp": 1.88,
+    "share_of_X_going_to_US_pct": 18.89
+   },
+   "UK": {
+    "gdp_usd_bn_2024": 3695.5,
+    "goods_X_extra_bn": 445.35,
+    "goods_M_extra_bn": 755.47,
+    "X_pct_gdp": 12.05,
+    "M_pct_gdp": 20.44,
+    "X_to_US_pct_gdp": 1.96,
+    "M_from_US_pct_gdp": 2.44,
+    "share_of_X_going_to_US_pct": 16.28
+   },
+   "CA": {
+    "gdp_usd_bn_2024": 2270.1,
+    "goods_X_extra_bn": 576.25,
+    "goods_M_extra_bn": 544.76,
+    "X_pct_gdp": 25.38,
+    "M_pct_gdp": 24.0,
+    "X_to_US_pct_gdp": 18.39,
+    "M_from_US_pct_gdp": 12.4,
+    "share_of_X_going_to_US_pct": 72.44
+   },
+   "MX": {
+    "gdp_usd_bn_2024": 1830.5,
+    "goods_X_extra_bn": 648.0,
+    "goods_M_extra_bn": 606.19,
+    "X_pct_gdp": 35.4,
+    "M_pct_gdp": 33.12,
+    "X_to_US_pct_gdp": 27.74,
+    "M_from_US_pct_gdp": 15.27,
+    "share_of_X_going_to_US_pct": 78.36
+   },
+   "IN": {
+    "gdp_usd_bn_2024": 3760.8,
+    "goods_X_extra_bn": 443.98,
+    "goods_M_extra_bn": 651.99,
+    "X_pct_gdp": 11.81,
+    "M_pct_gdp": 17.34,
+    "X_to_US_pct_gdp": 2.28,
+    "M_from_US_pct_gdp": 1.02,
+    "share_of_X_going_to_US_pct": 19.28
+   },
+   "KR": {
+    "gdp_usd_bn_2024": 1875.4,
+    "goods_X_extra_bn": 755.15,
+    "goods_M_extra_bn": 603.39,
+    "X_pct_gdp": 40.27,
+    "M_pct_gdp": 32.17,
+    "X_to_US_pct_gdp": 6.95,
+    "M_from_US_pct_gdp": 3.54,
+    "share_of_X_going_to_US_pct": 17.27
+   },
+   "BR": {
+    "gdp_usd_bn_2024": 2185.8,
+    "goods_X_extra_bn": 351.89,
+    "goods_M_extra_bn": 270.01,
+    "X_pct_gdp": 16.1,
+    "M_pct_gdp": 12.35,
+    "X_to_US_pct_gdp": 1.92,
+    "M_from_US_pct_gdp": 2.05,
+    "share_of_X_going_to_US_pct": 11.95
+   },
+   "AU": {
+    "gdp_usd_bn_2024": 1757.0,
+    "goods_X_extra_bn": 350.99,
+    "goods_M_extra_bn": 279.9,
+    "X_pct_gdp": 19.98,
+    "M_pct_gdp": 15.93,
+    "X_to_US_pct_gdp": 0.92,
+    "M_from_US_pct_gdp": 1.93,
+    "share_of_X_going_to_US_pct": 4.58
+   },
+   "OPEC+": {
+    "gdp_usd_bn_2024": 6661.4,
+    "goods_X_extra_bn": 1843.8,
+    "goods_M_extra_bn": 1407.54,
+    "X_pct_gdp": 27.68,
+    "M_pct_gdp": 21.13,
+    "X_to_US_pct_gdp": 1.53,
+    "M_from_US_pct_gdp": 1.33,
+    "share_of_X_going_to_US_pct": 5.53
+   },
+   "RoW": {
+    "gdp_usd_bn_2024": 19728.6,
+    "goods_X_extra_bn": 4459.84,
+    "goods_M_extra_bn": 4862.36,
+    "X_pct_gdp": 22.61,
+    "M_pct_gdp": 24.65,
+    "X_to_US_pct_gdp": 3.88,
+    "M_from_US_pct_gdp": 2.36,
+    "share_of_X_going_to_US_pct": 17.18
+   }
+  },
+  "fed_broad_dollar_weights_pct": {
+   "EA": {
+    "2024": 20.96,
+    "2025": 20.96,
+    "2026": 21.01
+   },
+   "CN": {
+    "2024": 10.9,
+    "2025": 10.9,
+    "2026": 10.89
+   },
+   "JP": {
+    "2024": 5.18,
+    "2025": 5.18,
+    "2026": 5.18
+   },
+   "UK": {
+    "2024": 5.25,
+    "2025": 5.25,
+    "2026": 5.25
+   },
+   "CA": {
+    "2024": 12.78,
+    "2025": 12.78,
+    "2026": 12.77
+   },
+   "MX": {
+    "2024": 14.81,
+    "2025": 14.81,
+    "2026": 14.8
+   },
+   "IN": {
+    "2024": 3.35,
+    "2025": 3.35,
+    "2026": 3.35
+   },
+   "KR": {
+    "2024": 3.62,
+    "2025": 3.62,
+    "2026": 3.62
+   },
+   "BR": {
+    "2024": 1.89,
+    "2025": 1.89,
+    "2026": 1.89
+   },
+   "AU": {
+    "2024": 1.44,
+    "2025": 1.44,
+    "2026": 1.44
+   },
+   "OPEC+": {
+    "2024": 1.99,
+    "2025": 1.99,
+    "2026": 1.99
+   },
+   "RoW": {
+    "2024": 17.83,
+    "2025": 17.83,
+    "2026": 17.82
+   }
+  }
+ },
+ "value_chains": {
+  "source": "OECD TiVA 2025 edition (ICIO), US as reporter, 2022; BEA/Census end-use Exhibit 7 for the goods use split",
+  "status": "read/own",
+  "tiva_by_bloc_2022": {
+   "EA": {
+    "IMGR": 632.59,
+    "IMGR_INT": 267.08,
+    "IMGR_FNL": 365.51,
+    "IMGR_DVA": 27.12,
+    "DFD_FVA": 564.36,
+    "FFD_DVA": 413.83,
+    "EXGR": 527.54,
+    "EXGR_DVA": 493.06,
+    "EXGR_INT": 347.3,
+    "EXGR_FNL": 180.24,
+    "INT_share_of_imports_pct": 42.22,
+    "US_content_in_imports_pct": 4.29,
+    "FVA_in_US_FD_pct_of_FD": 2.17,
+    "FVA_per_gross_import": 0.89,
+    "US_VA_in_partner_FD_pct_of_US_FD": 1.59,
+    "gdp_2022_usd_bn_wb": 14488.165,
+    "DFD_FVA_pct_of_bloc_GDP": 3.895,
+    "gross_imports_from_bloc_pct_GDP": 4.366
+   },
+   "CN": {
+    "IMGR": 532.15,
+    "IMGR_INT": 193.42,
+    "IMGR_FNL": 338.73,
+    "IMGR_DVA": 7.64,
+    "DFD_FVA": 542.69,
+    "FFD_DVA": 228.14,
+    "EXGR": 222.48,
+    "EXGR_DVA": 203.24,
+    "EXGR_INT": 145.91,
+    "EXGR_FNL": 76.58,
+    "INT_share_of_imports_pct": 36.35,
+    "US_content_in_imports_pct": 1.43,
+    "FVA_in_US_FD_pct_of_FD": 2.08,
+    "FVA_per_gross_import": 1.02,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.88,
+    "gdp_2022_usd_bn_wb": 18316.765,
+    "DFD_FVA_pct_of_bloc_GDP": 2.963,
+    "gross_imports_from_bloc_pct_GDP": 2.905
+   },
+   "JP": {
+    "IMGR": 149.56,
+    "IMGR_INT": 56.69,
+    "IMGR_FNL": 92.88,
+    "IMGR_DVA": 3.72,
+    "DFD_FVA": 146.72,
+    "FFD_DVA": 125.19,
+    "EXGR": 131.94,
+    "EXGR_DVA": 121.8,
+    "EXGR_INT": 86.69,
+    "EXGR_FNL": 45.25,
+    "INT_share_of_imports_pct": 37.9,
+    "US_content_in_imports_pct": 2.49,
+    "FVA_in_US_FD_pct_of_FD": 0.56,
+    "FVA_per_gross_import": 0.98,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.48,
+    "gdp_2022_usd_bn_wb": 4447.976,
+    "DFD_FVA_pct_of_bloc_GDP": 3.299,
+    "gross_imports_from_bloc_pct_GDP": 3.362
+   },
+   "UK": {
+    "IMGR": 144.38,
+    "IMGR_INT": 75.54,
+    "IMGR_FNL": 68.84,
+    "IMGR_DVA": 5.0,
+    "DFD_FVA": 133.49,
+    "FFD_DVA": 115.34,
+    "EXGR": 127.77,
+    "EXGR_DVA": 118.7,
+    "EXGR_INT": 76.44,
+    "EXGR_FNL": 51.33,
+    "INT_share_of_imports_pct": 52.32,
+    "US_content_in_imports_pct": 3.46,
+    "FVA_in_US_FD_pct_of_FD": 0.51,
+    "FVA_per_gross_import": 0.92,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.44,
+    "gdp_2022_usd_bn_wb": 3181.244,
+    "DFD_FVA_pct_of_bloc_GDP": 4.196,
+    "gross_imports_from_bloc_pct_GDP": 4.538
+   },
+   "CA": {
+    "IMGR": 447.25,
+    "IMGR_INT": 304.04,
+    "IMGR_FNL": 143.21,
+    "IMGR_DVA": 46.18,
+    "DFD_FVA": 317.78,
+    "FFD_DVA": 216.42,
+    "EXGR": 302.05,
+    "EXGR_DVA": 270.32,
+    "EXGR_INT": 181.59,
+    "EXGR_FNL": 120.47,
+    "INT_share_of_imports_pct": 67.98,
+    "US_content_in_imports_pct": 10.33,
+    "FVA_in_US_FD_pct_of_FD": 1.22,
+    "FVA_per_gross_import": 0.71,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.83,
+    "gdp_2022_usd_bn_wb": 2200.563,
+    "DFD_FVA_pct_of_bloc_GDP": 14.441,
+    "gross_imports_from_bloc_pct_GDP": 20.324
+   },
+   "MX": {
+    "IMGR": 409.9,
+    "IMGR_INT": 154.78,
+    "IMGR_FNL": 255.11,
+    "IMGR_DVA": 50.95,
+    "DFD_FVA": 256.47,
+    "FFD_DVA": 181.19,
+    "EXGR": 272.93,
+    "EXGR_DVA": 241.42,
+    "EXGR_INT": 161.08,
+    "EXGR_FNL": 111.85,
+    "INT_share_of_imports_pct": 37.76,
+    "US_content_in_imports_pct": 12.43,
+    "FVA_in_US_FD_pct_of_FD": 0.98,
+    "FVA_per_gross_import": 0.63,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.7,
+    "gdp_2022_usd_bn_wb": 1466.935,
+    "DFD_FVA_pct_of_bloc_GDP": 17.483,
+    "gross_imports_from_bloc_pct_GDP": 27.943
+   },
+   "IN": {
+    "IMGR": 150.68,
+    "IMGR_INT": 75.63,
+    "IMGR_FNL": 75.05,
+    "IMGR_DVA": 3.05,
+    "DFD_FVA": 126.7,
+    "FFD_DVA": 64.84,
+    "EXGR": 66.3,
+    "EXGR_DVA": 61.13,
+    "EXGR_INT": 42.44,
+    "EXGR_FNL": 23.86,
+    "INT_share_of_imports_pct": 50.19,
+    "US_content_in_imports_pct": 2.03,
+    "FVA_in_US_FD_pct_of_FD": 0.49,
+    "FVA_per_gross_import": 0.84,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.25,
+    "gdp_2022_usd_bn_wb": 3249.938,
+    "DFD_FVA_pct_of_bloc_GDP": 3.899,
+    "gross_imports_from_bloc_pct_GDP": 4.636
+   },
+   "KR": {
+    "IMGR": 121.16,
+    "IMGR_INT": 51.42,
+    "IMGR_FNL": 69.74,
+    "IMGR_DVA": 5.03,
+    "DFD_FVA": 102.57,
+    "FFD_DVA": 67.1,
+    "EXGR": 92.47,
+    "EXGR_DVA": 84.31,
+    "EXGR_INT": 68.82,
+    "EXGR_FNL": 23.65,
+    "INT_share_of_imports_pct": 42.44,
+    "US_content_in_imports_pct": 4.15,
+    "FVA_in_US_FD_pct_of_FD": 0.39,
+    "FVA_per_gross_import": 0.85,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.26,
+    "gdp_2022_usd_bn_wb": 1799.363,
+    "DFD_FVA_pct_of_bloc_GDP": 5.7,
+    "gross_imports_from_bloc_pct_GDP": 6.733
+   },
+   "BR": {
+    "IMGR": 49.28,
+    "IMGR_INT": 33.82,
+    "IMGR_FNL": 15.46,
+    "IMGR_DVA": 1.72,
+    "DFD_FVA": 50.42,
+    "FFD_DVA": 57.02,
+    "EXGR": 63.15,
+    "EXGR_DVA": 57.31,
+    "EXGR_INT": 40.86,
+    "EXGR_FNL": 22.29,
+    "INT_share_of_imports_pct": 68.63,
+    "US_content_in_imports_pct": 3.5,
+    "FVA_in_US_FD_pct_of_FD": 0.19,
+    "FVA_per_gross_import": 1.02,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.22,
+    "gdp_2022_usd_bn_wb": 1951.924,
+    "DFD_FVA_pct_of_bloc_GDP": 2.583,
+    "gross_imports_from_bloc_pct_GDP": 2.525
+   },
+   "AU": {
+    "IMGR": 19.45,
+    "IMGR_INT": 7.31,
+    "IMGR_FNL": 12.14,
+    "IMGR_DVA": 0.37,
+    "DFD_FVA": 35.75,
+    "FFD_DVA": 37.71,
+    "EXGR": 36.34,
+    "EXGR_DVA": 33.41,
+    "EXGR_INT": 18.59,
+    "EXGR_FNL": 17.75,
+    "INT_share_of_imports_pct": 37.59,
+    "US_content_in_imports_pct": 1.88,
+    "FVA_in_US_FD_pct_of_FD": 0.14,
+    "FVA_per_gross_import": 1.84,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.14,
+    "gdp_2022_usd_bn_wb": 1695.628,
+    "DFD_FVA_pct_of_bloc_GDP": 2.108,
+    "gross_imports_from_bloc_pct_GDP": 1.147
+   },
+   "OPEC+": {
+    "IMGR": 111.3,
+    "IMGR_INT": 66.17,
+    "IMGR_FNL": 45.13,
+    "IMGR_DVA": 2.37,
+    "DFD_FVA": 151.19,
+    "FFD_DVA": 100.75,
+    "EXGR": 107.1,
+    "EXGR_DVA": 98.25,
+    "EXGR_INT": 51.85,
+    "EXGR_FNL": 55.25,
+    "INT_share_of_imports_pct": 59.45,
+    "US_content_in_imports_pct": 2.13,
+    "FVA_in_US_FD_pct_of_FD": 0.58,
+    "FVA_per_gross_import": 1.36,
+    "US_VA_in_partner_FD_pct_of_US_FD": 0.39,
+    "gdp_2022_usd_bn_wb": 6928.041,
+    "DFD_FVA_pct_of_bloc_GDP": 2.182,
+    "gross_imports_from_bloc_pct_GDP": 1.607
+   },
+   "RoW": {
+    "IMGR": 843.47,
+    "IMGR_INT": 362.65,
+    "IMGR_FNL": 480.82,
+    "IMGR_DVA": 24.79,
+    "DFD_FVA": 784.86,
+    "FFD_DVA": 643.46,
+    "EXGR": 699.08,
+    "EXGR_DVA": 645.97,
+    "EXGR_INT": 360.06,
+    "EXGR_FNL": 339.02,
+    "INT_share_of_imports_pct": 43.0,
+    "US_content_in_imports_pct": 2.94,
+    "FVA_in_US_FD_pct_of_FD": 3.01,
+    "FVA_per_gross_import": 0.93,
+    "US_VA_in_partner_FD_pct_of_US_FD": 2.47,
+    "gdp_2022_usd_bn_wb": null,
+    "DFD_FVA_pct_of_bloc_GDP": null,
+    "gross_imports_from_bloc_pct_GDP": null
+   },
+   "World": {
+    "IMGR": 3611.17,
+    "IMGR_INT": 1648.56,
+    "IMGR_FNL": 1962.61,
+    "IMGR_DVA": 177.93,
+    "DFD_FVA": 3213.01,
+    "FFD_DVA": 2251.0,
+    "EXGR": 2649.16,
+    "EXGR_DVA": 2428.93,
+    "EXGR_INT": 1581.63,
+    "EXGR_FNL": 1067.53,
+    "INT_share_of_imports_pct": 45.65,
+    "US_content_in_imports_pct": 4.93,
+    "FVA_in_US_FD_pct_of_FD": 12.33,
+    "FVA_per_gross_import": 0.89,
+    "US_VA_in_partner_FD_pct_of_US_FD": 8.64,
+    "gdp_2022_usd_bn_wb": null,
+    "DFD_FVA_pct_of_bloc_GDP": null,
+    "gross_imports_from_bloc_pct_GDP": null
+   }
+  },
+  "tiva_imports_by_sector_2022": {
+   "Energy": {
+    "IMGR": 287.06,
+    "IMGR_INT": 252.78,
+    "IMGR_FNL": 34.28,
+    "IMGR_DVA": 15.64,
+    "DFD_FVA": 353.94,
+    "INT_share_pct": 88.06,
+    "US_content_pct": 5.45
+   },
+   "Food": {
+    "IMGR": 212.99,
+    "IMGR_INT": 68.09,
+    "IMGR_FNL": 144.91,
+    "IMGR_DVA": 10.52,
+    "DFD_FVA": 169.06,
+    "INT_share_pct": 31.97,
+    "US_content_pct": 4.94
+   },
+   "Durables": {
+    "IMGR": 1120.27,
+    "IMGR_INT": 443.67,
+    "IMGR_FNL": 676.6,
+    "IMGR_DVA": 73.89,
+    "DFD_FVA": 604.82,
+    "INT_share_pct": 39.6,
+    "US_content_pct": 6.6
+   },
+   "Nondurables": {
+    "IMGR": 577.27,
+    "IMGR_INT": 242.52,
+    "IMGR_FNL": 334.75,
+    "IMGR_DVA": 28.82,
+    "DFD_FVA": 380.06,
+    "INT_share_pct": 42.01,
+    "US_content_pct": 4.99
+   },
+   "Tech": {
+    "IMGR": 430.99,
+    "IMGR_INT": 168.66,
+    "IMGR_FNL": 262.33,
+    "IMGR_DVA": 18.44,
+    "DFD_FVA": 297.08,
+    "INT_share_pct": 39.13,
+    "US_content_pct": 4.28
+   },
+   "Leisure": {
+    "IMGR": 130.54,
+    "IMGR_INT": 25.21,
+    "IMGR_FNL": 105.34,
+    "IMGR_DVA": 4.92,
+    "DFD_FVA": 80.63,
+    "INT_share_pct": 19.31,
+    "US_content_pct": 3.77
+   },
+   "HealthEdu": {
+    "IMGR": 9.15,
+    "IMGR_INT": 1.21,
+    "IMGR_FNL": 7.94,
+    "IMGR_DVA": 0.13,
+    "DFD_FVA": 16.12,
+    "INT_share_pct": 13.19,
+    "US_content_pct": 1.46
+   },
+   "OtherServices": {
+    "IMGR": 840.04,
+    "IMGR_INT": 445.01,
+    "IMGR_FNL": 395.04,
+    "IMGR_DVA": 25.51,
+    "DFD_FVA": 1294.46,
+    "INT_share_pct": 52.97,
+    "US_content_pct": 3.04
+   },
+   "Construction": {
+    "IMGR": 2.85,
+    "IMGR_INT": 1.42,
+    "IMGR_FNL": 1.43,
+    "IMGR_DVA": 0.07,
+    "DFD_FVA": 16.85,
+    "INT_share_pct": 49.92,
+    "US_content_pct": 2.3
+   },
+   "Total": {
+    "IMGR": 3611.17,
+    "IMGR_INT": 1648.56,
+    "IMGR_FNL": 1962.61,
+    "IMGR_DVA": 177.93,
+    "DFD_FVA": 3213.01,
+    "INT_share_pct": 45.65,
+    "US_content_pct": 4.93
+   }
+  },
+  "recommended_intermediate_share_of_imports_by_sector": {
+   "Energy": {
+    "value": 0.881,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Food": {
+    "value": 0.32,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Durables": {
+    "value": 0.396,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Nondurables": {
+    "value": 0.42,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Tech": {
+    "value": 0.391,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Leisure": {
+    "value": 0.193,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "HealthEdu": {
+    "value": 0.132,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "OtherServices": {
+    "value": 0.53,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   },
+   "Construction": {
+    "value": 0.499,
+    "range": null,
+    "unit": "fraction",
+    "source": "OECD TiVA 2025, IMGR_INT/IMGR, 2022 (own aggregation)",
+    "status": "own"
+   }
+  },
+  "goods_import_use_split_2024": {
+   "Durables": {
+    "C_share": 0.3,
+    "I_share": 0.3,
+    "K_share": 0.4,
+    "total_usd_bn": 1538.8
+   },
+   "Energy": {
+    "C_share": 0.0,
+    "I_share": 1.0,
+    "K_share": 0.0,
+    "total_usd_bn": 266.9
+   },
+   "Food": {
+    "C_share": 0.9,
+    "I_share": 0.1,
+    "K_share": 0.0,
+    "total_usd_bn": 227.5
+   },
+   "Nondurables": {
+    "C_share": 0.7,
+    "I_share": 0.3,
+    "K_share": 0.0,
+    "total_usd_bn": 674.7
+   },
+   "Tech": {
+    "C_share": 0.3,
+    "I_share": 0.0,
+    "K_share": 0.7,
+    "total_usd_bn": 556.0
+   }
+  },
+  "us_content_in_imports_share": {
+   "value": 0.0493,
+   "range": [
+    0.043,
+    0.05
+   ],
+   "unit": "fraction",
+   "source": "TiVA 2022 IMGR_DVA/IMGR, world; 4.8-5.0% in 2016-2022",
+   "status": "read"
+  },
+  "us_content_in_imports_by_bloc": {
+   "EA": {
+    "value": 0.0429,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "CN": {
+    "value": 0.0143,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "JP": {
+    "value": 0.0249,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "UK": {
+    "value": 0.0346,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "CA": {
+    "value": 0.1033,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "MX": {
+    "value": 0.1243,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "IN": {
+    "value": 0.0203,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "KR": {
+    "value": 0.0415,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "BR": {
+    "value": 0.035,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "AU": {
+    "value": 0.0188,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "OPEC+": {
+    "value": 0.0213,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   },
+   "RoW": {
+    "value": 0.0294,
+    "range": null,
+    "unit": "fraction",
+    "source": "TiVA 2022",
+    "status": "own"
+   }
+  },
+  "foreign_va_in_us_final_demand_share": {
+   "value": 0.1233,
+   "range": null,
+   "unit": "fraction of US final demand (value added basis)",
+   "source": "TiVA 2022: DFD_FVA 3,213bn / FD_VA 26,050bn",
+   "status": "own"
+  },
+  "bloc_gdp_exposure_to_us_final_demand": {
+   "EA": {
+    "value": 0.0389,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "CN": {
+    "value": 0.0296,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "JP": {
+    "value": 0.033,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "UK": {
+    "value": 0.042,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "CA": {
+    "value": 0.1444,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "MX": {
+    "value": 0.1748,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "IN": {
+    "value": 0.039,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "KR": {
+    "value": 0.057,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "BR": {
+    "value": 0.0258,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "AU": {
+    "value": 0.0211,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   },
+   "OPEC+": {
+    "value": 0.0218,
+    "range": null,
+    "unit": "fraction of bloc GDP",
+    "source": "TiVA 2022 DFD_FVA / World Bank 2022 GDP",
+    "status": "own"
+   }
+  }
+ },
+ "invoicing": {
+  "us_imports_usd_share": {
+   "value": 0.93,
+   "range": [
+    0.9,
+    0.95
+   ],
+   "unit": "fraction",
+   "source": "Gopinath et al. (2020 AER) section 3.5 (93%); Gopinath (2015) (93%); Gopinath-Itskhoki-Rigobon (2010): about 90% of US imports in BLS sample 1994-2005",
+   "status": "read"
+  },
+  "us_exports_usd_share": {
+   "value": 0.97,
+   "range": [
+    0.95,
+    1.0
+   ],
+   "unit": "fraction",
+   "source": "Gopinath et al. (2020 AER) section 3.5 (97%)",
+   "status": "read"
+  },
+  "theta_usd_share_of_bloc_exports_to_US": {
+   "EA": {
+    "value": 0.66,
+    "range": [
+     0.6,
+     0.75
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: 34% of imports from Germany priced in exporter currency; EA mix assumed close to Germany",
+    "status": "assumed"
+   },
+   "UK": {
+    "value": 0.84,
+    "range": [
+     0.8,
+     0.9
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: 16% of imports from UK in sterling",
+    "status": "read"
+   },
+   "JP": {
+    "value": 0.87,
+    "range": [
+     0.8,
+     0.9
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: 13% of imports from Japan in yen",
+    "status": "read"
+   },
+   "CA": {
+    "value": 0.9,
+    "range": [
+     0.8,
+     0.95
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010 lists Canada among origins with a non-dollar share; value not read",
+    "status": "unverified"
+   },
+   "CN": {
+    "value": 0.97,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: developing countries' share in own currency close to zero",
+    "status": "read"
+   },
+   "MX": {
+    "value": 0.98,
+    "range": [
+     0.92,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   },
+   "IN": {
+    "value": 0.97,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   },
+   "KR": {
+    "value": 0.97,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   },
+   "BR": {
+    "value": 0.97,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   },
+   "AU": {
+    "value": 0.95,
+    "range": [
+     0.85,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   },
+   "OPEC+": {
+    "value": 1.0,
+    "range": [
+     0.95,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "oil priced and invoiced in dollars (convention)",
+    "status": "assumed"
+   },
+   "RoW": {
+    "value": 0.95,
+    "range": [
+     0.85,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "same",
+    "status": "assumed"
+   }
+  },
+  "bloc_imports_invoiced_usd_share": {
+   "CA": {
+    "value": 0.75,
+    "range": null,
+    "unit": "fraction",
+    "source": "Gopinath (2015) data via DCP Table 10",
+    "status": "read"
+   },
+   "BR": {
+    "value": 0.84,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10 (row assignment inferred from extraction order)",
+    "status": "read"
+   },
+   "JP": {
+    "value": 0.71,
+    "range": null,
+    "unit": "fraction",
+    "source": "Gopinath (2015); DCP Table 10",
+    "status": "read"
+   },
+   "KR": {
+    "value": 0.81,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "IN": {
+    "value": 0.86,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "AU": {
+    "value": 0.53,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "UK": {
+    "value": 0.47,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "EA": {
+    "value": 0.25,
+    "range": [
+     0.14,
+     0.37
+    ],
+    "unit": "fraction",
+    "source": "DCP Table 10: Germany 0.23, France 0.21, Italy 0.29, Spain 0.35, Netherlands 0.37, Belgium 0.14, Ireland 0.23 (include intra-EA trade)",
+    "status": "read"
+   },
+   "MX": {
+    "value": 0.9,
+    "range": [
+     0.8,
+     0.98
+    ],
+    "unit": "fraction",
+    "source": "no invoicing data in DCP Table 10; assumption",
+    "status": "assumed"
+   },
+   "CN": {
+    "value": 0.8,
+    "range": [
+     0.5,
+     0.95
+    ],
+    "unit": "fraction",
+    "source": "China reports no currency data; PBoC RMB share of goods trade settlement 27.2% in 2024 is settlement not invoicing; IMF WP 2025/178 argues invoicing share much lower",
+    "status": "unverified"
+   },
+   "OPEC+": {
+    "value": 0.9,
+    "range": [
+     0.8,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "assumption",
+    "status": "assumed"
+   },
+   "RoW": {
+    "value": 0.6,
+    "range": [
+     0.4,
+     0.8
+    ],
+    "unit": "fraction",
+    "source": "assumption: mix of euro-linked Europe and dollar Asia/Latin America",
+    "status": "assumed"
+   }
+  },
+  "bloc_imports_invoiced_eur_share": {
+   "CA": {
+    "value": 0.05,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "BR": {
+    "value": 0.11,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "JP": {
+    "value": 0.03,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "KR": {
+    "value": 0.05,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "IN": {
+    "value": 0.1,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "AU": {
+    "value": 0.08,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   },
+   "UK": {
+    "value": 0.15,
+    "range": null,
+    "unit": "fraction",
+    "source": "DCP Table 10",
+    "status": "read"
+   }
+  },
+  "ea_extra_ea_goods_exports_invoiced_in_euro": {
+   "value": 0.6,
+   "range": [
+    0.59,
+    0.61
+   ],
+   "unit": "fraction",
+   "source": "ECB International Role of the Euro, June 2026, Table 1 (2025; 59.6% in 2024)",
+   "status": "secondary"
+  },
+  "ea_extra_ea_goods_imports_invoiced_in_euro": {
+   "value": 0.531,
+   "range": [
+    0.52,
+    0.54
+   ],
+   "unit": "fraction",
+   "source": "ECB International Role of the Euro, June 2026, Table 1 (2025; 52.8% in 2024)",
+   "status": "secondary"
+  },
+  "global_dollar_vs_trade_share": {
+   "value": null,
+   "range": null,
+   "unit": "text",
+   "source": "Gopinath (2015): dollar invoicing share is 4.7x (imports) and 3.1x (exports) the share of trade with the US in a 43-country sample; Boz et al. (2020): non-commodity dollar invoicing 23% of exports vs 10% going to the US",
+   "status": "read"
+  }
+ },
+ "pass_through": {
+  "us_nonfuel_import_price_to_broad_dollar": {
+   "description": "Cumulative response of the US-dollar non-fuel import price index to a 1.0 permanent depreciation of the broad dollar (so 10% appreciation lowers the index by 10 x value)",
+   "months": [
+    1,
+    3,
+    6,
+    12,
+    24,
+    36
+   ],
+   "recommended_path": [
+    0.06,
+    0.15,
+    0.22,
+    0.3,
+    0.4,
+    0.45
+   ],
+   "range_low": [
+    0.03,
+    0.08,
+    0.12,
+    0.2,
+    0.3,
+    0.35
+   ],
+   "range_high": [
+    0.2,
+    0.35,
+    0.45,
+    0.5,
+    0.55,
+    0.55
+   ],
+   "long_run": {
+    "value": 0.47,
+    "range": [
+     0.4,
+     0.55
+    ],
+    "unit": "fraction",
+    "source": "Campa-Goldberg (WP 2002) 0.41; Gopinath 2015 0.44 (8 quarters); Burstein-Gopinath 2014 0.51; Fed USIT note 2016 about 0.30 (elasticity of core import prices ~0.3)",
+    "status": "read"
+   },
+   "monthly_speed_to_long_run": {
+    "value": 0.08,
+    "range": [
+     0.05,
+     0.12
+    ],
+    "unit": "per month",
+    "source": "median price duration 11 months in dollar prices (Gopinath-Rigobon 2007; GIR 2010); existing master value 0.08 (config import_pass_through_speed)",
+    "status": "read"
+   },
+   "model_check": "master config import_pass_through_long 0.45 with speed 0.08 gives 0.10 at 3m, 0.28 at 12m, 0.39 at 24m: within the range above; keep",
+   "literature": {
+    "Campa-Goldberg (NBER WP 8934, 2002)": {
+     "one_quarter": 0.26,
+     "long_run": 0.41
+    },
+    "Gopinath (2015) BLS ex-petroleum IPI": {
+     "one_quarter": 0.34,
+     "eight_quarters": 0.44
+    },
+    "Burstein-Gopinath (2014) Table 4, narrow NER": {
+     "one_quarter": 0.2,
+     "two_years": 0.51
+    },
+    "Gopinath-Itskhoki-Rigobon (2010) micro BLS": {
+     "month_1": 0.03,
+     "month_24_aggregate": 0.3,
+     "month_24_dollar_priced": 0.14,
+     "month_24_nondollar_priced": 0.94
+    },
+    "Cavallo-Gopinath-Neiman-Tang (2021) BLS micro": {
+     "month_12": 0.22,
+     "range_month_12": [
+      0.25,
+      0.35
+     ]
+    },
+    "own local projection, manufactured (capital goods)": {
+     "m3": 0.13,
+     "m12": 0.25,
+     "m24": 0.25
+    },
+    "own local projection, consumer goods ex autos": {
+     "m3": 0.08,
+     "m12": 0.21,
+     "m24": 0.23
+    },
+    "own local projection, all non-fuel (commodity-contaminated)": {
+     "m3": 0.35,
+     "m12": 0.64,
+     "m24": 0.51
+    }
+   }
+  },
+  "by_invoicing_dollar_priced_goods": {
+   "medium_run_conditional_on_price_change": {
+    "value": 0.24,
+    "range": [
+     0.16,
+     0.25
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010 (0.24-0.25); Burstein-Gopinath 2014 Table 6 (0.16, update to 2009)",
+    "status": "read"
+   },
+   "long_run": {
+    "value": 0.5,
+    "range": [
+     0.4,
+     0.6
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: rises above 50% in the long run",
+    "status": "read"
+   }
+  },
+  "by_invoicing_nondollar_priced_goods": {
+   "medium_run": {
+    "value": 0.9,
+    "range": [
+     0.8,
+     0.96
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010 (0.90-0.95); BG 2014 Table 6 (0.80)",
+    "status": "read"
+   },
+   "impact": {
+    "value": 0.96,
+    "range": [
+     0.9,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "GIR 2010: 0.96 with one lag",
+    "status": "read"
+   }
+  },
+  "us_import_price_from_bloc_formula": {
+   "formula": "Gamma_j(h) = theta_j * G_usd(h) + (1 - theta_j) * G_nonusd(h): response of the USD import price from bloc j to a 1.0 depreciation of j's currency against the dollar. G_usd = 0.24 at 12 months and 0.47 long run (dollar-priced goods, adjusting at 0.08 per month); G_nonusd = 0.90 at 12 months and 0.95 long run (adjusts within 1-2 months)",
+   "G_usd_12m": 0.24,
+   "G_usd_long_run": 0.47,
+   "G_nonusd_12m": 0.9,
+   "G_nonusd_long_run": 0.95,
+   "implied_12m_by_bloc": {
+    "EA": 0.464,
+    "CN": 0.26,
+    "JP": 0.326,
+    "UK": 0.346,
+    "CA": 0.306,
+    "MX": 0.253,
+    "IN": 0.26,
+    "KR": 0.26,
+    "BR": 0.26,
+    "AU": 0.273,
+    "OPEC+": 0.24,
+    "RoW": 0.273
+   },
+   "implied_long_run_by_bloc": {
+    "EA": 0.633,
+    "CN": 0.484,
+    "JP": 0.532,
+    "UK": 0.547,
+    "CA": 0.518,
+    "MX": 0.48,
+    "IN": 0.484,
+    "KR": 0.484,
+    "BR": 0.484,
+    "AU": 0.494,
+    "OPEC+": 0.47,
+    "RoW": 0.494
+   },
+   "us_import_weighted_12m": 0.309,
+   "check": "the import-weighted 12-month value should match the aggregate 0.22-0.34 (Cavallo et al. 2021 0.22; Gopinath 2015 0.34-0.44; own LP manufactured 0.21-0.25)",
+   "status": "own derivation from GIR 2010 numbers and the theta table"
+  },
+  "us_tradables_cpi_to_broad_dollar": {
+   "months": [
+    3,
+    6,
+    12,
+    24,
+    36
+   ],
+   "recommended_path": [
+    0.05,
+    0.08,
+    0.15,
+    0.22,
+    0.22
+   ],
+   "range_low": [
+    0.02,
+    0.03,
+    0.05,
+    0.1,
+    0.1
+   ],
+   "range_high": [
+    0.1,
+    0.15,
+    0.25,
+    0.35,
+    0.35
+   ],
+   "literature": {
+    "Burstein-Gopinath (2014) Table 4 US tradable CPI, narrow NER": {
+     "short_run_one_quarter": 0.06,
+     "long_run_two_years": 0.17
+    },
+    "broad NER": {
+     "short_run": 0.09,
+     "long_run": 0.14
+    },
+    "own local projection, CPI core goods SA": {
+     "m3": 0.09,
+     "m6": 0.11,
+     "m12": 0.19,
+     "m24": 0.29,
+     "se_m12": 0.17
+    }
+   },
+   "status": "read/own"
+  },
+  "bloc_import_price_of_us_goods_to_usd_rate": {
+   "value": 1.0,
+   "range": [
+    0.9,
+    1.0
+   ],
+   "unit": "fraction on impact (applied to the 97% dollar-invoiced share)",
+   "source": "DCP Figure 7: bilateral pass-through into US export prices in destination currency is 100% on impact",
+   "status": "read"
+  },
+  "dominant_currency_volume_response": {
+   "row_trade_volume_to_1pct_broad_dollar_appreciation_12m": {
+    "value": -0.6,
+    "range": [
+     -0.8,
+     -0.4
+    ],
+    "unit": "percent per 1% appreciation",
+    "source": "Gopinath et al. (2020) abstract: 0.6% fall within a year in the volume of trade between countries in the rest of the world",
+    "status": "read"
+   },
+   "bilateral_volume_elasticity_to_importer_usd_rate_impact": {
+    "value": -0.15,
+    "range": [
+     -0.19,
+     -0.12
+    ],
+    "unit": "percent per 1% importer depreciation vs USD, within the year",
+    "source": "DCP Table 4 (-0.13 to -0.19), Table 5 (-0.121 for non-US importers)",
+    "status": "read"
+   },
+   "bilateral_volume_elasticity_to_bilateral_rate": {
+    "value": -0.03,
+    "range": [
+     -0.04,
+     -0.01
+    ],
+    "unit": "percent per 1%",
+    "source": "DCP Table 4: an order of magnitude smaller once the dollar rate is included",
+    "status": "read"
+   },
+   "us_import_volume_to_bilateral_rate": {
+    "value": 0.0,
+    "range": [
+     -0.02,
+     0.02
+    ],
+    "unit": "percent per 1%",
+    "source": "DCP Table 5: the interaction for US importer cancels the -0.12 (0.124)",
+    "status": "read"
+   },
+   "pass_through_of_dollar_rises_with_dollar_invoicing": {
+    "value": 0.45,
+    "range": [
+     0.3,
+     0.6
+    ],
+    "unit": "pp of dollar pass-through per 1pp of dollar invoicing share",
+    "source": "Boz et al. (ECB WP 2456) section 4: 0.3-0.6",
+    "status": "read"
+   },
+   "usd_share_effect_on_pass_through": {
+    "value": null,
+    "range": null,
+    "unit": "text",
+    "source": "Gopinath (2015): one-quarter pass-through rises from 23% to 78% as the foreign-currency invoicing share rises from 0 to 100%; Japan 83% (1q) and 90% (8q), Turkey 93% and 100%, US 34% and 44%",
+    "status": "read"
+   }
+  }
+ },
+ "elasticities": {
+  "us_imports": {
+   "relative_price_elasticity_domestic_vs_import": {
+    "one_year": {
+     "value": 0.7,
+     "range": [
+      0.3,
+      1.2
+     ],
+     "unit": "elasticity of import volume to import price relative to domestic price",
+     "source": "Fed USIT (Gruber-McCallum-Vigfusson 2016) implied: +2.1% imports / -3.0% import prices; Fajgelbaum et al. 2020 kappa 1.19; Boehm et al. 2023 0.76 (bilateral)",
+     "status": "own derivation"
+    },
+    "long_run_2_to_3_years": {
+     "value": 1.3,
+     "range": [
+      0.6,
+      2.0
+     ],
+     "unit": "elasticity",
+     "source": "Fed USIT implied 3.9/3.0 = 1.3; Feenstra et al. 2018 macro 1-3.5 by sector; Boehm et al. 2023 about 2 (bilateral, 7-10 years); Hooper-Johnson-Marquez 2000: 0.3 (long run, low end)",
+     "status": "own derivation"
+    },
+    "monthly_adjustment_speed_lambda": {
+     "value": 0.05,
+     "range": [
+      0.03,
+      0.08
+     ],
+     "unit": "per month",
+     "source": "fraction of long-run response reached at 12 months 0.30 (Boehm et al.) to 0.54 (Fed USIT imports): lambda = 1-(1-f)^(1/12)",
+     "status": "own derivation"
+    },
+    "model_comparison": "master config import_price_elasticity 0.2 / import_elasticity_lr 0.6 are about half the post-2000 estimates; b7-tariff tariff elasticities 0.3 / 1.2 are consistent with them in the long run"
+   },
+   "income_elasticity_long_run": {
+    "value": 1.9,
+    "range": [
+     1.5,
+     2.3
+    ],
+    "unit": "elasticity of real imports to US GDP",
+    "source": "Hooper-Johnson-Marquez 2000: 1.8 (long run) and 2.3 (short run ECM); Fed USIT 2016: 2.06 goods, 1.46 services, 1.93 weighted",
+    "status": "read"
+   },
+   "origin_substitution_elasticity": {
+    "value": 2.53,
+    "range": [
+     1.5,
+     4.0
+    ],
+    "unit": "elasticity of substitution across origins within a product",
+    "source": "Fajgelbaum et al. 2020 (sigma 2.53); Feenstra et al. micro 3.2-4.1",
+    "status": "read"
+   },
+   "across_products_elasticity": {
+    "value": 1.53,
+    "range": [
+     1.0,
+     2.5
+    ],
+    "unit": "elasticity of substitution across imported products",
+    "source": "Fajgelbaum et al. 2020 (eta)",
+    "status": "read"
+   }
+  },
+  "us_exports": {
+   "foreign_income_elasticity": {
+    "value": 1.4,
+    "range": [
+     0.8,
+     1.8
+    ],
+    "unit": "elasticity of US real exports to export-weighted foreign GDP",
+    "source": "Fed USIT 2016: 1.39 goods, 1.69 services, 1.45 weighted; Hooper-Johnson-Marquez 2000: 0.8 long run, 1.8 short run",
+    "status": "read"
+   },
+   "price_elasticity_one_year": {
+    "value": 0.3,
+    "range": [
+     0.2,
+     0.5
+    ],
+    "unit": "elasticity to US export price relative to foreign prices (incl. exchange rate)",
+    "source": "Fed USIT: -2.9% exports for +10% real dollar = 0.29 at one year; HJM 2000 short run 0.5",
+    "status": "own derivation"
+   },
+   "price_elasticity_long_run": {
+    "value": 0.8,
+    "range": [
+     0.5,
+     1.5
+    ],
+    "unit": "elasticity",
+    "source": "Fed USIT 0.71 (3 years); Hooper et al. 1.5; Fajgelbaum et al. 2020 foreign demand elasticity for US varieties 1.04",
+    "status": "own derivation"
+   },
+   "monthly_adjustment_speed_lambda": {
+    "value": 0.07,
+    "range": [
+     0.04,
+     0.09
+    ],
+    "unit": "per month",
+    "source": "Fed USIT exports reach 41%, 80%, 100% of long run at 1, 2, 3 years: lambda 0.04-0.09",
+    "status": "own derivation"
+   },
+   "foreign_income_weights": {
+    "description": "use US total export shares by bloc (2024) as weights on bloc GDP growth",
+    "weights": {
+     "EA": 0.1866,
+     "CN": 0.0614,
+     "JP": 0.0398,
+     "UK": 0.0558,
+     "CA": 0.137,
+     "MX": 0.1198,
+     "IN": 0.0259,
+     "KR": 0.029,
+     "BR": 0.0244,
+     "AU": 0.0188,
+     "OPEC+": 0.041,
+     "RoW": 0.2604
+    }
+   }
+  },
+  "bloc_trade_elasticities": {
+   "description": "income and price elasticities of bloc exports (X) and imports (M); price elasticities negative; lr = long run; sr = short run (quarterly ECM, convert to monthly with lambda)",
+   "by_bloc": {
+    "EA": {
+     "source": "Hooper, Johnson, Marquez (2000) Princeton Studies in International Economics 87, Tables 1 and 2 (decoded from the PDF)",
+     "status": "read",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -0.47,
+     "price_M_lr": -0.29,
+     "inc_X_sr": 1.53,
+     "inc_M_sr": 1.23,
+     "price_X_sr": -0.17,
+     "price_M_sr": -0.1,
+     "note": "mean of France, Germany, Italy (HJM 2000 Tables 1-2)"
+    },
+    "CN": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0,
+     "note": "Cheung-Chinn-Qian (2012): exports respond to foreign GDP (estimates 1 to 5.9 depending on time trend) and to the real exchange rate; import equations unstable; import price elasticity 0.5 and income 1.57 reported from another study (NBER WP 17875 lit. review). Use defaults with exports income 1.5-2.0."
+    },
+    "JP": {
+     "source": "Hooper, Johnson, Marquez (2000) Princeton Studies in International Economics 87, Tables 1 and 2 (decoded from the PDF)",
+     "status": "read",
+     "inc_X_lr": 1.1,
+     "inc_M_lr": 0.9,
+     "price_X_lr": -1.0,
+     "price_M_lr": -0.3,
+     "inc_X_sr": 0.6,
+     "inc_M_sr": 1.0,
+     "price_X_sr": -0.5,
+     "price_M_sr": -0.1
+    },
+    "UK": {
+     "source": "Hooper, Johnson, Marquez (2000) Princeton Studies in International Economics 87, Tables 1 and 2 (decoded from the PDF)",
+     "status": "read",
+     "inc_X_lr": 1.1,
+     "inc_M_lr": 2.2,
+     "price_X_lr": -1.6,
+     "price_M_lr": -0.6,
+     "inc_X_sr": 1.1,
+     "inc_M_sr": 1.0,
+     "price_X_sr": -0.2,
+     "price_M_sr": -0.0
+    },
+    "CA": {
+     "source": "Hooper, Johnson, Marquez (2000) Princeton Studies in International Economics 87, Tables 1 and 2 (decoded from the PDF)",
+     "status": "read",
+     "inc_X_lr": 1.1,
+     "inc_M_lr": 1.4,
+     "price_X_lr": -0.9,
+     "price_M_lr": -0.9,
+     "inc_X_sr": 1.1,
+     "inc_M_sr": 1.3,
+     "price_X_sr": -0.5,
+     "price_M_sr": -0.1
+    },
+    "MX": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "IN": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "KR": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "BR": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "AU": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "OPEC+": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    },
+    "RoW": {
+     "source": "Senhadji-Montenegro (1999) cross-country average long-run income 1.5 and price -1.0 (exports); Senhadji (1998) imports: price about 0 short run, slightly above 1 long run. No bloc-specific estimate verified.",
+     "status": "assumed",
+     "inc_X_lr": 1.5,
+     "inc_M_lr": 1.5,
+     "price_X_lr": -1.0,
+     "price_M_lr": -1.0
+    }
+   }
+  },
+  "tariff_trade_elasticity_by_horizon_boehm_levchenko_pandalai_nayar": {
+   "description": "Elasticity of tariff-exclusive bilateral import values to the duty-inclusive price; annual horizons h (h=0 is the calendar year of the change, about 6 months on average; h=1 about 18 months)",
+   "h": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "value": [
+    0.26,
+    0.76,
+    0.85,
+    1.02,
+    1.02,
+    1.24,
+    1.3,
+    2.06,
+    1.9,
+    1.93,
+    2.12
+   ],
+   "source": "Boehm-Levchenko-Pandalai-Nayar (2023) AER, NBER WP 27064 Table B6 col 1",
+   "status": "read",
+   "monthly_mapping": {
+    "m6": 0.26,
+    "m18": 0.76,
+    "m30": 0.85,
+    "m42": 1.02,
+    "m66": 1.24,
+    "m90": 2.06
+   }
+  },
+  "tariff_elasticities_fgkk": {
+   "origins_sigma": 2.53,
+   "products_eta": 1.53,
+   "domestic_vs_import_within_sector_kappa": 1.19,
+   "foreign_demand_for_us_varieties": 1.04,
+   "foreign_export_supply_inverse_elasticity": 0.0,
+   "source": "Fajgelbaum, Goldberg, Kennedy, Khandelwal (2020 QJE), NBER WP 25638",
+   "status": "read"
+  },
+  "conversion_rules": {
+   "annual_to_monthly_flow": "divide annual level by 12; do not seasonally adjust sector shares",
+   "lambda_from_share_reached_at_12_months": "lambda = 1 - (1 - f12)^(1/12); f12=0.30 -> 0.029, 0.40 -> 0.041, 0.50 -> 0.056, 0.63 -> 0.080",
+   "quarterly_to_monthly_speed": "monthly speed m = 1 - (1 - q)^(1/3) from a quarterly closing share q",
+   "partial_adjustment_form": "z_t = z_{t-1} + lambda (x_t - z_{t-1});  ln f_t = -eps_SR x_t - (eps_LR - eps_SR) z_t  (same form as b7-tariff M2)",
+   "income_effect_timing": "apply the income elasticity to the three-month moving average of bloc GDP growth: income effects are felt mostly contemporaneously (Fed USIT note 2016)"
+  }
+ },
+ "tariffs": {
+  "border_pass_through_to_duty_inclusive_import_price": {
+   "value": 0.92,
+   "range": [
+    0.85,
+    1.0
+   ],
+   "unit": "fraction of the duty",
+   "source": "2018-19: 0.995 (ARW 2019 Table 4: 10% tariff -> +9.95%), 0.925 at 12m (CGNT 2021); 2025: 0.94 Jan-Aug, 0.92 Sep-Oct, 0.86 Nov (NY Fed LSE Feb 2026), about 0.90 (AHW 2026), 0.92 (Gopinath-Neiman JEP)",
+   "status": "read/secondary"
+  },
+  "foreign_exporter_absorption_omega": {
+   "value": 0.08,
+   "range": [
+    0.0,
+    0.15
+   ],
+   "unit": "fraction of the duty absorbed in ex-tariff prices",
+   "source": "1 - border pass-through; steel in 2018-19 was an exception (ARW 2020, CGNT 2021)",
+   "status": "read"
+  },
+  "border_lag_months": {
+   "value": 1,
+   "range": [
+    0,
+    2
+   ],
+   "unit": "months",
+   "source": "AHW 2026: nearly complete in the first month; ARW 2019 figure 3",
+   "status": "read"
+  },
+  "retail_pass_through_of_duty_on_import_content": {
+   "months": [
+    1,
+    3,
+    6,
+    12,
+    24,
+    60
+   ],
+   "b7_tariff_values": [
+    0.075,
+    0.21,
+    0.37,
+    0.61,
+    0.85,
+    0.99
+   ],
+   "evidence_share_of_full_pass_through": {
+    "CGNT_2018_19_12m": "about 0.05 of tariff relative to unaffected goods (20% tariff -> +1%)",
+    "CLV_2025_6m": "0.14-0.20 of applied tariff (relative, same sector)",
+    "AHW_2026_12m": "direct 0.17 of tariff + indirect 0.09 = 0.26 into non-oil goods CPI",
+    "Minton_Ray_Somale_2026": "cost pass-through complete after about 7 months [secondary]",
+    "Dallas_Fed_2026": "full pass-through of collected duties into core PCE by Feb 2026 [secondary]"
+   },
+   "recommended_speed_lambda_R": {
+    "value": 0.075,
+    "range": [
+     0.05,
+     0.2
+    ],
+    "unit": "per month",
+    "source": "b7-tariff value is inside the range; CLV and AHW favour 0.05-0.08, Minton et al. and Dallas Fed favour 0.15-0.20",
+    "status": "own"
+   },
+   "recommended_long_run_phi_R": {
+    "value": 1.0,
+    "range": [
+     0.8,
+     1.0
+    ],
+    "unit": "fraction",
+    "source": "complete pass-through of cost net of fixed-dollar margins",
+    "status": "own"
+   }
+  },
+  "ratio_effective_to_statutory_duty": {
+   "value": 0.55,
+   "range": [
+    0.45,
+    0.7
+   ],
+   "unit": "fraction",
+   "source": "Gopinath-Neiman: actual 14.1% vs statutory 27.4% (0.51); AHW 2026: effective about two-thirds of statutory at end of sample; Yale Budget Lab post- vs pre-substitution 0.84",
+   "status": "secondary"
+  },
+  "average_effective_tariff_rate_path": {
+   "start_of_2025": {
+    "value": 0.026,
+    "range": null,
+    "unit": "fraction (average tariff rate)",
+    "source": "NY Fed Liberty Street Economics 12 Feb 2026: 2.6% at the start of 2025, 13% by end-2025 (statutory-style average; duty rate lower)",
+    "status": "secondary"
+   },
+   "2025_peak_collected": {
+    "value": 0.11,
+    "range": [
+     0.094,
+     0.118
+    ],
+    "unit": "fraction",
+    "source": "St. Louis Fed (11% late 2025); Dallas Fed realized 9.4% end-2025; Yale pre-substitution 11.8% (Apr 2026)",
+    "status": "secondary"
+   },
+   "2026_may_collected": {
+    "value": 0.07,
+    "range": [
+     0.06,
+     0.07
+    ],
+    "unit": "fraction",
+    "source": "St. Louis Fed Aug 18, 2026: just below 7% in May 2026 after the IEEPA ruling",
+    "status": "secondary"
+   },
+   "yale_pre_substitution_end_2026_section122_expires": {
+    "value": 0.097,
+    "range": null,
+    "unit": "fraction",
+    "source": "Yale Budget Lab State of US Tariffs April 8, 2026 (before the Section 301 forced-labor tariffs of 24 Jul 2026)",
+    "status": "read"
+   },
+   "yale_aug_2026_pre_substitution": {
+    "value": 0.109,
+    "range": null,
+    "unit": "fraction",
+    "source": "reported via search summary of Yale Budget Lab Aug 2026 update; original not opened",
+    "status": "unverified"
+   }
+  },
+  "yale_partner_effective_rates_end_2026_pre_substitution_pct": {
+   "China": 19.4,
+   "Canada": 7.0,
+   "Mexico": 11.2,
+   "EU": 6.5,
+   "Japan": 11.1,
+   "UK": 4.9,
+   "FTA_partners": 9.1,
+   "RoW": 7.3,
+   "total": 9.7,
+   "source": "Yale Budget Lab April 8, 2026, Table 2 (Section 122 expires); China 23.9, EU 9.7, Japan 13.4, total 12.2 if extended",
+   "status": "read"
+  },
+  "bown_average_tariffs_pct": {
+   "US_on_China": {
+    "2018_01": 3.1,
+    "2020_02": 19.3,
+    "2025_01": 20.7,
+    "2025_05_peak": 126.1,
+    "2025_05_14_after_Geneva": 51.7,
+    "2026_08_22": 35.2
+   },
+   "China_on_US": {
+    "2018_01": 8.0,
+    "2020_02": 21.0,
+    "2025_04_peak": 147.6,
+    "2025_after_Geneva": 31.9,
+    "2026_08_22": 31.9
+   },
+   "coverage_share_of_trade": {
+    "US_on_China_2020_02": 0.666,
+    "China_on_US_2020_02": 0.583,
+    "US_on_China_2026_08": 0.89,
+    "China_on_US_2026_08": 1.0
+   },
+   "source": "Bown, PIIE chart 'US-China trade war tariffs: an up-to-date chart' (updated Aug 22, 2026); Jan 2018 US value implied from text",
+   "status": "secondary"
+  },
+  "consumer_price_effect_of_uniform_tariff": {
+   "goods_cpi_12m_per_10pct_tariff": {
+    "value": 0.026,
+    "range": [
+     0.014,
+     0.06
+    ],
+    "unit": "price change for a 10% uniform duty",
+    "source": "AHW 2026: 26% of the tariff into non-oil goods CPI at 12 months (direct 0.017, marginal cost 0.0077, markup 0.0017); CLV: 14-20% retail at 6m; Minton et al. near full",
+    "status": "read/secondary"
+   },
+   "all_items_cpi_12m_per_10pct_tariff_pp": {
+    "value": 0.65,
+    "range": [
+     0.45,
+     1.1
+    ],
+    "unit": "percentage points",
+    "source": "AHW x non-oil goods weight 0.19-0.27; Yale: price level +0.7% for ETR +6pp -> 1.1pp per 10pp; b7-tariff 0.76",
+    "status": "own"
+   },
+   "domestic_producer_price_response": {
+    "marginal_cost_channel_per_10pct_input_duty": 0.026,
+    "markup_channel_per_10pct_output_duty": 0.007,
+    "source": "AHW 2026 section 1",
+    "status": "read"
+   }
+  },
+  "flaaen_pierce_manufacturing": {
+   "interquartile_exposure_employment_pct": -1.4,
+   "import_protection": 0.3,
+   "input_costs": -1.1,
+   "retaliation": -0.7,
+   "ppi_input_cost_pct": 4.1,
+   "source": "Flaaen-Pierce FEDS 2019-086",
+   "status": "read"
+  },
+  "waugh_county_consumption": {
+   "elasticity_auto_sales_growth_to_retaliatory_tariff_exposure": -1.0,
+   "upper_quartile_decline_pp": -3.8,
+   "source": "Waugh 2019 NBER WP 26353",
+   "status": "read"
+  }
+ },
+ "retaliation": {
+  "export_response_to_retaliation": {
+   "volume_elasticity_to_retaliatory_duty_inclusive_price": {
+    "value": 1.04,
+    "range": [
+     0.8,
+     1.5
+    ],
+    "unit": "elasticity",
+    "source": "Fajgelbaum et al. (2020): foreign import demand for US varieties 1.04 (se 0.32)",
+    "status": "read"
+   },
+   "twelve_month_log_export_value_per_ln_1_plus_tau": {
+    "value": -3.9,
+    "range": [
+     -5.0,
+     -2.0
+    ],
+    "unit": "elasticity",
+    "source": "Amiti-Redding-Weinstein (2019): a 10% foreign tariff goes with a 32% fall in US export value at 12 months; own 2025 check for China: -2.0 to -3.5 depending on the average 2025 duty (31.9% post-Geneva level gives -3.5)",
+    "status": "read/own"
+   },
+   "exporter_absorption_ag_and_homogeneous": {
+    "value": 0.5,
+    "range": [
+     0.3,
+     0.65
+    ],
+    "unit": "fraction of retaliatory duty absorbed in US ex-tariff export price",
+    "source": "Cavallo et al. (2021): 54% (48% with controls) after 12 months; 63% for China; nearly zero for differentiated goods",
+    "status": "read"
+   },
+   "exporter_absorption_differentiated": {
+    "value": 0.1,
+    "range": [
+     0.0,
+     0.2
+    ],
+    "unit": "fraction",
+    "source": "Cavallo et al. (2021): decline in relative export price driven by non-differentiated and agricultural goods",
+    "status": "read"
+   }
+  },
+  "recommended_rule": {
+   "form": "tau*_{j,s,t} = min(cap_j, kappa_j * w_s * max_{k=0..ell_j} tau_US->j,t-k); tau*_t = tau*_{t-1} + mu (target - tau*_{t-1}), mu_up = 1, mu_down = 0.1 (ratchet)",
+   "kappa": {
+    "CN": {
+     "value": 0.95,
+     "range": [
+      0.85,
+      1.1
+     ],
+     "unit": "ratio of partner's average duty to US average duty on that partner",
+     "source": "2018-19: 21.0/19.3 = 1.09; April 2025 125/145 = 0.86; Aug 2026 31.9/35.2 = 0.91 (Bown/PIIE)",
+     "status": "secondary"
+    },
+    "CA": {
+     "value": 0.5,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "unit": "same",
+     "source": "2025: 25% on C$30bn (4 Mar) and C$14.2bn (13 Mar) of US goods, removed 1 Sep 2025 except steel/aluminium/autos (Canada Dept of Finance; Blakes)",
+     "status": "secondary"
+    },
+    "EU": {
+     "value": 0.2,
+     "range": [
+      0.0,
+      0.6
+     ],
+     "unit": "same",
+     "source": "2025: countermeasures adopted 24 Jul to apply from 7 Aug, then suspended 5 Aug 2025 for six months; 2018: 25% on about $3.5bn of US imports (Bown, PIIE 2018)",
+     "status": "secondary"
+    },
+    "MX": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.2
+     ],
+     "unit": "same",
+     "source": "no tariff retaliation in 2025 (unverified here); 2018 retaliated on pork, steel, cheese",
+     "status": "unverified"
+    },
+    "IN": {
+     "value": 0.1,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "same",
+     "source": "2018-19: delayed retaliation on 28 products; 2025: none found",
+     "status": "unverified"
+    },
+    "JP": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "same",
+     "source": "no tariff retaliation 2018-19 or 2025-26 found",
+     "status": "unverified"
+    },
+    "KR": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "same",
+     "source": "same",
+     "status": "unverified"
+    },
+    "UK": {
+     "value": 0.2,
+     "range": [
+      0.0,
+      0.6
+     ],
+     "unit": "same",
+     "source": "OWNER CHOICE (proxy for the euro area, 2026-10-15): the UK retaliates like the EU (kappa 0.2, range 0.0-0.6, lag 2 months). Evidence: 2018, the UK was inside the EU rebalancing (25% on about $3.5bn of US imports, Bown PIIE 2018); 2025, the UK consulted on a list of US goods to target (April 2025) but agreed the US-UK deal (May 2025) and applied no duties. So this is a modelling choice, not a measured 2025 response.",
+     "status": "owner choice (proxy)"
+    },
+    "BR": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.2
+     ],
+     "unit": "same",
+     "source": "reciprocity law not used against the US in sources found",
+     "status": "unverified"
+    },
+    "AU": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "same",
+     "source": "same",
+     "status": "unverified"
+    },
+    "OPEC+": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "same",
+     "source": "assumption",
+     "status": "assumed"
+    },
+    "RoW": {
+     "value": 0.05,
+     "range": [
+      0.0,
+      0.2
+     ],
+     "unit": "same",
+     "source": "Turkey, Russia retaliated in 2018 (Bown 2019)",
+     "status": "secondary"
+    }
+   },
+   "lag_months": {
+    "CN": {
+     "value": 0,
+     "range": [
+      0,
+      1
+     ],
+     "unit": "months",
+     "source": "2025: Feb 4 tariff -> Feb 10 retaliation; Mar 4 -> Mar 10; Apr 2-11 same week",
+     "status": "secondary"
+    },
+    "CA": {
+     "value": 0,
+     "range": [
+      0,
+      1
+     ],
+     "unit": "months",
+     "source": "2025: same day (Mar 4)",
+     "status": "secondary"
+    },
+    "EU": {
+     "value": 2,
+     "range": [
+      1,
+      3
+     ],
+     "unit": "months",
+     "source": "2025: Mar 12 232 tariffs -> April package",
+     "status": "secondary"
+    },
+    "MX": {
+     "value": 1,
+     "range": [
+      0,
+      2
+     ],
+     "unit": "months",
+     "source": "2018: 1 month",
+     "status": "assumed"
+    },
+    "IN": {
+     "value": 12,
+     "range": [
+      6,
+      14
+     ],
+     "unit": "months",
+     "source": "2018-19",
+     "status": "unverified"
+    },
+    "UK": {
+     "value": 2,
+     "range": [
+      1,
+      3
+     ],
+     "unit": "months",
+     "source": "owner choice (proxy): the euro area lag (see kappa.UK)",
+     "status": "owner choice (proxy)"
+    }
+   },
+   "cap": {
+    "CN": {
+     "value": 1.25,
+     "range": [
+      1.0,
+      1.5
+     ],
+     "unit": "duty rate",
+     "source": "April 2025 peak 125% (average 147.6% incl. earlier measures)",
+     "status": "secondary"
+    },
+    "others": {
+     "value": 0.5,
+     "range": [
+      0.25,
+      0.6
+     ],
+     "unit": "duty rate",
+     "source": "assumption",
+     "status": "assumed"
+    }
+   },
+   "sector_weights_w_s": {
+    "Energy": {
+     "value": 1.0,
+     "range": [
+      0.5,
+      1.5
+     ],
+     "unit": "multiplier",
+     "source": "China 2018 and 2025 targeted LNG, coal, crude",
+     "status": "secondary"
+    },
+    "Food": {
+     "value": 1.5,
+     "range": [
+      1.0,
+      2.0
+     ],
+     "unit": "multiplier",
+     "source": "agriculture is the main target (soybeans, pork, sorghum); CGNT: price absorption concentrated in agriculture",
+     "status": "read"
+    },
+    "Durables": {
+     "value": 1.2,
+     "range": [
+      0.8,
+      1.5
+     ],
+     "unit": "multiplier",
+     "source": "autos, aircraft, machinery",
+     "status": "secondary"
+    },
+    "Nondurables": {
+     "value": 1.0,
+     "range": [
+      0.8,
+      1.2
+     ],
+     "unit": "multiplier",
+     "source": "assumed",
+     "status": "assumed"
+    },
+    "Tech": {
+     "value": 0.5,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "unit": "multiplier",
+     "source": "chips/export-control disputes handled outside tariffs",
+     "status": "assumed"
+    },
+    "Leisure": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "multiplier",
+     "source": "services seldom tariffed",
+     "status": "assumed"
+    },
+    "HealthEdu": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "multiplier",
+     "source": "same",
+     "status": "assumed"
+    },
+    "OtherServices": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.3
+     ],
+     "unit": "multiplier",
+     "source": "same",
+     "status": "assumed"
+    },
+    "Construction": {
+     "value": 0.0,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "unit": "multiplier",
+     "source": "non-traded",
+     "status": "assumed"
+    }
+   },
+   "evidence": {
+    "2018_19_us_tariffs": "rates 2.6% -> 16.6% on 12,043 products covering $303bn (12.7% of imports)",
+    "2018_19_retaliation": "7.3% -> 20.4% on 8,073 export products covering $127bn (8.2% of exports); about 3/4 of observations are China",
+    "source": "Fajgelbaum et al. 2020; Cavallo et al. 2021",
+    "status": "read"
+   }
+  },
+  "persistence": {
+   "value": null,
+   "range": null,
+   "unit": "text",
+   "source": "China's average tariff on US goods stayed at 31.9% from May 2025 to Aug 2026 although the US IEEPA tariffs were struck down on 20 Feb 2026 (US average on China fell from about 47.6% to 35.2%): retaliation is a ratchet",
+   "status": "secondary"
+  }
+ },
+ "trade_diversion": {
+  "description": "Trade diversion: change in US goods imports by origin, 2024 to 2025 (Census basis). China -$132bn; replaced one-for-one in total value, mostly by Taiwan, Vietnam, Thailand, India, Mexico; part is AI-server capex, part gold",
+  "table_usd_bn": {
+   "China": {
+    "imports_2024": 440.32,
+    "imports_2025": 308.65,
+    "imports_chg_24_25_bn": -131.67,
+    "imports_pct_24_25": -29.9,
+    "exports_2024": 143.27,
+    "exports_2025": 105.98,
+    "exports_pct_24_25": -26.03
+   },
+   "Taiwan": {
+    "imports_2024": 116.28,
+    "imports_2025": 201.37,
+    "imports_chg_24_25_bn": 85.08,
+    "imports_pct_24_25": 73.17,
+    "exports_2024": 42.5,
+    "exports_2025": 54.76,
+    "exports_pct_24_25": 28.85
+   },
+   "Vietnam": {
+    "imports_2024": 136.32,
+    "imports_2025": 193.88,
+    "imports_chg_24_25_bn": 57.56,
+    "imports_pct_24_25": 42.23,
+    "exports_2024": 13.07,
+    "exports_2025": 15.6,
+    "exports_pct_24_25": 19.4
+   },
+   "Switzerland": {
+    "imports_2024": 63.42,
+    "imports_2025": 106.21,
+    "imports_chg_24_25_bn": 42.8,
+    "imports_pct_24_25": 67.48,
+    "exports_2024": 24.93,
+    "exports_2025": 73.72,
+    "exports_pct_24_25": 195.76
+   },
+   "Mexico": {
+    "imports_2024": 503.11,
+    "imports_2025": 534.32,
+    "imports_chg_24_25_bn": 31.2,
+    "imports_pct_24_25": 6.2,
+    "exports_2024": 334.49,
+    "exports_2025": 337.28,
+    "exports_pct_24_25": 0.83
+   },
+   "Ireland": {
+    "imports_2024": 103.26,
+    "imports_2025": 133.65,
+    "imports_chg_24_25_bn": 30.39,
+    "imports_pct_24_25": 29.43,
+    "exports_2024": 16.77,
+    "exports_2025": 19.26,
+    "exports_pct_24_25": 14.82
+   },
+   "Thailand": {
+    "imports_2024": 62.95,
+    "imports_2025": 91.25,
+    "imports_chg_24_25_bn": 28.3,
+    "imports_pct_24_25": 44.95,
+    "exports_2024": 17.91,
+    "exports_2025": 19.59,
+    "exports_pct_24_25": 9.39
+   },
+   "India": {
+    "imports_2024": 87.28,
+    "imports_2025": 103.78,
+    "imports_chg_24_25_bn": 16.49,
+    "imports_pct_24_25": 18.89,
+    "exports_2024": 41.58,
+    "exports_2025": 45.35,
+    "exports_pct_24_25": 9.07
+   },
+   "Canada": {
+    "imports_2024": 411.77,
+    "imports_2025": 381.92,
+    "imports_chg_24_25_bn": -29.85,
+    "imports_pct_24_25": -7.25,
+    "exports_2024": 350.61,
+    "exports_2025": 333.62,
+    "exports_pct_24_25": -4.84
+   },
+   "Australia": {
+    "imports_2024": 16.64,
+    "imports_2025": 28.95,
+    "imports_chg_24_25_bn": 12.31,
+    "imports_pct_24_25": 74.01,
+    "exports_2024": 34.59,
+    "exports_2025": 33.71,
+    "exports_pct_24_25": -2.54
+   },
+   "Malaysia": {
+    "imports_2024": 52.16,
+    "imports_2025": 59.54,
+    "imports_chg_24_25_bn": 7.37,
+    "imports_pct_24_25": 14.14,
+    "exports_2024": 27.68,
+    "exports_2025": 28.7,
+    "exports_pct_24_25": 3.68
+   },
+   "Indonesia": {
+    "imports_2024": 27.75,
+    "imports_2025": 34.64,
+    "imports_chg_24_25_bn": 6.89,
+    "imports_pct_24_25": 24.84,
+    "exports_2024": 10.13,
+    "exports_2025": 10.84,
+    "exports_pct_24_25": 7.01
+   },
+   "Japan": {
+    "imports_2024": 147.12,
+    "imports_2025": 145.84,
+    "imports_chg_24_25_bn": -1.27,
+    "imports_pct_24_25": -0.87,
+    "exports_2024": 78.86,
+    "exports_2025": 81.39,
+    "exports_pct_24_25": 3.21
+   },
+   "Korea, South": {
+    "imports_2024": 131.46,
+    "imports_2025": 125.55,
+    "imports_chg_24_25_bn": -5.91,
+    "imports_pct_24_25": -4.5,
+    "exports_2024": 65.77,
+    "exports_2025": 69.07,
+    "exports_pct_24_25": 5.01
+   },
+   "Germany": {
+    "imports_2024": 160.31,
+    "imports_2025": 155.83,
+    "imports_chg_24_25_bn": -4.48,
+    "imports_pct_24_25": -2.79,
+    "exports_2024": 75.69,
+    "exports_2025": 82.82,
+    "exports_pct_24_25": 9.42
+   }
+  },
+  "china_share_of_us_goods_imports_pct": {
+   "2017": 22,
+   "2022": 16,
+   "2024": 13.5,
+   "2025": 9.0,
+   "source": "Freund et al. 2024 JIE (22 -> 16); PIIE 2026 blog (22 -> 13 -> 9); Census Exhibit 13 for 2024-25",
+   "status": "read/secondary"
+  },
+  "within_product_diversion_2018_19": {
+   "targeted_varieties_pct": -31.7,
+   "targeted_products_pct": -2.5,
+   "targeted_sectors_pct": -0.2,
+   "source": "Fajgelbaum et al. 2020: diversion to untargeted origins offsets about 90% of the variety-level loss within products",
+   "status": "read"
+  }
+ },
+ "validation_targets": [
+  {
+   "id": "V01",
+   "quantity": "US real imports",
+   "shock": "10% permanent real dollar appreciation (partial equilibrium)",
+   "horizon": "1y / 2y / 3y",
+   "value": [
+    2.1,
+    3.9,
+    3.9
+   ],
+   "unit": "percent",
+   "suggested_tolerance": "+-1.0pp at 1y; +-1.5pp at 3y",
+   "source": "Gruber, McCallum, Vigfusson (2016) Fed IFDP Notes, USIT model",
+   "status": "read"
+  },
+  {
+   "id": "V02",
+   "quantity": "US real exports",
+   "shock": "10% real dollar appreciation",
+   "horizon": "1y / 2y / 3y",
+   "value": [
+    -2.9,
+    -5.7,
+    -7.1
+   ],
+   "unit": "percent",
+   "suggested_tolerance": "+-1.5pp; +-2.5pp at 3y",
+   "source": "same",
+   "status": "read"
+  },
+  {
+   "id": "V03",
+   "quantity": "US core import prices",
+   "shock": "10% real dollar appreciation",
+   "horizon": "all horizons (USIT)",
+   "value": -3.0,
+   "unit": "percent",
+   "suggested_tolerance": "-1.5 to -4.5 at 12m",
+   "source": "same; pass-through about 0.30",
+   "status": "read"
+  },
+  {
+   "id": "V04",
+   "quantity": "US real GDP (partial eq., no policy response)",
+   "shock": "10% real dollar appreciation",
+   "horizon": "1y / 2y / 3y",
+   "value": [
+    -0.7,
+    -1.3,
+    -1.5
+   ],
+   "unit": "percent",
+   "suggested_tolerance": "reported, not gated",
+   "source": "same",
+   "status": "read"
+  },
+  {
+   "id": "V05",
+   "quantity": "US non-fuel import price index",
+   "shock": "1% depreciation of broad dollar",
+   "horizon": "3m / 12m / 24m",
+   "value": [
+    0.15,
+    0.3,
+    0.42
+   ],
+   "unit": "percent per percent",
+   "suggested_tolerance": "within range_low/high of pass_through block",
+   "source": "Burstein-Gopinath 2014; Gopinath 2015; Campa-Goldberg; Cavallo et al. 2021; own LP",
+   "status": "read"
+  },
+  {
+   "id": "V06",
+   "quantity": "US import prices of manufactured goods (capital, consumer goods ex autos)",
+   "shock": "1% depreciation of broad dollar",
+   "horizon": "3m / 12m / 24m",
+   "value": [
+    0.1,
+    0.23,
+    0.24
+   ],
+   "unit": "percent per percent",
+   "suggested_tolerance": "+-0.1",
+   "source": "own local projection 2006-2026 (scripts/erpt_lp.py), se 0.04-0.12",
+   "status": "own"
+  },
+  {
+   "id": "V07",
+   "quantity": "US core goods CPI",
+   "shock": "1% depreciation of broad dollar",
+   "horizon": "3m / 12m / 24m",
+   "value": [
+    0.09,
+    0.19,
+    0.29
+   ],
+   "unit": "percent per percent",
+   "suggested_tolerance": "wide: se 0.04 / 0.17 / 0.20",
+   "source": "own LP; Burstein-Gopinath 2014: 0.06 and 0.17",
+   "status": "own"
+  },
+  {
+   "id": "V08",
+   "quantity": "Rest-of-world trade volume",
+   "shock": "1% appreciation of the dollar against all currencies",
+   "horizon": "within 12 months",
+   "value": -0.6,
+   "unit": "percent",
+   "suggested_tolerance": "-0.4 to -0.8",
+   "source": "Gopinath et al. (2020) abstract",
+   "status": "read"
+  },
+  {
+   "id": "V09",
+   "quantity": "Dollar pass-through into import prices, dollar-priced vs non-dollar-priced US imports",
+   "shock": "exchange rate move",
+   "horizon": "1m / 24m",
+   "value": {
+    "dollar_priced": [
+     0.03,
+     0.14
+    ],
+    "non_dollar_priced": [
+     0.96,
+     0.94
+    ],
+    "aggregate_24m": 0.3
+   },
+   "unit": "pass-through",
+   "suggested_tolerance": "+-0.1",
+   "source": "Gopinath, Itskhoki, Rigobon (2010)",
+   "status": "read"
+  },
+  {
+   "id": "V10",
+   "quantity": "US exports",
+   "shock": "1% fall in export-weighted foreign GDP",
+   "horizon": "long run / contemporaneous",
+   "value": [
+    -1.4,
+    -1.8
+   ],
+   "unit": "percent",
+   "suggested_tolerance": "-0.8 to -1.8",
+   "source": "Fed USIT 2016 (1.39); Hooper et al. 2000 (0.8 LR, 1.8 SR ECM)",
+   "status": "read"
+  },
+  {
+   "id": "V11",
+   "quantity": "US imports",
+   "shock": "1% fall in US GDP",
+   "horizon": "long run",
+   "value": -1.9,
+   "unit": "percent",
+   "suggested_tolerance": "-1.5 to -2.3",
+   "source": "Hooper et al. 2000 (1.8, 2.3 SR); Fed USIT (2.06)",
+   "status": "read"
+  },
+  {
+   "id": "V12",
+   "quantity": "Duty-inclusive US import price",
+   "shock": "10% tariff on a product",
+   "horizon": "1m / 12m",
+   "value": [
+    9.0,
+    9.3
+   ],
+   "unit": "percent",
+   "suggested_tolerance": ">= 8.5 at 1m and 12m",
+   "source": "Amiti-Heise-Weinstein 2026 (about 90% in month 1); Cavallo et al. 2021 (92.5% at 12m); ARW 2019 (9.95)",
+   "status": "read"
+  },
+  {
+   "id": "V13",
+   "quantity": "Foreign export price (ex-tariff)",
+   "shock": "10% US tariff",
+   "horizon": "2025: Jan-Aug / Sep-Oct / Nov",
+   "value": [
+    -0.6,
+    -0.8,
+    -1.4
+   ],
+   "unit": "percent",
+   "suggested_tolerance": "0 to -2",
+   "source": "NY Fed Liberty Street Economics, 12 Feb 2026",
+   "status": "secondary"
+  },
+  {
+   "id": "V14",
+   "quantity": "US imports of targeted varieties",
+   "shock": "2018-19 tariffs (avg +14pp)",
+   "horizon": "about 12 months",
+   "value": -31.7,
+   "unit": "percent",
+   "suggested_tolerance": "-25 to -35",
+   "source": "Fajgelbaum et al. 2020; ARW 2019: import values -25 to -30%",
+   "status": "read"
+  },
+  {
+   "id": "V15",
+   "quantity": "US import log-elasticity to tariff",
+   "shock": "tariff",
+   "horizon": "12 months",
+   "value": -1.3,
+   "unit": "elasticity",
+   "suggested_tolerance": "-0.8 to -1.7",
+   "source": "Amiti-Redding-Weinstein 2019 (-1.3 log; -6 per pp with IHS)",
+   "status": "read"
+  },
+  {
+   "id": "V16",
+   "quantity": "Trade elasticity to tariffs, bilateral",
+   "shock": "tariff",
+   "horizon": "annual h=0..10",
+   "value": [
+    0.26,
+    0.76,
+    0.85,
+    1.02,
+    1.02,
+    1.24,
+    1.3,
+    2.06,
+    1.9,
+    1.93,
+    2.12
+   ],
+   "unit": "elasticity",
+   "suggested_tolerance": "+-0.25 (se 0.07-0.28)",
+   "source": "Boehm, Levchenko, Pandalai-Nayar (2023) Table B6",
+   "status": "read"
+  },
+  {
+   "id": "V17",
+   "quantity": "US exports within retaliated products",
+   "shock": "retaliatory duties averaging +13pp",
+   "horizon": "2018-19",
+   "value": -9.9,
+   "unit": "percent",
+   "suggested_tolerance": "-5 to -15",
+   "source": "Fajgelbaum et al. 2020",
+   "status": "read"
+  },
+  {
+   "id": "V18",
+   "quantity": "US export value elasticity to retaliatory tariff",
+   "shock": "foreign tariff",
+   "horizon": "12 months",
+   "value": -3.9,
+   "unit": "elasticity per ln(1+tau)",
+   "suggested_tolerance": "-2 to -5",
+   "source": "Amiti-Redding-Weinstein 2019; own 2025 China check -2.0 to -3.5",
+   "status": "read/own"
+  },
+  {
+   "id": "V19",
+   "quantity": "US exports to China, goods",
+   "shock": "2025 trade war (China average duty 21% -> 32%)",
+   "horizon": "calendar 2025",
+   "value": -26.0,
+   "unit": "percent",
+   "suggested_tolerance": "-20 to -30",
+   "source": "Census Exhibit 13; PIIE 2026 blog (-26%)",
+   "status": "read"
+  },
+  {
+   "id": "V20",
+   "quantity": "US imports from China, goods",
+   "shock": "2025 (US average duty on China about 21% -> about 50%)",
+   "horizon": "calendar 2025",
+   "value": -30.0,
+   "unit": "percent",
+   "suggested_tolerance": "-25 to -33",
+   "source": "Census Exhibit 13 (-29.9%); PIIE (real -28%)",
+   "status": "read"
+  },
+  {
+   "id": "V21",
+   "quantity": "US total goods imports",
+   "shock": "2025 tariffs",
+   "horizon": "calendar 2025",
+   "value": 4.6,
+   "unit": "percent nominal",
+   "suggested_tolerance": "+2 to +7",
+   "source": "Census Exhibit 13 (PIIE: real +4%)",
+   "status": "read"
+  },
+  {
+   "id": "V22",
+   "quantity": "Welfare of 2018-19 tariffs",
+   "shock": "2018 tariffs",
+   "horizon": "annual",
+   "value": {
+    "consumer_loss_bn": 51,
+    "pct_gdp": 0.27,
+    "net_real_income_bn": -7.2,
+    "net_pct_gdp": -0.04,
+    "tariff_revenue_bn": 34.3
+   },
+   "unit": "USD bn",
+   "suggested_tolerance": "order of magnitude",
+   "source": "Fajgelbaum et al. 2020",
+   "status": "read"
+  },
+  {
+   "id": "V23",
+   "quantity": "Retail price of tariffed imports relative to untariffed in same sector",
+   "shock": "20% tariff, 2018-19",
+   "horizon": "12 months",
+   "value": 1.0,
+   "unit": "percent",
+   "suggested_tolerance": "0 to 4",
+   "source": "Cavallo, Gopinath, Neiman, Tang (2021)",
+   "status": "read"
+  },
+  {
+   "id": "V24",
+   "quantity": "Retail pass-through of applied tariff",
+   "shock": "2025",
+   "horizon": "6 months",
+   "value": [
+    0.14,
+    0.2
+   ],
+   "unit": "fraction",
+   "suggested_tolerance": "0.1 to 0.3",
+   "source": "Cavallo, Llamas, Vazquez (2025)",
+   "status": "read"
+  },
+  {
+   "id": "V25",
+   "quantity": "Non-oil goods CPI",
+   "shock": "uniform 10% tariff",
+   "horizon": "12 months",
+   "value": 2.6,
+   "unit": "percent",
+   "suggested_tolerance": "1.5 to 4",
+   "source": "Amiti, Heise, Weinstein (2026)",
+   "status": "read"
+  },
+  {
+   "id": "V26",
+   "quantity": "Core goods PCE price level",
+   "shock": "2025 tariffs through Nov 2025",
+   "horizon": "through Feb 2026",
+   "value": 3.1,
+   "unit": "percent",
+   "suggested_tolerance": "reported",
+   "source": "Minton, Ray, Somale (FEDS Note, 8 Apr 2026)",
+   "status": "secondary"
+  },
+  {
+   "id": "V27",
+   "quantity": "Core PCE inflation contribution of tariffs",
+   "shock": "2025 tariffs",
+   "horizon": "March 2026 yoy",
+   "value": [
+    0.8,
+    0.5
+   ],
+   "unit": "percentage points (Dallas Fed; Minneapolis Fed low end)",
+   "suggested_tolerance": "0.2 to 1.0",
+   "source": "Mau-Smith Dallas Fed 2026; Minneapolis Fed 2026",
+   "status": "secondary"
+  },
+  {
+   "id": "V28",
+   "quantity": "Foreign exporter share of tariff, 2018-19 steel exception",
+   "shock": "232 steel",
+   "horizon": "2018-19",
+   "value": "substantial",
+   "unit": "text",
+   "suggested_tolerance": "qualitative",
+   "source": "ARW 2020; CGNT 2021",
+   "status": "read"
+  },
+  {
+   "id": "V29",
+   "quantity": "Direction of the dollar after tariffs",
+   "shock": "2018-19 and 2025",
+   "horizon": "Jan 2018 to Dec 2019 / Jan 2025 to Dec 2025",
+   "value": [
+    7.0,
+    -6.7
+   ],
+   "unit": "percent change of Fed broad index",
+   "suggested_tolerance": "sign differs between episodes",
+   "source": "own from Fed H.10 broad index (finance/data/fred_DTWEXBGS.csv)",
+   "status": "own"
+  },
+  {
+   "id": "V30",
+   "quantity": "Intermediate share of US gross imports",
+   "shock": "-",
+   "horizon": "2022",
+   "value": 45.7,
+   "unit": "percent",
+   "suggested_tolerance": "+-3",
+   "source": "OECD TiVA 2025",
+   "status": "own"
+  },
+  {
+   "id": "V31",
+   "quantity": "US content of imports",
+   "shock": "-",
+   "horizon": "2022",
+   "value": {
+    "world": 4.9,
+    "CA": 10.3,
+    "MX": 12.4,
+    "IE": 9.6,
+    "CN": 1.4
+   },
+   "unit": "percent",
+   "suggested_tolerance": "+-1pp",
+   "source": "OECD TiVA 2025",
+   "status": "own"
+  },
+  {
+   "id": "V32",
+   "quantity": "Foreign VA in US final demand",
+   "shock": "-",
+   "horizon": "2022",
+   "value": 12.3,
+   "unit": "percent of US final demand",
+   "suggested_tolerance": "+-1",
+   "source": "OECD TiVA 2025",
+   "status": "own"
+  },
+  {
+   "id": "V33",
+   "quantity": "Welfare/price effect of 2026 tariff stance",
+   "shock": "Yale Budget Lab baseline (Section 122 expires)",
+   "horizon": "long run",
+   "value": {
+    "price_level_pct": [
+     0.5,
+     0.7
+    ],
+    "gdp_pct": -0.11
+   },
+   "unit": "percent",
+   "suggested_tolerance": "reported",
+   "source": "Yale Budget Lab 8 Apr 2026",
+   "status": "read"
+  }
+ ],
+ "flags_vs_b7_tariff": [
+  {
+   "parameter": "tariff_retail_speed 0.075 (61% at 12m, 99% at 60m)",
+   "literature": "Cavallo et al. 2025: 14-20% of applied tariff at 6m (about 28-40% of full on import content); AHW 2026: direct 0.17 of tariff at 12m; Minton et al.: full cost pass-through at 7m; Cavallo et al. 2021: about 5% at 12m",
+   "verdict": "inside the range; mid-low versus 2025 evidence, high versus 2018-19"
+  },
+  {
+   "parameter": "tariff_retail_long phi_R = 1.0 and full border pass-through (no foreign absorption)",
+   "literature": "border pass-through 0.86-1.0 (ARW, CGNT, NY Fed, AHW, Gopinath-Neiman)",
+   "verdict": "agrees; optional omega 0.08"
+  },
+  {
+   "parameter": "import-share elasticity 0.3 SR / 1.2 LR; lag speed 0.03 (0.48 at m12, 0.9 at m60)",
+   "literature": "Boehm et al.: 0.26 / 0.76 / 1.02 at ~6 / 18 / 42 months, 2.1 after 10 years (bilateral); Fajgelbaum et al.: domestic vs import in sector 1.19 within a year, across origins 2.53; ARW -1.3 at 12m; 2025 China -1.4 to -1.7 (own)",
+   "verdict": "LR agrees with kappa=1.19; 12-month value 0.48 agrees with Boehm et al. interpolation (about 0.5) but is below Fajgelbaum et al. and ARW (1.2-1.3 within a year)"
+  },
+  {
+   "parameter": "dollar +0.9% at m12 after a 10% tariff",
+   "literature": "broad dollar +7.0% in Jan 2018-Dec 2019 but -6.7% in Jan-Dec 2025 (own, Fed H.10); EUR +13%, MXN +14%, CNY +3.5% in 2025",
+   "verdict": "no stable sign; do not hard-wire an appreciation"
+  },
+  {
+   "parameter": "uniform tariff on consumer goods and firm inputs, energy and services exempt",
+   "literature": "2025 coverage was partial (statutory 27.4% vs actual 14.1%; USMCA and Annex II exemptions; energy exempt)",
+   "verdict": "exemptions agree; add effective-to-statutory ratio 0.55"
+  },
+  {
+   "parameter": "CPI +0.76pp at m12 (10% tariff)",
+   "literature": "AHW x goods weight: 0.45-0.7pp; Yale: 1.1pp per 10pp of ETR long run; CLV: +0.7pp for 2025 by Sep 2025",
+   "verdict": "inside the range"
+  },
+  {
+   "parameter": "no domestic-price spillover beyond input-cost channel",
+   "literature": "AHW: 36% of consumer pass-through is indirect (marginal cost 0.77pp, markup 0.17pp per 10pp)",
+   "verdict": "input-cost channel present (M7); markup channel absent; optional"
+  }
+ ],
+ "flags_vs_master_config": [
+  {
+   "parameter": "import_pass_through_long 0.45, speed 0.08",
+   "verdict": "agrees with literature (Section 6)"
+  },
+  {
+   "parameter": "import_price_elasticity 0.2, import_elasticity_lr 0.6",
+   "verdict": "low versus post-2000 estimates (0.7 at one year, 1.3 long run); consistent with Hooper et al. 2000 only"
+  },
+  {
+   "parameter": "export_elasticity_sr 0.3, export_elasticity_lr 1.0, export_lag_speed 0.08",
+   "verdict": "agrees with Fed USIT (0.29, 0.71) and Hooper et al.; speed slightly fast at 12m (63% vs 41%)"
+  },
+  {
+   "parameter": "export demand proportional to last month's US GDP",
+   "verdict": "replace by bloc-GDP-weighted foreign demand with income elasticity 1.4"
+  },
+  {
+   "parameter": "export_base_share_gdp (Other services 1.3%)",
+   "verdict": "Other services should be 2.5% of GDP (data); Nondurables 1.4% and Food 0.6%"
+  }
+ ]
+}

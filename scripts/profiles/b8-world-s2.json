@@ -1,0 +1,10 @@
+{
+  "world_block_enabled": true,
+  "world_link_trade": true,
+  "world_ius_offset": -0.43,
+  "world_yus_offset": -0.9,
+  "import_price_elasticity": 0.4,
+  "import_elasticity_lr": 1.0,
+  "world_export_price_lr": 1.0,
+  "world_export_fx_lr": 0.4
+}

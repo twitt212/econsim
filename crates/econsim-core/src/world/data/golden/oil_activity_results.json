@@ -1,0 +1,68 @@
+{
+ "isolated (prototype activity)": {
+  "sd": 9.508,
+  "skew": -0.536,
+  "exkurt": 5.488,
+  "ac1": 0.196,
+  "vr12": 1.16,
+  "ar1_level": 0.959,
+  "sd_level": 0.335,
+  "share_big12": 0.147,
+  "share_gt3sd": 0.013
+ },
+ "integrated proxy, activity sd 2%": {
+  "sd": 9.24,
+  "skew": -0.582,
+  "exkurt": 6.051,
+  "ac1": 0.164,
+  "vr12": 1.024,
+  "ar1_level": 0.941,
+  "sd_level": 0.269,
+  "share_big12": 0.116,
+  "share_gt3sd": 0.013
+ },
+ "integrated proxy, no activity": {
+  "sd": 9.228,
+  "skew": -0.585,
+  "exkurt": 6.047,
+  "ac1": 0.164,
+  "vr12": 1.01,
+  "ar1_level": 0.94,
+  "sd_level": 0.269,
+  "share_big12": 0.115,
+  "share_gt3sd": 0.013
+ },
+ "integrated, rho_q 0.995": {
+  "sd": 9.224,
+  "skew": -0.61,
+  "exkurt": 6.07,
+  "ac1": 0.16,
+  "vr12": 1.0,
+  "ar1_level": 0.945,
+  "sd_level": 0.28,
+  "share_big12": 0.11,
+  "share_gt3sd": 0.013
+ },
+ "integrated, sig_I x1.1": {
+  "sd": 10.124,
+  "skew": -0.609,
+  "exkurt": 6.13,
+  "ac1": 0.162,
+  "vr12": 1.008,
+  "ar1_level": 0.94,
+  "sd_level": 0.293,
+  "share_big12": 0.145,
+  "share_gt3sd": 0.013
+ },
+ "integrated, rho_q 0.995 and sig_I x1.1": {
+  "sd": 10.082,
+  "skew": -0.62,
+  "exkurt": 6.159,
+  "ac1": 0.157,
+  "vr12": 0.989,
+  "ar1_level": 0.945,
+  "sd_level": 0.305,
+  "share_big12": 0.14,
+  "share_gt3sd": 0.013
+ }
+}

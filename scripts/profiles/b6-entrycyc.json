@@ -1,0 +1,6 @@
+{
+  "entry_gate_cyclical": true,
+  "entry_gate_capital_weighted": false,
+  "entry_gate_base_prob": 0.5,
+  "entry_gate_cyc_slope": 150.0
+}

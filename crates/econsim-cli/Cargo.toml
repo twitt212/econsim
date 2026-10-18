@@ -1,0 +1,11 @@
+[package]
+name = "econsim-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Tyson Wittmann"]
+license = "Apache-2.0"
+
+[dependencies]
+econsim-core = { path = "../econsim-core" }
+serde_json = { workspace = true }
+mimalloc = { version = "=0.1.43", default-features = false }

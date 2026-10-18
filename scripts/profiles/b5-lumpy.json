@@ -1,0 +1,5 @@
+{
+  "inv_lumpy": true,
+  "inv_inaction_band": 0.60,
+  "inv_catchup_band": 0.0
+}

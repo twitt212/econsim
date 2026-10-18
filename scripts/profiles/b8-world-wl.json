@@ -1,0 +1,5 @@
+{
+  "world_block_enabled": false,
+  "import_price_elasticity": 0.4,
+  "import_elasticity_lr": 1.0
+}

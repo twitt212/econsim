@@ -1,0 +1,8 @@
+{
+  "udur_contact_on": true,
+  "udur_contact_d1": 0.9,
+  "udur_contact_m1": 12,
+  "udur_contact_d2": 1.0,
+  "udur_contact_m2": 12,
+  "udur_effort_norm": 0.5
+}

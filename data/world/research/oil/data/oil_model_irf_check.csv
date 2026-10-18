@@ -1,0 +1,49 @@
+check,h,model,center,lo,hi,inside
+oil_specific_price,0,8.141,8.141,7.294,8.95,True
+oil_specific_price,1,9.194,10.196,8.67,12.001,True
+oil_specific_price,3,8.161,9.299,8.07,10.92,True
+oil_specific_price,6,6.919,7.255,5.332,8.417,True
+oil_specific_price,12,4.903,5.771,2.912,7.077,True
+oil_specific_price,24,2.506,3.768,0.662,5.338,True
+oil_specific_price,36,1.555,3.139,0.224,4.202,True
+agg_demand_price,0,1.273,0.904,0.632,1.209,False
+agg_demand_price,1,2.332,2.274,1.846,2.938,True
+agg_demand_price,3,3.453,3.972,2.53,5.791,True
+agg_demand_price,6,4.079,3.884,2.374,5.532,True
+agg_demand_price,12,4.245,3.921,1.71,5.476,True
+agg_demand_price,24,3.703,3.523,1.389,5.22,True
+agg_demand_price,36,2.997,2.726,0.339,4.371,True
+supply_production,0,-1.164,-1.258,-1.381,-1.116,True
+supply_production,1,-1.116,-1.122,-1.318,-0.895,True
+supply_production,3,-1.048,-0.843,-1.013,-0.669,False
+supply_production,6,-0.947,-0.669,-0.86,-0.449,False
+supply_production,12,-0.761,-0.856,-1.182,-0.428,True
+supply_production,24,-0.489,-0.764,-1.057,-0.367,True
+supply_production,36,-0.337,-0.776,-1.041,-0.429,False
+supply_price(Cholesky bands),0,3.429,1.02,0.092,1.93,False
+supply_price(Cholesky bands),1,4.059,1.361,0.042,2.7,False
+supply_price(Cholesky bands),3,4.006,2.102,0.663,3.693,False
+supply_price(Cholesky bands),6,3.912,1.972,0.323,3.759,False
+supply_price(Cholesky bands),12,3.513,1.923,-0.304,4.047,True
+supply_price(Cholesky bands),24,2.419,1.353,-2.03,4.401,True
+supply_price(Cholesky bands),36,1.465,1.385,-0.824,3.22,True
+oil_specific_production,1,0.247,0.019,-0.128,0.165,False
+oil_specific_production,3,0.263,0.273,0.047,0.555,True
+oil_specific_production,6,0.297,0.236,-0.019,0.523,True
+oil_specific_production,12,0.356,0.261,-0.11,0.624,True
+oil_specific_production,24,0.383,0.023,-0.343,0.358,False
+oil_specific_production,36,0.329,0.009,-0.362,0.365,True
+kanzig_price,0,10.0,10.0,10.0,10.0,True
+kanzig_price,1,11.045,12.515,11.051,13.875,False
+kanzig_price,3,9.268,11.011,4.492,13.002,True
+kanzig_price,6,7.298,7.782,1.395,10.107,True
+kanzig_price,12,4.509,7.121,0.318,9.042,True
+kanzig_price,18,2.805,4.892,-0.754,6.486,True
+kanzig_price,24,1.831,4.139,-1.62,5.685,True
+kanzig_price,36,1.069,2.617,-1.549,3.302,True
+kanzig_production,3,0.1,0.222,-0.112,0.623,True
+kanzig_production,6,-0.061,-0.055,-0.49,0.271,True
+kanzig_production,12,-0.296,-0.109,-0.487,0.223,True
+kanzig_production,18,-0.44,-0.28,-0.644,0.115,True
+kanzig_production,24,-0.526,-0.313,-0.66,0.147,True
+kanzig_production,36,-0.589,-0.305,-0.652,0.192,True

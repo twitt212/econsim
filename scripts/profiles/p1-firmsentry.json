@@ -1,0 +1,17 @@
+{
+  "entrant_customer_floor": 3.0,
+  "entrant_intro_discount": 0.05,
+  "entrant_tie_switch": true,
+  "entrant_startup_months": 12.0,
+  "entrant_productivity_sigma": 0.2,
+  "entry_gate_slope": 40.0,
+  "entry_gate_hurdle": 0.03,
+  "entry_labour_force": true,
+  "owner_founders": true,
+  "merton_cost_of_capital": 0.1,
+  "merton_q_min": 0.2,
+  "firm_prod_sigma": 0.05,
+  "firm_prod_revert": 0.01,
+  "merton_recovery_floor": 0.7,
+  "entry_reborn_max_share": 0.002
+}

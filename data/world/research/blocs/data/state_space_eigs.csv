@@ -1,0 +1,13 @@
+bloc,n_state,spectral_radius_monthly,dominant_period_months,half_life_months,n_eig_above_0p5,stable
+EA,33,0.9359,71.0,10.5,16,True
+CN,33,0.8948,71.2,6.2,16,True
+JP,33,0.9366,89.5,10.6,16,True
+UK,33,0.9212,114.4,8.4,16,True
+CA,33,0.9212,114.4,8.4,16,True
+MX,33,0.9157,61.7,7.9,17,True
+IN,33,0.9523,269.0,14.2,16,True
+KR,33,0.903,53.7,6.8,17,True
+BR,33,0.9157,61.7,7.9,17,True
+AU,33,0.9206,92.8,8.4,16,True
+OPEC+,33,0.9208,85.1,8.4,16,True
+RoW,33,0.9135,66.2,7.7,16,True

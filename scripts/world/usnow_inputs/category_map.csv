@@ -1,0 +1,24 @@
+yale_category,model_sector,weight_usd_bn_2025,basis
+Energy (mineral fuels),0,210,"Census end-use 2025: crude oil 140.0, fuel oil 19.0, other petroleum 34.2, natural gas 8.3, LPG 3.5, coal 1.3, electric 2.2, nuclear fuel 8.0 (rounded to 210)"
+Agriculture & live animals,1,110,"end-use 2025: fruits 30.4, vegetables 19.2, fish 26.0, meat 22.2, nuts, tea, coffee 10.3, cocoa, oilseeds 10.3, feeds 9.3 ..."
+"Processed foods, beverages & tobacco",1,105,"end-use 2025: other foods 25.7, bakery 23.9, wine/beer 13.8, alcohol 8.8, sugar, dairy, tobacco 16.5 ..."
+Motor vehicles & parts,2,422,"end-use 2025: automotive vehicles, parts and engines 422.0"
+Other transport equipment,2,70,"end-use 2025: civilian aircraft 15.6, aircraft parts 17.1, aircraft engines 28.2, railway 1.5, boats 3.9, motorcycles 4.0"
+Iron & steel,2,60,"end-use 2025: steel mill products 17.5, iron and steel advanced 12.6, products n.e.c. 10.0, steelmaking materials 9.1 plus a share of finished metal shapes 105.3 (author split)"
+Aluminum,2,25,end-use 2025: bauxite and aluminum 17.0 plus a share of finished metal shapes (author split)
+Other base metals,2,50,"end-use 2025: copper 17.6, nickel 2.3, zinc 2.2, tin 1.1, other nonferrous 5.3, plus a share of finished metal shapes (author split)"
+Industrial machinery & computers,2,330,"end-use 2025: capital goods excluding computers, telecom, semiconductors, medical equipment and aircraft: generators 49.4, industrial engines 33.3, other industrial machinery 83.4, excavating 16.7, materials handling 27.5, photo and service machinery 26.9, agricultural 13.8, metalworking 14.4, others (the computers share of this Yale category is in Tech, see note)"
+Electronics & electrical equipment,2,150,"end-use 2025: electric apparatus 106.8, household appliances 36.6 (the telecom, phones and TV share of this Yale category is TECH_TELECOM_TV)"
+Miscellaneous manufactures,2,150,"end-use 2025: furniture and household goods 37.8, toys 40.0, other consumer 20.8, cookware 11.1 ..."
+"Stone, cement, ceramics & glass",2,30,"end-use 2025: stone, sand, cement 7.6, floor tiles 6.9, glass 2.6, shingles and wallboard 14.7"
+Minerals & ores,2,30,"author estimate (CPA B07, B08 are Durables in the model's concordance)"
+Precious metals & stones,2,100,"end-use 2025: nonmonetary gold 30.7, other precious metals 20.4, gem diamonds 7.4, jewelry 19.3, gem stones 2.6 ..."
+"Textiles, apparel & footwear",3,150,"end-use 2025: cotton apparel 41.6, other textile apparel 50.6, footwear 17.7, wool 2.9, synthetic cloth 5.2 ..."
+Leather & furskins,3,15,author estimate
+Chemicals (ex-pharma),3,110,"end-use 2025: organic 23.6, inorganic 12.6, other chemicals 18.5, fertilizers 14.5, toiletries 20.2 ..."
+Pharmaceuticals,3,290,end-use 2025: pharmaceutical preparations 287.5
+Plastics & rubber,3,90,"end-use 2025: plastic materials 19.3, synthetic rubber 2.9, tires 17.4 (in motor vehicles), others"
+"Wood, paper & printing",3,50,"end-use 2025: paper 9.2, pulp 4.0, lumber 7.0, plywood 3.9, newsprint, books 4.2 ..."
+Semiconductors & electronic components,4,436,end-use 2025: semiconductors 76.0 plus computers 218.2 and accessories 143.3 (assumed to carry this category's rate: the April 2025 exemption of computers and chips)
+Precision instruments & optical,4,35,"end-use 2025: measuring and testing instruments 27.6, laboratory 7.8"
+TECH_TELECOM_TV,4,252,"end-use 2025: telecom equipment 114.7, cell phones and household goods 108.8, TVs 16.7, stereo 11.3 (rate of Electronics & electrical equipment)"

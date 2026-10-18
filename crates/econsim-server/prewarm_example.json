@@ -1,0 +1,8 @@
+[
+  {
+    "config": { "n_households": 1000 },
+    "shocks": [ { "at_month": 1, "shock": { "type": "OilPrice", "pct": 20, "half_life_months": 6 } } ],
+    "months": 3,
+    "seeds": [1, 2]
+  }
+]
