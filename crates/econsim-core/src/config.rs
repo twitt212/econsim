@@ -1745,6 +1745,15 @@ pub struct Config {
     /// basket), residential (one sector), export (by sector) and import (fixed tradable weights) deflators are not this
     /// form and are unchanged. Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
     pub paasche_deflators: bool,
+    /// Stock-flow consistency is enforced in every build: `sim::step` panics, naming the tick and the failing identity, when
+    /// the month's `sfc_error` is set (the checks of `ledger::check_consistency` that `metrics::record` computes in its passes:
+    /// bank deposit liabilities against customer deposits, loan books against loans, finite balances, Fund shares against
+    /// household shares, mortgage links) or when the world block's identities fail (`world::check_identities`: the NIIP
+    /// residual and the bilateral current accounts). Debug builds also panic on the full `ledger::check_consistency`, as
+    /// before. The checks are computed anyway, so the cost is nil. Legacy: a release build (server, CLI, `cargo test
+    /// --release`) only records `sfc_error` and goes on with an inconsistent economy. Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub sfc_enforce: bool,
     /// rz1 F1: mean lag (months) of the firms' investment user cost, when different from the households' lag. A negative value
     /// (the default, -1) means "the same as `rate_perception_months`" (legacy: one lag for firms and households). A value >= 0
     /// replaces `rate_perception_months` in the firms' smoother only (`firms::plan`); the households keep `rate_perception_months`.
@@ -2718,6 +2727,7 @@ impl Default for Config {
             fisim_constant_margin: false,
             // accounting fixes; legacy values in scripts/profiles/legacy_acctfix_off.json
             paasche_deflators: true,
+            sfc_enforce: true,
             rate_perception_firm_months: -1.0,
 
             // rz12

@@ -138,7 +138,31 @@ pub fn step(w: &mut World) {
             panic!("world identity violated at tick {}: {e}", w.tick);
         }
     }
+    if w.cfg.sfc_enforce {
+        enforce_identities(w);
+    }
     w.tick += 1;
+}
+
+/// `Config::sfc_enforce`: panics, naming the tick and the identity, when this month's record carries `sfc_error` (the
+/// checks of `ledger::check_consistency`, fused into the passes of `metrics::record`) or when the world block's identities
+/// fail. Both are already computed (the world check is O(blocs)), so a consistent month costs nothing. The full
+/// `ledger::check_consistency` runs only after the fused check has failed, to name the identity.
+fn enforce_identities(w: &World) {
+    if w.history.last().is_some_and(|m| m.sfc_error != 0.0) {
+        let what = match ledger::check_consistency(w) {
+            Err(e) => e,
+            // Only the summation order differs between the two checks, so this is a residual at the tolerance.
+            Ok(()) => "sfc_error is set: a bank's deposit liabilities or loan book, or the Fund's shares, differ from the sum \
+                       over their holders by more than 1e-6 relative (ledger::check_consistency, summing in another order, \
+                       passes)"
+                .to_string(),
+        };
+        panic!("stock-flow inconsistency at tick {}: {what} (sfc_enforce)", w.tick);
+    }
+    if let Err(e) = world::check_identities(w) {
+        panic!("world identity violated at tick {}: {e} (sfc_enforce)", w.tick);
+    }
 }
 
 /// Names of the tick phases timed by `step_timed` (21 with the world block's phase after "fx").
@@ -480,6 +504,40 @@ pub fn compare_with(sc: &Scenario, common: &(dyn Fn(u64) -> CommonWorld + Sync),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A small consistent world stepped once, then with bank 0's deposit liability moved off the sum of its customers'
+    /// deposits by 1% (no ledger entry), as a stock-flow bug would.
+    fn corrupted_world(sfc_enforce: bool) -> World {
+        let mut w = crate::testkit::tiny_world(Config { n_households: 200, sfc_enforce, ..Default::default() }, 1);
+        step(&mut w);
+        assert_eq!(w.history.last().unwrap().sfc_error, 0.0);
+        let b = &mut w.banks[0];
+        b.deposits += 0.01 * b.deposits.abs() + 1.0;
+        w
+    }
+
+    /// sfc_enforce: the next month stops with a panic that names the tick and the identity, in release builds too (the
+    /// full debug check reports the same identity first in debug builds).
+    #[test]
+    fn sfc_enforce_panics_on_an_injected_inconsistency() {
+        let mut w = corrupted_world(true);
+        let tick = w.tick;
+        let err = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| step(&mut w))).expect_err("an inconsistent month must panic");
+        let msg = err.downcast_ref::<String>().cloned().unwrap_or_default();
+        assert!(msg.starts_with(&format!("stock-flow inconsistency at tick {tick}: ")), "{msg}");
+        assert!(msg.contains("bank 0: deposit liabilities"), "{msg}");
+    }
+
+    /// sfc_enforce off: a release build records the inconsistency in `sfc_error` and goes on, as the release did. Debug builds
+    /// always panic on the full check, so this runs in release builds only.
+    #[cfg(not(debug_assertions))]
+    #[test]
+    fn sfc_enforce_off_records_the_inconsistency_and_goes_on() {
+        let mut w = corrupted_world(false);
+        step(&mut w);
+        step(&mut w);
+        assert!(w.history.iter().rev().take(2).all(|m| m.sfc_error == 1.0));
+    }
 
     /// Smoke test for the CLI `irf` / server compare path: a 1-seed, 12-month compare crosses the first January,
     /// where the stayer fields are null, and must average and deserialise without panicking.

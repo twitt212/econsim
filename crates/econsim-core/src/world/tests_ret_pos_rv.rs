@@ -205,6 +205,7 @@ fn rv_world_metrics_are_in_their_stated_units() {
     if !cfg!(debug_assertions) {
         let gdp = crate::common::gdp_month_model(&w);
         w.world.as_mut().unwrap().pos.as_mut().unwrap().niip_prev += 1.0e-6 * gdp;
+        w.cfg.sfc_enforce = false; // the displaced month is read back here, not stopped (`Config::sfc_enforce` would panic on it)
         sim::step(&mut w);
         let e = w.world.as_ref().unwrap().diag.sfc_world_error;
         assert!((e - 1.0e-6).abs() < 1.0e-9, "displacement 1e-6 of gdp read back as {e}");
@@ -281,6 +282,7 @@ fn rv_a_burn_in_worlds_first_update_is_checked_not_waived() {
     }
     let gdp = crate::common::gdp_month_model(&w);
     w.world.as_mut().unwrap().pos.as_mut().unwrap().niip_prev += 1.0e-6 * gdp;
+    w.cfg.sfc_enforce = false; // the displaced month is read back here, not stopped (`Config::sfc_enforce` would panic on it)
     sim::step(&mut w);
     let e = w.world.as_ref().unwrap().diag.sfc_world_error;
     assert!((e - 1.0e-6).abs() < 1.0e-9, "first update residual {e}");

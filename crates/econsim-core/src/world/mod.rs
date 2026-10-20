@@ -609,8 +609,8 @@ pub fn world_row_extra(w: &World) -> Option<f64> {
 }
 
 /// Debug-build identities of the world block (stage 4-3, hook H22 in the `cfg!(debug_assertions)` block of `sim::step`, after
-/// `ledger::check_consistency`): the NIIP identity residual and the bilateral current accounts of the month. `Ok` when the block, the
-/// positions or the month do not apply.
+/// `ledger::check_consistency`; in every build with `Config::sfc_enforce`): the NIIP identity residual and the bilateral current
+/// accounts of the month. `Ok` when the block, the positions or the month do not apply.
 pub fn check_identities(w: &World) -> Result<(), String> {
     let Some(wb) = w.world.as_deref() else { return Ok(()) };
     let Some(ps) = wb.pos.as_ref() else { return Ok(()) };
