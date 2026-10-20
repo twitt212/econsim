@@ -7623,7 +7623,7 @@ this tree, legacy_acctfix_off.json, RAYON 1 and 8      1a76b12271eee590b51c6f247
 this tree, defaults, RAYON 1, 4 and 8                  a06730ec789aa0742f2052eeb64e631b
 ```
 
-Tests: core 647 passed and 2 ignored, server 85, cli 9 (18 new; four existing tests pin the release path for a key that
+Tests: core 647 passed and 2 ignored, server 86, cli 10 (20 new; four existing tests pin the release path for a key that
 moves them and now set that key false: `legacy_keys_reproduce_the_4_1_link`, `with_no_change_the_block_holds_todays_state`,
 `rv_world_metrics_are_in_their_stated_units`, `rv_a_burn_in_worlds_first_update_is_checked_not_waived`).
 

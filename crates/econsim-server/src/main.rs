@@ -469,6 +469,8 @@ fn validate_config(cfg: &Config) -> Result<(), ApiError> {
     cfg.validate_world_links().map_err(ApiError::BadRequest)?;
     // rz2: range checks of the oil-fix keys (every off value passes).
     cfg.validate_rz2().map_err(ApiError::BadRequest)?;
+    // Bound pairs the run passes to `f64::clamp` (a lower bound above the upper one panicked in the run, a 500).
+    cfg.validate_clamp_bounds().map_err(ApiError::BadRequest)?;
     // b9-warmup: live simulations ignore the key, but it is validated here too (create_sim shares this check).
     if !warmup_ok(cfg.warmup_months) {
         return Err(ApiError::BadRequest(format!(
@@ -1953,28 +1955,59 @@ mod tests {
         assert_eq!(sim_ids(&st), expect);
     }
 
-    /// A compare whose computation panics (today: `u_star_min` above `u_star_max`, which `f64::clamp` refuses in the Taylor
-    /// rule) answers a JSON 500. The flight is cleared, so the same request computes again instead of waiting on it, and the
-    /// permits are released (two failures on a two-permit cache, then a valid request still computes).
+    /// A compare whose computation panics (the test hook `with_failure_at_year(2)` panics after the second year of reported
+    /// months) answers a JSON 500. The flight is cleared, so the same request computes again instead of waiting on it, and the
+    /// permits are released (two failures on a two-permit cache, then a valid request of one year still computes).
     #[tokio::test]
     async fn a_panicking_compare_is_a_500_and_frees_its_flight_and_permit() {
-        let st = state(64 << 20);
-        let bad = r#"{"config":{"n_households":300,"burn_in_months":12,"u_star_min":0.09,"u_star_max":0.01},"months":2,"seeds":[1]}"#;
+        let st = state_with(CompareCache::new(64 << 20, 2).with_failure_at_year(2), None);
+        let bad = r#"{"config":{"n_households":300,"burn_in_months":12},"months":13,"seeds":[1]}"#;
         for n in 1..=2u64 {
             let Err(err) = compare(State(st.clone()), Query(HashMap::new()), Bytes::from(bad)).await else { panic!("must fail") };
             let (status, msg) = error_of(err).await;
             assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-            assert!(msg.contains("panicked"), "{msg}");
+            assert!(msg.contains("panicked") && msg.contains("injected failure in year 2"), "{msg}");
             assert_eq!(st.compare.computed.load(Ordering::SeqCst), n, "a failed computation is neither stored nor left in flight");
         }
         let (cache, _) = call(&st, REQ).await;
         assert_eq!(cache, "miss");
-        // The same invalid config on a live economy fails at creation, also as a JSON 500.
-        let Err(err) = create_sim(State(st.clone()), Bytes::from(r#"{"config":{"n_households":300,"u_star_min":0.09,"u_star_max":0.01}}"#)).await
-        else {
-            panic!("must fail")
-        };
-        assert_eq!(error_of(err).await.0, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// A bound pair that the run would pass to `f64::clamp` with the lower bound above the upper one (a panic, so a 500) is a 400
+    /// on create and on compare, before anything runs. A pair the run does not use passes: the mortgage-spread bounds without a
+    /// spread gain, and `r_star_est_min` without `r_star_adapt`. Equal bounds pass.
+    #[tokio::test]
+    async fn clamp_bounds_out_of_order_are_a_400() {
+        let st = state(64 << 20);
+        let bad = [
+            (r#""u_star_min":0.09,"u_star_max":0.01"#, "u_star_min = 0.09 is above u_star_max = 0.01"),
+            (r#""ebp_min":0.05,"ebp_max":0.04"#, "ebp_min = 0.05 is above ebp_max = 0.04"),
+            (
+                r#""mortgage_spread_min_adj":0.02,"mortgage_spread_max_adj":0.01,"mortgage_spread_stress_gain":0.5"#,
+                "mortgage_spread_min_adj = 0.02 is above mortgage_spread_max_adj = 0.01",
+            ),
+            (r#""r_star_est_min":0.05,"r_star_adapt":0.3"#, "r_star_est_min = 0.05 is above the r* estimate's upper bound = 0.03"),
+        ];
+        for (keys, want) in bad {
+            let create = create_sim(State(st.clone()), Bytes::from(format!(r#"{{"config":{{"n_households":300,{keys}}}}}"#))).await;
+            let body = format!(r#"{{"config":{{"n_households":300,{keys}}},"months":2,"seeds":[1]}}"#);
+            let compared = compare(State(st.clone()), Query(HashMap::new()), Bytes::from(body)).await;
+            for r in [create.map(|_| ()), compared.map(|_| ())] {
+                let (status, msg) = error_of(r.expect_err(keys)).await;
+                assert_eq!(status, StatusCode::BAD_REQUEST, "{keys}");
+                assert!(msg.contains(want), "{msg}");
+            }
+        }
+        assert_eq!(st.compare.computed.load(Ordering::SeqCst), 0, "nothing ran");
+        assert!(lock(&st.sims).map.is_empty(), "nothing was created");
+        let d = Config::default();
+        for ok in [
+            Config { mortgage_spread_min_adj: 0.02, mortgage_spread_max_adj: 0.01, ..d.clone() },
+            Config { r_star_est_min: 0.05, ..d.clone() },
+            Config { u_star_min: 0.05, u_star_max: 0.05, ebp_min: 0.01, ebp_max: 0.01, ..d.clone() },
+        ] {
+            assert!(validate_config(&ok).is_ok());
+        }
     }
 
     // ---- R13-S: common-world cache, no-change fast path, streaming ------------------------------------------------------------

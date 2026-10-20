@@ -44,6 +44,10 @@ A month that fails the stock-flow identities stops the run (`sfc_enforce`, defau
 caches nothing; a live economy whose step fails answers 500 to every later request except the list and DELETE. Its world is
 dropped, and its `SimInfo` in the list gains `stopped`, the reason (the other fields are as of the failed step); `stopped` is
 omitted while an economy runs. A refused request does not touch the economy (see `ECONSIM_SIM_TTL_HOURS`).
+A config whose bounds are out of order where the run uses them (`u_star_min` above `u_star_max`, `ebp_min` above `ebp_max`,
+`mortgage_spread_min_adj` above `mortgage_spread_max_adj` with a mortgage-spread gain, `r_star_est_min` above 0.03 with
+`r_star_adapt` > 0) is refused with 400 on create and compare, the keys named (the CLI exits with status 2); it used to
+panic in the run.
 Creating a world with 20k households and burn-in takes a few seconds; `/api/compare` with 4 seeds × 60 months may take
 10–30 s.
 

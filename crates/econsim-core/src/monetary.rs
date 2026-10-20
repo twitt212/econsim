@@ -271,8 +271,9 @@ const INFLATION_RISK_PREMIUM: f64 = 0.1;
 /// Upper bound on the natural-unemployment estimate: `Config::u_star_max` (round 7 step 10a; 0.044 is the CBO noncyclical
 /// rate for 2026, which the equilibrium u sits about 0.2pp above).
 
-/// Upper bound on the adaptive r* estimate. The lower bound is `Config::r_star_est_min` (re-fit Step 3).
-const R_STAR_EST_MAX: f64 = 0.03;
+/// Upper bound on the adaptive r* estimate. The lower bound is `Config::r_star_est_min` (re-fit Step 3), which
+/// `Config::validate_clamp_bounds` keeps at or below this.
+pub const R_STAR_EST_MAX: f64 = 0.03;
 /// Policy rate (decimal) at or below which the r* anti-windup switch (`Config::r_star_antiwindup`) skips negative-gap
 /// integration.
 const R_STAR_ZLB_RATE: f64 = 0.0025;

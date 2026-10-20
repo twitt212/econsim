@@ -56,3 +56,14 @@ fn out_of_range_retaliation_values_exit_with_an_error() {
         }
     }
 }
+
+/// A bound pair out of order (`Config::validate_clamp_bounds`) exits with status 2 before anything runs, instead of panicking in
+/// `f64::clamp` during the run.
+#[test]
+fn clamp_bounds_out_of_order_exit_with_an_error() {
+    let out = econsim_with(r#"{"u_star_min":0.09,"u_star_max":0.01}"#, &["run", "300", "2", "1"]);
+    assert_eq!(out.status.code(), Some(2));
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("u_star_min = 0.09 is above u_star_max = 0.01"), "stderr: {err}");
+    assert!(out.stdout.is_empty(), "nothing on stdout");
+}

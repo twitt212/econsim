@@ -1906,6 +1906,33 @@ impl Config {
         Ok(())
     }
 
+    /// Bound pairs that reach `f64::clamp`, which panics when the lower bound is above the upper one (before this check the
+    /// server answered such a config with a 500 from the panic): `u_star_min` and `u_star_max` (the natural-rate estimate,
+    /// every month), `ebp_min` and `ebp_max` (the lender premium, every month), `mortgage_spread_min_adj` and
+    /// `mortgage_spread_max_adj` (only with a mortgage-spread gain), and `r_star_est_min` against the fixed upper bound of the r*
+    /// estimate, `monetary::R_STAR_EST_MAX` (only with `r_star_adapt` > 0). A pair the run does not use is not checked. Equal
+    /// bounds pass. The server calls this before it runs a request, and the CLI before it runs a config.
+    pub fn validate_clamp_bounds(&self) -> Result<(), String> {
+        fn ordered(lo_name: &str, lo: f64, hi_name: &str, hi: f64) -> Result<(), String> {
+            if lo <= hi {
+                Ok(())
+            } else {
+                Err(format!("{lo_name} = {lo} is above {hi_name} = {hi}"))
+            }
+        }
+        ordered("u_star_min", self.u_star_min, "u_star_max", self.u_star_max)?;
+        ordered("ebp_min", self.ebp_min, "ebp_max", self.ebp_max)?;
+        if self.mortgage_spread_vol_gain != 0.0 || self.mortgage_spread_stress_gain != 0.0 {
+            let (lo, hi) = (self.mortgage_spread_min_adj, self.mortgage_spread_max_adj);
+            ordered("mortgage_spread_min_adj", lo, "mortgage_spread_max_adj", hi).map_err(|e| format!("{e} (a mortgage-spread gain is set)"))?;
+        }
+        if self.r_star_adapt > 0.0 {
+            let max = crate::monetary::R_STAR_EST_MAX;
+            ordered("r_star_est_min", self.r_star_est_min, "the r* estimate's upper bound", max).map_err(|e| format!("{e} (r_star_adapt > 0)"))?;
+        }
+        Ok(())
+    }
+
     /// Stage 5 (S2-R7, D57): `world_import_gap_offset` is empty or holds twelve finite values in [-10, 10] (pp; the term it centres is clamped to +-10).
     pub fn validate_world_import_gap_offset(&self) -> Result<(), String> {
         let v = &self.world_import_gap_offset;
