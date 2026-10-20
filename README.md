@@ -96,8 +96,13 @@ is tied to a build and a model fingerprint.
 RAYON_NUM_THREADS=1 ./target/release/econsim-cli run 5000 60 3 --json | tail -n 1 | md5     # md5sum on Linux
 ```
 
-It must be `9f90c88a2c8b653857029d235cd6b0a6`, and the same with `RAYON_NUM_THREADS=8`. If it is not, your build does not
-run the model of this release. Documents, profiles and checks that name other fingerprints say which profile they belong to.
+On macOS it must be `TODO-remeasure-on-macOS` (see the accounting fixes in [docs/CALIBRATION.md](docs/CALIBRATION.md)),
+and the same with `RAYON_NUM_THREADS=8`. If it is not, your build does not run the model of this release. The md5 can
+differ between platforms, because the system maths library's `exp`, `ln` and `pow` are not bit-identical everywhere: on
+Linux x86-64 (glibc) the same run gives `a06730ec789aa0742f2052eeb64e631b`. With
+`ECONSIM_CFG="$(cat scripts/profiles/legacy_acctfix_off.json)"` the run reproduces the model before the accounting fixes:
+`9f90c88a2c8b653857029d235cd6b0a6` on macOS, `1a76b12271eee590b51c6f247312627d` on Linux x86-64. Documents, profiles and
+checks that name other fingerprints say which profile they belong to.
 
 ## Where to read next
 

@@ -40,6 +40,8 @@ type Shock =
 ```
 
 Errors: HTTP 4xx/5xx with `{ "error": string }`. CORS is open (`*`). Long computations run on a blocking thread pool.
+A month that fails the stock-flow identities stops the run (`sfc_enforce`, default true): `/api/compare` answers 500 and
+caches nothing; a live economy whose step fails answers 500 to every later request except the list and DELETE.
 Creating a world with 20k households and burn-in takes a few seconds; `/api/compare` with 4 seeds × 60 months may take
 10–30 s.
 
