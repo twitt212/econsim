@@ -7599,7 +7599,10 @@ Tests: core 632 passed, 0 failed, 2 ignored (base 623); server 82 passed (base 8
 
 A code review of the release (60f681a) found six places where money or a measure did not follow the model's own
 accounting. Each fix is a `Config` key, default true; `scripts/profiles/legacy_acctfix_off.json` sets all seven to false
-and reproduces the release bit for bit. The keys are independent: each can be switched off alone.
+and reproduces the release bit for bit. The keys are independent: each can be switched off alone. With either
+repossession key on, the sale of a repossession writes off its loan only while that id is still a mortgage on the house, so
+`housing_reo_relist` without `housing_reo_nonaccrual` (where the evicted borrower can repay the loan and the loan slab reuses
+its id) writes off no other loan.
 
 | Key | What was wrong | What the key does |
 |---|---|---|
@@ -7620,7 +7623,7 @@ this tree, legacy_acctfix_off.json, RAYON 1 and 8      1a76b12271eee590b51c6f247
 this tree, defaults, RAYON 1, 4 and 8                  a06730ec789aa0742f2052eeb64e631b
 ```
 
-Tests: core 646 passed and 2 ignored, server 84, cli 9 (16 new; four existing tests pin the release path for a key that
+Tests: core 647 passed and 2 ignored, server 84, cli 9 (17 new; four existing tests pin the release path for a key that
 moves them and now set that key false: `legacy_keys_reproduce_the_4_1_link`, `with_no_change_the_block_holds_todays_state`,
 `rv_world_metrics_are_in_their_stated_units`, `rv_a_burn_in_worlds_first_update_is_checked_not_waived`).
 
@@ -7657,5 +7660,5 @@ Scenario effects (10,000 households, 6 seeds, 24 months, warm-up 24; mean ± SE)
 stylised-facts scorecard and the joint gates were measured on the legacy accounting and are not re-run here. The
 website's request overlay (`README.md`, "Reproduce a result") does not set these keys, so it gets the fixes. Not changed:
 base prices are never re-based; banks have no tax-loss carry-forward; the import deflator uses domestic prices; with
-`housing_reo_nonaccrual` off, a repossession loan paid off at maturity leaves a stale `reo_loan` id that a later sale can
-match to a reused loan id.
+both repossession keys off (the release), a repossession loan paid off at maturity leaves a stale `reo_loan` id, and a later
+sale writes off whatever loan has reused that id.

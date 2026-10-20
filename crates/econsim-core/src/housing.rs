@@ -1809,6 +1809,16 @@ fn execute_purchase(w: &mut World, bid: &Bid, house: HouseId) -> Option<bool> {
         return None;
     }
 
+    // A repossession's loan id is checked before the buyer's loan is originated: with `housing_reo_nonaccrual` off the
+    // evicted borrower can repay the loan, and the slab gives its freed id to the next loan, which may be the buyer's.
+    // With either REO key the sale writes off only a loan that is still a mortgage on this house, which only the REO loan
+    // can be until the sale (`is_reo_loan` alone would also match a reused id that is another house's repossession).
+    // Both keys off: no check (the release).
+    let reo_stale = (w.cfg.housing_reo_nonaccrual || w.cfg.housing_reo_relist)
+        && w.housing.reo_loan.get(hu).copied().flatten().is_some_and(|l| {
+            !w.loans.get(l).is_some_and(|x| x.kind == LoanKind::Mortgage { house })
+        });
+
     // The seller's mortgage is unlinked while the buyer's loan is originated (a bank will not lend against a
     // house that is already encumbered); it is settled from the sale proceeds below.
     let old_loan = w.houses[hu].mortgage.take();
@@ -1865,8 +1875,8 @@ fn execute_purchase(w: &mut World, bid: &Bid, house: HouseId) -> Option<bool> {
         }
         Owner::Bank(_) => {
             reo = true;
-            // Foreclosed house: the defaulted loan is written off net of proceeds (DESIGN §16).
-            if let Some(l) = w.housing.reo_loan.get_mut(hu).and_then(|x| x.take()) {
+            // Foreclosed house: the defaulted loan is written off net of proceeds (DESIGN §16). A stale id is cleared only.
+            if let Some(l) = w.housing.reo_loan.get_mut(hu).and_then(|x| x.take()).filter(|_| !reo_stale) {
                 if let Some(loan) = w.loans.get(l) {
                     let (lb, p) = (loan.bank as usize, loan.principal);
                     let rec = p.min(price);
@@ -3281,6 +3291,76 @@ mod tests {
             assert!(w.housing.reo_loan[hu].is_none());
             let loss = w.banks[bank as usize].loan_losses - loss0;
             assert!((loss - (principal - price).max(0.0)).abs() < 1e-6, "loss {loss}");
+            ledger::check_consistency(&w).unwrap();
+            check_invariants(&w).unwrap();
+        }
+    }
+
+    /// `housing_reo_relist` with `housing_reo_nonaccrual` off: the evicted borrower can repay the repossession's loan (here in
+    /// full, as at maturity), and the slab gives the freed id to the next loan. The sale then writes nothing off, whether the id
+    /// went to another owner's mortgage, to a loan that is itself another house's repossession, or to the buyer's own mortgage
+    /// at this sale. Legacy (both keys off): the sale writes off the other owner's mortgage.
+    #[test]
+    fn repossession_sale_does_not_write_off_a_loan_that_reused_its_id() {
+        for (relist, reuse) in [(true, "other"), (true, "other_reo"), (true, "buyer"), (false, "other")] {
+            let mut c = cfg(500);
+            c.housing_reo_nonaccrual = false;
+            c.housing_reo_relist = relist;
+            let mut w = tiny_world(c, 8);
+            ensure_sizes(&mut w);
+            let (h, house) = find_owner_occupier(&w, true);
+            let hu = house as usize;
+            let loan = w.houses[hu].mortgage.unwrap();
+            foreclose(&mut w, loan, house);
+            let p = w.loans.get(loan).unwrap().principal;
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(h as HhId), p);
+            ledger::repay_principal(&mut w, loan, p);
+            assert!(!w.loans.contains(loan));
+            assert_eq!(w.housing.reo_loan[hu], Some(loan), "the repossession keeps the repaid loan's id");
+            let buyer = find_renter(&w, h);
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(buyer as HhId), 10_000_000.0);
+            let price = w.houses[hu].ask_price;
+            let mut other = None;
+            let bid = if reuse == "buyer" {
+                let quote = MortgageQuote { bank: 0, rate: 0.05, max_loan: 0.5 * price };
+                Bid { hh: buyer as HhId, price, principal: 0.5 * price, quote: Some(quote), investor: false }
+            } else {
+                let (o, oh) = find_owner_occupier(&w, false);
+                let bank = w.households[o].bank;
+                let kind = LoanKind::Mortgage { house: oh };
+                assert_eq!(ledger::create_loan(&mut w, bank, Borrower::Household(o as HhId), kind, 100_000.0, 0.06, 360), loan);
+                if reuse == "other_reo" {
+                    foreclose(&mut w, loan, oh);
+                }
+                other = Some(oh);
+                cash_bid(buyer)
+            };
+            let losses0 = w.flows.loan_losses;
+            assert_eq!(execute_purchase(&mut w, &bid, house), Some(true), "{reuse}");
+            assert!(w.housing.reo_loan[hu].is_none());
+            match other {
+                None => {
+                    // The buyer's mortgage was originated at this sale under the freed id.
+                    assert_eq!(w.houses[hu].mortgage, Some(loan));
+                    assert_eq!(w.loans.get(loan).map(|l| l.borrower), Some(Borrower::Household(buyer as HhId)));
+                }
+                Some(oh) if relist => {
+                    let l = w.loans.get(loan).expect("the other loan survives the sale");
+                    assert_eq!((l.kind, l.principal), (LoanKind::Mortgage { house: oh }, 100_000.0), "{reuse}");
+                    if reuse == "other_reo" {
+                        assert_eq!(w.housing.reo_loan[oh as usize], Some(loan));
+                    } else {
+                        assert_eq!(w.houses[oh as usize].mortgage, Some(loan));
+                    }
+                }
+                Some(oh) => {
+                    assert!(!w.loans.contains(loan), "legacy: the stale id writes off the other loan");
+                    assert!(w.houses[oh as usize].mortgage.is_none());
+                }
+            }
+            if relist {
+                assert_eq!(w.flows.loan_losses, losses0, "{reuse}: no loss is booked");
+            }
             ledger::check_consistency(&w).unwrap();
             check_invariants(&w).unwrap();
         }

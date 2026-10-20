@@ -1127,7 +1127,9 @@ pub struct Config {
     /// A repossession whose listing reaches the end of its life stays on the market (`housing::update_listings`): it is
     /// re-listed at the lower of its decayed ask and `REO_ASK_FACTOR` × current value, instead of being let as a
     /// bank-owned rental that nothing ever offers for sale again. The bank keeps cutting the price until a buyer takes it,
-    /// so every repossession is resolved through the sale path that writes the loan off net of proceeds. Legacy `false`
+    /// so every repossession is resolved through the sale path that writes the loan off net of proceeds. With
+    /// `housing_reo_nonaccrual` off the evicted borrower can repay the loan before the sale, which then writes nothing off:
+    /// with either key the sale checks that the loan id is still a mortgage on the house. Legacy `false`
     /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
     pub housing_reo_relist: bool,
     /// Owner-to-renter exit hazard elasticity to the user cost relative to its anchor: exits scale by (uc / uc0)^e.
