@@ -57,10 +57,15 @@ pub fn begin_month(w: &mut World) {
         f.demand = 0.0;
         f.investment_order = 0.0;
     });
+    // `bank_loss_carry`: losses booked after last month's P&L (business write-offs in `firms::close_books`) open this
+    // month's loan losses, so the P&L recognises them once; legacy zeroes them. A dead bank has no P&L to carry into.
+    let carry = w.cfg.bank_loss_carry;
     for b in w.banks.iter_mut() {
         b.interest_income = 0.0;
         b.interest_expense = 0.0;
-        b.loan_losses = 0.0;
+        let unrecognised = b.loan_losses - b.loan_losses_recognised;
+        b.loan_losses = if carry && b.alive && unrecognised.is_finite() { unrecognised } else { 0.0 };
+        b.loan_losses_recognised = 0.0;
         b.profit = 0.0;
         b.dividends = 0.0;
     }
@@ -526,6 +531,44 @@ mod tests {
             months,
             seeds: vec![1],
         }
+    }
+
+    /// `bank_loss_carry`: through the real month order, every loan loss booked (`flows.loan_losses`, which includes the
+    /// write-offs of firms failing in `firms::close_books`, after the bank P&L) reaches the bank P&L exactly once:
+    /// opening carry + losses booked = losses recognised + closing carry. Legacy drops the late write-offs.
+    #[test]
+    fn every_loan_loss_reaches_the_bank_pnl_once() {
+        let run_months = |carry: bool| -> (f64, f64, f64) {
+            let cfg = Config { n_households: 400, burn_in_months: 12, bank_loss_carry: carry, ..Default::default() };
+            let mut w = new_world(&cfg, 2);
+            let pending =
+                |w: &World| w.banks.iter().filter(|b| b.alive).map(|b| b.loan_losses - b.loan_losses_recognised).sum::<f64>();
+            let open = pending(&w);
+            // A firm with a business loan is left insolvent, so it fails in the first month's close_books.
+            let f = (0..w.firms.len()).find(|&f| w.firms[f].alive).unwrap();
+            let bank = w.firms[f].bank;
+            ledger::create_loan(&mut w, bank, Borrower::Firm(f as FirmId), LoanKind::Business, 1.0e6, 0.06, 60);
+            let d = w.firms[f].deposits;
+            ledger::pay(&mut w, ledger::Account::Firm(f as FirmId), ledger::Account::Government, d + 1.0e9);
+            let (mut booked, mut recognised) = (0.0, 0.0);
+            for t in 0..4 {
+                step(&mut w);
+                if t == 0 {
+                    assert!(!w.firms[f].alive, "the insolvent firm fails in close_books");
+                }
+                booked += w.flows.loan_losses;
+                recognised += w.banks.iter().filter(|b| b.alive).map(|b| b.loan_losses_recognised).sum::<f64>();
+            }
+            (open + booked, recognised, pending(&w))
+        };
+        let (inflow, recognised, close) = run_months(true);
+        assert!(inflow >= 1.0e6, "the failed firm's loan is written off: {inflow}");
+        assert!(
+            (inflow - recognised - close).abs() <= 1e-9 * inflow,
+            "opening carry + booked {inflow} != recognised {recognised} + closing carry {close}"
+        );
+        let (inflow, recognised, close) = run_months(false);
+        assert!(recognised + close <= inflow - 1.0e6 * (1.0 - 1e-9), "legacy: booked {inflow}, recognised {recognised} + {close}");
     }
 
     /// b9-warmup: with 0 the compare is the legacy one: reported month 0 is tick 0 at 2026.0, and the serialised

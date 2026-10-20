@@ -462,6 +462,14 @@ pub struct Config {
     pub business_spread: f64,
     pub capital_requirement: f64,
     pub bank_payout_ratio: f64,
+    /// Loan losses booked after the month's bank P&L are recognised in the next month's P&L. Business write-offs of
+    /// failed firms are booked in `firms::close_books`, which runs after `banking::service` has computed profit and
+    /// dividends and after the bank tax, and `sim::begin_month` used to zero them. They cut bank equity but never
+    /// bank profit, dividends or the bank tax base (bank_profits_bn_ar left out the business charge-offs that
+    /// loan_losses_bn_ar counts). With the key on, `sim::begin_month` keeps the part of `Bank.loan_losses` that the
+    /// P&L has not recognised, so every loss reaches the P&L exactly once, one month late when it is booked late.
+    /// Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub bank_loss_carry: bool,
     pub discount_spread: f64,
     /// Lender balance-sheet premium (excess bond premium), added to a bank's business loan base rate. Loss term:
     /// percentage points of premium per pp by which the expected loss rate on the bank's business loans (loan-weighted
@@ -2207,6 +2215,7 @@ impl Default for Config {
             business_spread: 0.014,
             capital_requirement: 0.105,
             bank_payout_ratio: 0.5,
+            bank_loss_carry: true,
             discount_spread: 0.001,
             ebp_loss_sens: 3.0,
             ebp_capital_sens: 1.0,

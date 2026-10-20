@@ -1232,6 +1232,8 @@ fn service_bank_pnl(w: &mut World, wage_sum: &[f64]) {
             w.banks[b].interest_income - w.banks[b].interest_expense - w.banks[b].loan_losses - opex[b],
         );
         w.banks[b].profit = profit;
+        // Losses booked after this point are left for next month's P&L (`bank_loss_carry`, see `sim::begin_month`).
+        w.banks[b].loan_losses_recognised = w.banks[b].loan_losses;
         // Payout: a share of profit when adequately capitalised, plus a gradual distribution of capital above the
         // management target (buybacks/special dividends), so bank equity does not accumulate without bound.
         let cr = capital_ratio(w, b as BankId);
@@ -1668,6 +1670,74 @@ mod tests {
         }
         let paid: f64 = w.banks.iter().map(|b| b.dividends).sum();
         assert!((w.fund.dividends_received + w.fund.special_dividends - paid).abs() < 1e-6 * (1.0 + paid));
+    }
+
+    /// `bank_loss_carry`: a business write-off booked after the month's P&L (as `firms::close_books` books a failed
+    /// firm's loans) lowers the next month's bank profit, dividends and bank tax by exactly that loss, once. Legacy
+    /// (`false`) drops it from the P&L.
+    #[test]
+    fn late_write_off_reaches_next_months_bank_pnl_once() {
+        let month = |x: &mut World| {
+            crate::sim::begin_month(x);
+            set_rates(x);
+            service(x);
+        };
+        let mut w = world(9);
+        assert!(w.cfg.bank_loss_carry, "the fix is the default");
+        month(&mut w);
+        // Size the loss well inside next month's tax bases (after and before operating expenses), from a dry run.
+        let mut dry = w.clone();
+        month(&mut dry);
+        let base = |b: &Bank| b.profit.min(b.interest_income - b.interest_expense - b.loan_losses);
+        let bank = (0..dry.banks.len()).max_by(|&a, &b| base(&dry.banks[a]).total_cmp(&base(&dry.banks[b]))).unwrap();
+        assert!(base(&dry.banks[bank]) > 0.0, "a bank with a positive tax base");
+        let loss = 0.25 * base(&dry.banks[bank]);
+        // A business loan of that bank written off after the P&L, in both worlds.
+        let f = (0..w.firms.len()).find(|&f| w.firms[f].alive).unwrap();
+        let lid = ledger::create_loan(&mut w, bank as BankId, Borrower::Firm(f as FirmId), LoanKind::Business, loss, 0.06, 60);
+        let mut legacy = w.clone();
+        legacy.cfg.bank_loss_carry = false;
+        for x in [&mut w, &mut legacy] {
+            assert_eq!(x.banks[bank].loan_losses_recognised, x.banks[bank].loan_losses);
+            let pre = x.banks[bank].loan_losses;
+            assert_eq!(ledger::write_off(x, lid), loss);
+            assert_eq!(x.banks[bank].loan_losses, pre + loss);
+        }
+        // A dead bank carries nothing.
+        let mut dead = w.clone();
+        dead.banks[bank].alive = false;
+        crate::sim::begin_month(&mut dead);
+        assert_eq!(dead.banks[bank].loan_losses, 0.0);
+
+        // Next month: only the fixed P&L recognises the loss; interest flows and operating expenses are identical.
+        let carried = w.banks[bank].loan_losses - w.banks[bank].loan_losses_recognised;
+        month(&mut w);
+        month(&mut legacy);
+        let (on, off) = (&w.banks[bank], &legacy.banks[bank]);
+        assert_eq!(on.loan_losses.to_bits(), carried.to_bits());
+        assert!((carried - loss).abs() <= 1e-12 * loss, "carried {carried} vs written off {loss}");
+        assert_eq!(off.loan_losses, 0.0);
+        assert_eq!(on.interest_income.to_bits(), off.interest_income.to_bits());
+        assert_eq!(on.interest_expense.to_bits(), off.interest_expense.to_bits());
+        assert!((off.profit - on.profit - loss).abs() <= 1e-9 * loss, "profit falls by the loss: {}", off.profit - on.profit);
+        assert!(on.dividends <= off.dividends && off.dividends - on.dividends <= loss * (1.0 + 1e-9));
+        assert!(on.dividends < off.dividends, "the loss is not paid out as a dividend");
+        // The bank tax base is lower by the loss on both bases (after operating expenses, and the legacy one before).
+        let cit = w.cfg.corporate_tax;
+        for after_opex in [true, false] {
+            let tax = |x: &World| {
+                let mut x = x.clone();
+                x.cfg.bank_tax_after_opex = after_opex;
+                crate::fiscal::collect_and_finance(&mut x);
+                x.fiscal.bank_tax_month
+            };
+            let d = tax(&legacy) - tax(&w);
+            assert!((d - cit * loss).abs() <= 1e-9 * cit * loss, "after_opex {after_opex}: tax falls by {d}, want {}", cit * loss);
+        }
+        // Recognised once: the month after, nothing is left to carry.
+        month(&mut w);
+        assert_eq!(w.banks[bank].loan_losses, 0.0);
+        ledger::check_consistency(&w).unwrap();
     }
 
     // rz1 F2: the credit-spread tail reaches both loan rates through `set_rates`.

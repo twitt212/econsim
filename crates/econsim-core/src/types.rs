@@ -405,6 +405,10 @@ pub struct Bank {
     pub interest_income: f64,
     pub interest_expense: f64,
     pub loan_losses: f64,
+    /// The part of `loan_losses` recognised in this month's P&L (set by `banking::service_bank_pnl`). Losses booked
+    /// after it (firm bankruptcies in `firms::close_books`) are the remainder, which `sim::begin_month` carries into the
+    /// next month's P&L when `bank_loss_carry` is on.
+    pub loan_losses_recognised: f64,
     pub profit: f64,
     pub dividends: f64,
     // rates offered (annual)
