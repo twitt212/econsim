@@ -74,6 +74,15 @@ const COMPARE_RECORDS: &[&str] = &["baseline", "shocked"];
 struct SimEntry {
     world: World,
     seed: u64,
+    /// Set when a step panicked on this economy (with `Config::sfc_enforce`, a stock-flow inconsistency): the world is
+    /// half-stepped, so it is no longer read, forked, shocked or stepped (`lock_usable`), only listed and deleted.
+    failed: Option<String>,
+}
+
+impl SimEntry {
+    fn new(world: World, seed: u64) -> Self {
+        SimEntry { world, seed, failed: None }
+    }
 }
 
 /// Pre-warm progress for `/api/health`: the entries finished (computed, cached or failed) of the `total` in the pre-warm file.
@@ -256,6 +265,28 @@ type Shared = Arc<AppState>;
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     // A panicked simulation must not wedge the server; the data is still readable.
     m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// The economy `id` locked for a request, refused (500, JSON error) once a step has panicked on it: that world is
+/// half-stepped and must not be served or stepped on. A mutex poisoned by a panic elsewhere is treated the same way.
+fn lock_usable<'a>(id: &str, e: &'a Mutex<SimEntry>) -> Result<MutexGuard<'a, SimEntry>, ApiError> {
+    let poisoned = e.is_poisoned();
+    let mut g = lock(e);
+    if poisoned && g.failed.is_none() {
+        g.failed = Some("a request panicked while it held this simulation".to_string());
+    }
+    match &g.failed {
+        None => Ok(g),
+        Some(why) => Err(ApiError::Internal(format!("simulation '{id}' stopped: {why}; it can only be deleted"))),
+    }
+}
+
+/// The message of a caught panic.
+fn panic_text(p: &(dyn std::any::Any + Send)) -> String {
+    match p.downcast_ref::<String>() {
+        Some(s) => s.clone(),
+        None => p.downcast_ref::<&str>().map_or_else(|| "panic".to_string(), |s| s.to_string()),
+    }
 }
 
 fn splitmix(mut x: u64) -> u64 {
@@ -620,7 +651,7 @@ async fn create_sim(State(st): State<Shared>, body: Bytes) -> Result<Json<SimInf
     validate_config(&cfg)?;
     let seed = req.seed.unwrap_or(1);
     let world = blocking(move || sim::new_world(&cfg, seed)).await?;
-    Ok(Json(register(&st, SimEntry { world, seed })))
+    Ok(Json(register(&st, SimEntry::new(world, seed))))
 }
 
 /// `GET /api/sims`. Lists the economies after the idle sweep; a list does not touch them (R17).
@@ -655,14 +686,14 @@ async fn get_sim(
 ) -> Result<Response, ApiError> {
     let keep = fields_param(&query);
     let e = get_entry(&st, &id)?;
-    let state = blocking(move || {
-        let g = lock(&e);
-        SimState {
+    let state = blocking(move || -> Result<SimState, ApiError> {
+        let g = lock_usable(&id, &e)?;
+        Ok(SimState {
             info: info_of(&id, &g),
             history: g.world.history.clone(),
-        }
+        })
     })
-    .await?;
+    .await??;
     filtered_json(state, &["history"], keep).await
 }
 
@@ -695,16 +726,24 @@ async fn step_sim(
         )));
     }
     let e = get_entry(&st, &id)?;
-    let resp = blocking(move || {
-        let mut g = lock(&e);
+    let resp = blocking(move || -> Result<StepResponse, ApiError> {
+        let mut g = lock_usable(&id, &e)?;
         let before = g.world.history.len();
-        sim::run(&mut g.world, req.months);
-        StepResponse {
+        // A panic in a month (with `Config::sfc_enforce`, a stock-flow inconsistency) leaves the world half-stepped. It is
+        // caught here, while the lock is held, so the economy is marked stopped (and the mutex is not poisoned) and the
+        // client gets the panic message in a JSON 500.
+        let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sim::run(&mut g.world, req.months)));
+        if let Err(p) = run {
+            let why = format!("a month panicked at tick {}: {}", g.world.tick, panic_text(&*p));
+            g.failed = Some(why.clone());
+            return Err(ApiError::Internal(format!("simulation '{id}' stopped: {why}")));
+        }
+        Ok(StepResponse {
             tick: g.world.tick,
             metrics: g.world.history[before..].to_vec(),
-        }
+        })
     })
-    .await?;
+    .await??;
     filtered_json(resp, &["metrics"], keep).await
 }
 
@@ -717,7 +756,7 @@ async fn add_shock(
     req.shock.validate().map_err(ApiError::BadRequest)?;
     let e = get_entry(&st, &id)?;
     let info = blocking(move || -> Result<SimInfo, ApiError> {
-        let mut g = lock(&e);
+        let mut g = lock_usable(&id, &e)?;
         let at = req.at_month.unwrap_or(g.world.tick);
         if at < g.world.tick {
             return Err(ApiError::BadRequest(format!(
@@ -737,20 +776,17 @@ async fn add_shock(
 
 async fn snapshot_sim(State(st): State<Shared>, Path(id): Path<String>) -> Result<Json<Snapshot>, ApiError> {
     let e = get_entry(&st, &id)?;
-    let snap = blocking(move || metrics::snapshot(&lock(&e).world)).await?;
+    let snap = blocking(move || lock_usable(&id, &e).map(|g| metrics::snapshot(&g.world))).await??;
     Ok(Json(snap))
 }
 
 async fn fork_sim(State(st): State<Shared>, Path(id): Path<String>) -> Result<Json<SimInfo>, ApiError> {
     let e = get_entry(&st, &id)?;
-    let copy = blocking(move || {
-        let g = lock(&e);
-        SimEntry {
-            world: g.world.clone(),
-            seed: g.seed,
-        }
+    let copy = blocking(move || -> Result<SimEntry, ApiError> {
+        let g = lock_usable(&id, &e)?;
+        Ok(SimEntry::new(g.world.clone(), g.seed))
     })
-    .await?;
+    .await??;
     Ok(Json(register(&st, copy)))
 }
 
@@ -1705,7 +1741,7 @@ mod tests {
     fn live_sim(st: &Shared) -> String {
         let mut world = sim::new_world(&Config { n_households: 1000, ..Config::default() }, 7);
         sim::run(&mut world, 3);
-        register(st, SimEntry { world, seed: 7 }).id
+        register(st, SimEntry::new(world, 7)).id
     }
 
     /// `GET /api/sims/:id` with `fields` filters `history` only. Without it the body is the serialised `SimState`, as before.
@@ -1763,6 +1799,77 @@ mod tests {
                 assert_eq!(l[k], f[k], "{k}");
             }
         }
+    }
+
+    /// The status and the `error` message of a handler's error response.
+    async fn error_of(e: ApiError) -> (StatusCode, String) {
+        let resp = e.into_response();
+        let status = resp.status();
+        let body: Value = serde_json::from_slice(&to_bytes(resp.into_body(), usize::MAX).await.unwrap()).unwrap();
+        (status, body["error"].as_str().unwrap().to_string())
+    }
+
+    /// sfc_enforce: a month that panics (here a stock-flow inconsistency injected into a live economy) answers a JSON 500 with the
+    /// panic message. The half-stepped economy is then refused on every route but the list and DELETE, its mutex is not poisoned,
+    /// and the other economies are unaffected.
+    #[tokio::test]
+    async fn a_panicking_step_is_a_500_and_stops_the_economy() {
+        let st = state(0);
+        let (id, other) = (live_sim(&st), live_sim(&st));
+        let e = get_entry(&st, &id).unwrap();
+        {
+            let mut g = lock(&e);
+            let b = &mut g.world.banks[0];
+            b.deposits += 0.01 * b.deposits.abs() + 1.0;
+        }
+        let step = |id: &str| step_sim(State(st.clone()), Path(id.to_string()), Query(HashMap::new()), Bytes::from_static(br#"{"months":2}"#));
+        let Err(err) = step(&id).await else { panic!("an inconsistent month must fail") };
+        let (status, msg) = error_of(err).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert!(msg.contains("stock-flow inconsistency at tick 3"), "{msg}");
+        assert!(!e.is_poisoned());
+        let stopped = |r: Result<(), ApiError>| async move {
+            let (status, msg) = error_of(r.expect_err("a stopped economy must be refused")).await;
+            assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+            assert!(msg.contains("stopped") && msg.contains("stock-flow inconsistency"), "{msg}");
+        };
+        stopped(step(&id).await.map(|_| ())).await;
+        stopped(get_sim(State(st.clone()), Path(id.clone()), Query(HashMap::new())).await.map(|_| ())).await;
+        stopped(snapshot_sim(State(st.clone()), Path(id.clone())).await.map(|_| ())).await;
+        stopped(fork_sim(State(st.clone()), Path(id.clone())).await.map(|_| ())).await;
+        let shock = Bytes::from_static(br#"{"shock":{"type":"OilPrice","pct":20,"half_life_months":6}}"#);
+        stopped(add_shock(State(st.clone()), Path(id.clone()), shock).await.map(|_| ())).await;
+        assert_eq!(lock(&e).world.tick, 3, "the stopped economy was not stepped again");
+        // The other economy steps on; the stopped one is still listed and can be deleted.
+        assert!(step(&other).await.is_ok());
+        let listed = list_sims(State(st.clone())).await.unwrap().0;
+        assert!(listed.iter().any(|s| s.id == id));
+        assert!(delete_sim(State(st.clone()), Path(id.clone())).await.is_ok());
+        assert!(matches!(get_sim(State(st.clone()), Path(id), Query(HashMap::new())).await, Err(ApiError::NotFound(_))));
+    }
+
+    /// A compare whose computation panics (today: `u_star_min` above `u_star_max`, which `f64::clamp` refuses in the Taylor
+    /// rule) answers a JSON 500. The flight is cleared, so the same request computes again instead of waiting on it, and the
+    /// permits are released (two failures on a two-permit cache, then a valid request still computes).
+    #[tokio::test]
+    async fn a_panicking_compare_is_a_500_and_frees_its_flight_and_permit() {
+        let st = state(64 << 20);
+        let bad = r#"{"config":{"n_households":300,"burn_in_months":12,"u_star_min":0.09,"u_star_max":0.01},"months":2,"seeds":[1]}"#;
+        for n in 1..=2u64 {
+            let Err(err) = compare(State(st.clone()), Query(HashMap::new()), Bytes::from(bad)).await else { panic!("must fail") };
+            let (status, msg) = error_of(err).await;
+            assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+            assert!(msg.contains("panicked"), "{msg}");
+            assert_eq!(st.compare.computed.load(Ordering::SeqCst), n, "a failed computation is neither stored nor left in flight");
+        }
+        let (cache, _) = call(&st, REQ).await;
+        assert_eq!(cache, "miss");
+        // The same invalid config on a live economy fails at creation, also as a JSON 500.
+        let Err(err) = create_sim(State(st.clone()), Bytes::from(r#"{"config":{"n_households":300,"u_star_min":0.09,"u_star_max":0.01}}"#)).await
+        else {
+            panic!("must fail")
+        };
+        assert_eq!(error_of(err).await.0, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     // ---- R13-S: common-world cache, no-change fast path, streaming ------------------------------------------------------------
@@ -2073,7 +2180,7 @@ mod tests {
     /// A small economy of `n` households, not run, created through `register` as `create_sim` does.
     fn tiny_sim(st: &Shared, n: usize) -> String {
         let world = sim::new_world(&Config { n_households: n, ..Config::default() }, 3);
-        register(st, SimEntry { world, seed: 3 }).id
+        register(st, SimEntry::new(world, 3)).id
     }
 
     /// R17: an economy untouched for the TTL is removed exactly at the TTL (not before); one created later is kept. The removal
