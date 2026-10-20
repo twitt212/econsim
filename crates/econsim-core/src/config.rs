@@ -1731,6 +1731,20 @@ pub struct Config {
     /// `real_consumption_per_hh` can differ. With the world block's trade link and US import channel on, `world/trade.rs` reads
     /// last month's `gdp_real_bn_ar`, so the key then reaches the economy. Off = the current-margin real FISIM (legacy).
     pub fisim_constant_margin: bool,
+    /// Accounting fix (recorded real series): real consumption and real government purchases are deflated component by
+    /// component, each sector's nominal purchases over that sector's price relative to the base month and housing services
+    /// over the rent index, so the implied deflators (nominal over real) are Paasche indices: the expenditure-weighted
+    /// harmonic means of the relatives (`metrics::paasche_volume`). The headline then agrees with its own breakdown
+    /// (`household_purchases_real_bn_ar`, `consumption_by_sector_real`). The same applies to in-kind health care (split by
+    /// `health_sector_mix`), to the household deflator behind `consumption_by_quintile`, and, through the PCE deflator, to
+    /// the constant-margin real FISIM. Legacy: the aggregates are divided by the arithmetic mean of the relatives weighted by
+    /// current nominal spending, which overstates the deflator whenever relative prices diverge (4% of spending on energy,
+    /// energy prices +50%, quantities unchanged: real consumption -0.9%) and understates real consumption, real government
+    /// purchases and real GDP. Nominal series and the economy are unchanged, except that with the world block's trade link and
+    /// US import channel on `world/trade.rs` reads last month's `gdp_real_bn_ar`. The investment (fixed capital-goods
+    /// basket), residential (one sector), export (by sector) and import (fixed tradable weights) deflators are not this
+    /// form and are unchanged. Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub paasche_deflators: bool,
     /// rz1 F1: mean lag (months) of the firms' investment user cost, when different from the households' lag. A negative value
     /// (the default, -1) means "the same as `rate_perception_months`" (legacy: one lag for firms and households). A value >= 0
     /// replaces `rate_perception_months` in the firms' smoother only (`firms::plan`); the households keep `rate_perception_months`.
@@ -2702,6 +2716,8 @@ impl Default for Config {
             rate_perception_deposit: false,
             credit_tail_half_life_months: 0.0,
             fisim_constant_margin: false,
+            // accounting fixes; legacy values in scripts/profiles/legacy_acctfix_off.json
+            paasche_deflators: true,
             rate_perception_firm_months: -1.0,
 
             // rz12
