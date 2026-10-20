@@ -849,6 +849,11 @@ pub struct Config {
     pub employer_benefits: f64,
     pub payroll_cap_annual: f64,
     pub corporate_tax: f64,
+    /// A firm reborn in a dead slot (`firms::reborn`, which reuses the slot's id) starts with no corporate-tax loss
+    /// carry-forward. The dead predecessor's `FiscalState::firm_loss_cf` was kept, so the entrant paid no corporate tax
+    /// until it had used up the failed firm's losses (households in a reused slot already start clean). Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub entrant_loss_cf_reset: bool,
     /// Monthly pull of wage offers toward the firm's initial labour share (log gap).
     pub labor_share_pull: f64,
     /// Share of the gap to target inventory that production closes each month (partial adjustment ≈20–30% a
@@ -2330,6 +2335,7 @@ impl Default for Config {
             payroll_cap_annual: 176_100.0,
             // effective rate on book profits (US corporate receipts ≈ 1.7% of GDP; statutory 21%)
             corporate_tax: 0.13,
+            entrant_loss_cf_reset: true,
             labor_share_pull: 0.0,
             inventory_adjust: 0.12,
             demand_adapt: 0.4,
