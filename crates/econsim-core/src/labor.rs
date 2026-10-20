@@ -237,6 +237,29 @@ pub fn tightness(w: &World) -> f64 {
     w.flows.vacancies as f64 / w.labor.unemployed.max(1) as f64
 }
 
+/// Clear the labour-market memory of household slot `h` for a new occupant (an entrant placed in a reused slot;
+/// demography calls it with `Config::entrant_slot_reset`): the sector of the last employer, which targets job
+/// applications, and the pay multiplier of the last match. The scar and the re-entry memory are cleared too, although
+/// `bookkeeping` already ignores them for an entrant (no last wage, not out of the labour force).
+pub fn reset_household(st: &mut LaborState, h: HhId) {
+    let i = h as usize;
+    if let Some(x) = st.last_sector.get_mut(i) {
+        *x = None;
+    }
+    if let Some(x) = st.match_mult.get_mut(i) {
+        *x = 1.0;
+    }
+    if let Some(x) = st.scar.get_mut(i) {
+        *x = 1.0;
+    }
+    if let Some(x) = st.reentry_prev.get_mut(i) {
+        *x = 0;
+    }
+    if let Some(x) = st.reentry_n.get_mut(i) {
+        *x = 0;
+    }
+}
+
 fn ensure_sizes(w: &World, st: &mut LaborState) {
     let nh = w.households.len();
     let nf = w.firms.len();

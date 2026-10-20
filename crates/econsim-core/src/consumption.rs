@@ -180,6 +180,28 @@ struct Env<'a> {
     life: &'a [f64],
 }
 
+/// Clear the memory of household slot `h` for a new occupant (an entrant placed in a reused slot; demography calls it
+/// with `Config::entrant_slot_reset`): last month's capital income and taxable distributions, the windfall stock and
+/// UI-spell flag, and the impatience type, which `assign_types` redraws at the next `decide` as for a slot seen dead.
+pub fn reset_household(cs: &mut ConsumptionState, h: HhId) {
+    let i = h as usize;
+    if let Some(x) = cs.capital_income_prev.get_mut(i) {
+        *x = 0.0;
+    }
+    if let Some(x) = cs.distributions_prev.get_mut(i) {
+        *x = 0.0;
+    }
+    if let Some(x) = cs.windfall_stock.get_mut(i) {
+        *x = 0.0;
+    }
+    if let Some(x) = cs.ui_spell.get_mut(i) {
+        *x = false;
+    }
+    if let Some(x) = cs.type_age.get_mut(i) {
+        *x = u32::MAX;
+    }
+}
+
 /// Record each household's capital income for this month (interest + dividends + business income + rent received).
 /// `decide` uses these values next month, because capital income is paid after consumption in the tick.
 /// The orchestrator must call this at the end of each tick (after `monetary::markets`).

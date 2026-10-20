@@ -120,6 +120,14 @@ pub struct Config {
     /// Log change in native household formation per pp of unemployment gap (u* − u); 2008–11: a ≈5pp gap cut
     /// formation ≈60% (JCHS), ≈0.18. 0 makes formation acyclical.
     pub household_formation_cyclicality: f64,
+    /// An entrant placed in a reused household slot (`demography::add_entrants`) starts with none of the previous
+    /// occupant's per-slot memory: last month's capital income and taxable distributions (otherwise taxed in the
+    /// entrant's name and spent at the capital-income MPC), the windfall stock, UI-spell flag and impatience type (redrawn
+    /// even when the entrant is not younger than the decedent, which the "age falls" test missed), the labour-market
+    /// sector that targets job applications, the job's pay multiplier, and the tax arrears, year-to-date wages, Fund cost
+    /// basis and loss carry-forward. Inheritance is unchanged: the estate still passes to the heirs at death. Legacy
+    /// `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub entrant_slot_reset: bool,
 
     // --- labour ---
     pub min_wage_monthly: f64,
@@ -2050,6 +2058,7 @@ impl Default for Config {
             // Net immigrant households per household per year (US net international migration ≈1M people/yr, CBO).
             immigration_annual: 0.0035,
             household_formation_cyclicality: 0.18,
+            entrant_slot_reset: true,
 
             min_wage_monthly: 1_260.0,
             // exogenous E→U separations (CPS flows ≈1.1–1.3%/month incl. layoffs, which are endogenous here)
