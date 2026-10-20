@@ -171,7 +171,8 @@ pub const PHASES: [&str; 21] = [
     "housing", "consumption", "gov.spend", "goods", "banking", "fiscal", "markets", "firms.close", "metrics",
 ];
 
-/// `step` with wall-clock seconds per phase accumulated into `t` (profiling).
+/// `step` with wall-clock seconds per phase accumulated into `t` (profiling). With `sfc_enforce` it stops on the same
+/// inconsistencies as `step` (untimed: the checks are already computed).
 pub fn step_timed(w: &mut World, t: &mut [f64; 21]) {
     use std::time::Instant;
     let fns: [fn(&mut World); 21] = [
@@ -214,6 +215,9 @@ pub fn step_timed(w: &mut World, t: &mut [f64; 21]) {
         let t0 = Instant::now();
         f(w);
         t[i] += t0.elapsed().as_secs_f64();
+    }
+    if w.cfg.sfc_enforce {
+        enforce_identities(w);
     }
     w.tick += 1;
 }
@@ -526,6 +530,22 @@ mod tests {
         let msg = err.downcast_ref::<String>().cloned().unwrap_or_default();
         assert!(msg.starts_with(&format!("stock-flow inconsistency at tick {tick}: ")), "{msg}");
         assert!(msg.contains("bank 0: deposit liabilities"), "{msg}");
+    }
+
+    /// sfc_enforce: `step_timed` (profiling) stops on the same inconsistency as `step`, and only with the key on.
+    #[test]
+    fn step_timed_enforces_sfc_like_step() {
+        let mut w = corrupted_world(true);
+        let tick = w.tick;
+        let mut t = [0.0; 21];
+        let err = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| step_timed(&mut w, &mut t)))
+            .expect_err("an inconsistent month must panic");
+        let msg = err.downcast_ref::<String>().cloned().unwrap_or_default();
+        assert!(msg.starts_with(&format!("stock-flow inconsistency at tick {tick}: ")), "{msg}");
+        assert!(msg.contains("bank 0: deposit liabilities"), "{msg}");
+        let mut off = corrupted_world(false);
+        step_timed(&mut off, &mut t);
+        assert_eq!(off.history.last().unwrap().sfc_error, 1.0);
     }
 
     /// sfc_enforce off: a release build records the inconsistency in `sfc_error` and goes on, as the release did. Debug builds
