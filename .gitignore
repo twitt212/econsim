@@ -1,1 +1,4 @@
 /target
+
+# Secrets: never commit an env file.
+.env*
