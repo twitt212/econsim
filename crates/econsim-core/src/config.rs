@@ -1108,6 +1108,20 @@ pub struct Config {
     /// distressed sale. A borrower's own home is vacated at listing (an owner exit); a let unit is only listed, and its
     /// owner keeps the home they live in.
     pub housing_distress_sale_prob: f64,
+    /// A repossession's defaulted loan (`HousingState::reo_loan`, held from foreclosure until the bank sells the house) is
+    /// a non-accruing bank asset: the evicted borrower, or an entrant who later takes that household slot, is not charged
+    /// interest or principal on it, has no shortfall, miss or Fund-share sale for it, and it does not count as that
+    /// household's loan in servicing. It also leaves the household-mortgage measures (mortgage debt, average outstanding
+    /// rate, delinquency counts and shares, the FISIM loan leg and the mortgage rate by age), since the borrower no
+    /// longer owns the house; it stays in the bank's loan book and capital until the sale writes it off net of proceeds.
+    /// Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub housing_reo_nonaccrual: bool,
+    /// A repossession whose listing reaches the end of its life stays on the market (`housing::update_listings`): it is
+    /// re-listed at the lower of its decayed ask and `REO_ASK_FACTOR` × current value, instead of being let as a
+    /// bank-owned rental that nothing ever offers for sale again. The bank keeps cutting the price until a buyer takes it,
+    /// so every repossession is resolved through the sale path that writes the loan off net of proceeds. Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub housing_reo_relist: bool,
     /// Owner-to-renter exit hazard elasticity to the user cost relative to its anchor: exits scale by (uc / uc0)^e.
     /// Higher mortgage rates raise exits, so ownership falls and rental demand rises when rates rise.
     pub housing_exit_uc_elasticity: f64,
@@ -2508,6 +2522,8 @@ impl Default for Config {
             construction_rate_elasticity: 0.16,
             housing_foreclosure_prob: 0.45,
             housing_distress_sale_prob: 0.10,
+            housing_reo_nonaccrual: true,
+            housing_reo_relist: true,
             housing_exit_uc_elasticity: 2.0,
             housing_price_uc_gain: 0.9,
             housing_rent_price_anchor: 0.08,

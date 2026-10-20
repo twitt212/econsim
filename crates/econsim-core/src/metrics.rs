@@ -514,7 +514,7 @@ fn fisim_constant_margin_real(
     let dep_stock: f64 = dep.iter().map(|d| d.max(0.0)).sum();
     let dep_part: f64 = dep.iter().zip(w.banks.iter()).map(|(&d, b)| d.max(0.0) * (r_ref - b.deposit_rate).max(0.0)).sum();
     let (mut loan_stock, mut loan_part) = (0.0f64, 0.0f64);
-    for (_, l) in w.loans.iter().filter(|(_, l)| matches!(l.borrower, Borrower::Household(_))) {
+    for (_, l) in w.loans.iter().filter(|(_, l)| household_loan(w, l)) {
         loan_stock += l.principal.max(0.0);
         loan_part += l.principal.max(0.0) * (l.annual_rate - r_ref).max(0.0);
     }
@@ -1001,6 +1001,19 @@ fn in_tenure_base(h: &Household) -> bool {
     }
 }
 
+/// `housing_reo_nonaccrual`: a repossession's loan (`housing::is_reo_loan`) is left out of the household-mortgage
+/// measures, since the former borrower no longer owns the house or services the loan. Always false with the key off.
+#[inline]
+fn reo_excluded(w: &World, l: &Loan) -> bool {
+    w.cfg.housing_reo_nonaccrual && crate::housing::is_reo_loan(&w.housing, l.id, l.kind)
+}
+
+/// A household borrower's loan for the FISIM loan leg (repossessions excluded as in `reo_excluded`).
+#[inline]
+fn household_loan(w: &World, l: &Loan) -> bool {
+    matches!(l.borrower, Borrower::Household(_)) && !reo_excluded(w, l)
+}
+
 /// Tenure, unhoused and mortgage-delinquency counts for the Round 7 metrics (serial, cheap: one pass per record).
 #[derive(Default)]
 struct TenureExtras {
@@ -1036,7 +1049,7 @@ fn tenure_extras(w: &World) -> TenureExtras {
             Some(_) => {}
         }
     }
-    for (_, l) in w.loans.iter() {
+    for (_, l) in w.loans.iter().filter(|(_, l)| !reo_excluded(w, l)) {
         if let (LoanKind::Mortgage { .. }, Borrower::Household(_)) = (l.kind, l.borrower) {
             e.mort_total += 1;
             if l.months_delinquent >= 3 {
@@ -1493,7 +1506,7 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
         let loan_part: f64 = w
             .loans
             .iter()
-            .filter(|(_, l)| matches!(l.borrower, Borrower::Household(_)))
+            .filter(|(_, l)| household_loan(w, l))
             .map(|(_, l)| l.principal.max(0.0) * (l.annual_rate - r_ref).max(0.0))
             .sum();
         (dep_part + loan_part) / 12.0
@@ -1703,8 +1716,11 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
         }
         match l.kind {
             LoanKind::Mortgage { .. } => {
-                mort_total += l.principal;
-                mort_rate_wsum += l.principal * l.annual_rate;
+                // A repossession's loan stays in the bank's book (and risk weights), not in household mortgage debt.
+                if !reo_excluded(w, l) {
+                    mort_total += l.principal;
+                    mort_rate_wsum += l.principal * l.annual_rate;
+                }
                 mort_by_bank[l.bank as usize] += l.principal;
             }
             LoanKind::Business => {
@@ -2860,7 +2876,7 @@ fn fill_observations(w: &World, st: &mut MetricsState, m: &mut Metrics, loc: &Ob
             (_, LoanKind::Consumer) => consumer += l.principal,
             _ => {}
         }
-        if let LoanKind::Mortgage { .. } = l.kind {
+        if let (LoanKind::Mortgage { .. }, false) = (l.kind, reo_excluded(w, l)) {
             mort += l.principal;
             if l.months_delinquent >= 1 {
                 d30 += l.principal;
@@ -3219,7 +3235,7 @@ pub fn snapshot(w: &World) -> Snapshot {
     // mortgage rates by borrower age bucket
     let mut mr_sum = [0.0f64; 6];
     let mut mr_n = [0usize; 6];
-    for (_, l) in w.loans.iter() {
+    for (_, l) in w.loans.iter().filter(|(_, l)| !reo_excluded(w, l)) {
         if let (LoanKind::Mortgage { .. }, Borrower::Household(hid)) = (l.kind, l.borrower) {
             if let Some(b) = bucket_of(u32::from(w.households[hid as usize].age_months / 12)) {
                 mr_sum[b] += l.annual_rate;
@@ -3978,6 +3994,46 @@ mod tests {
             total * w.cfg.effective_scale() / 1e9
         };
         assert!((m.obs.overdraft_balance_bn - want_bn).abs() <= 1e-9 * (1.0 + want_bn.abs()));
+    }
+
+    /// `housing_reo_nonaccrual`: a repossession's loan leaves the household-mortgage measures (mortgage debt and the
+    /// delinquency count and balance shares) and stays in the bank's book. Off: the release definitions, which count it as
+    /// a household mortgage.
+    #[test]
+    fn repossession_loan_leaves_household_mortgage_measures() {
+        let mut w = tiny_world(Config { n_households: 500, ..Default::default() }, 1);
+        // Repossess a mortgaged owner-occupied house as housing::foreclose leaves it (90+ days delinquent).
+        let (h, house) = (0..w.houses.len())
+            .find_map(|i| match w.houses[i].owner {
+                Owner::Household(h) if w.houses[i].occupant == Some(h) && w.houses[i].mortgage.is_some() => {
+                    Some((h, i as HouseId))
+                }
+                _ => None,
+            })
+            .expect("a mortgaged owner-occupier");
+        let loan = w.houses[house as usize].mortgage.unwrap();
+        let bank = w.loans.get(loan).unwrap().bank;
+        w.houses[house as usize].occupant = None;
+        w.houses[house as usize].for_sale = true;
+        w.households[h as usize].home = None;
+        w.households[h as usize].tenure = Tenure::WithParents;
+        crate::ledger::transfer_house(&mut w, house, Owner::Bank(bank));
+        w.housing.reo_loan.resize(w.houses.len(), None);
+        w.housing.reo_loan[house as usize] = Some(loan);
+        w.loans.get_mut(loan).unwrap().months_delinquent = 4;
+        let principal = w.loans.get(loan).unwrap().principal;
+        let mut on = w.clone();
+        on.cfg.housing_reo_nonaccrual = true;
+        w.cfg.housing_reo_nonaccrual = false;
+        record(&mut on);
+        record(&mut w);
+        let (a, b) = (&on.history[0], &w.history[0]);
+        let stock = w.cfg.effective_scale() / 1e9;
+        let gap = b.mortgage_debt_bn - a.mortgage_debt_bn;
+        assert!((gap - principal * stock).abs() <= 1e-9 * (1.0 + b.mortgage_debt_bn), "gap {gap}");
+        assert!(a.mortgage_delinquent_90 < b.mortgage_delinquent_90, "the repossession still counts as delinquent");
+        assert!(a.obs.mortgage_delinquent_90_share < b.obs.mortgage_delinquent_90_share);
+        assert_eq!(a.bank_capital_ratio.to_bits(), b.bank_capital_ratio.to_bits(), "the bank side changed");
     }
 
     #[test]
