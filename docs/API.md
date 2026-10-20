@@ -40,8 +40,10 @@ type Shock =
 ```
 
 Errors: HTTP 4xx/5xx with `{ "error": string }`. CORS is open (`*`). Long computations run on a blocking thread pool.
-A month that fails the stock-flow identities stops the run (`sfc_enforce`, default true): `/api/compare` answers 500 and
-caches nothing; a live economy whose step fails answers 500 to every later request except the list and DELETE. Its world is
+A month that fails the stock-flow identities stops the run (`sfc_enforce`, default true). `/api/compare` caches nothing
+and answers 500; with `?stream=1` the 200 NDJSON response has already started, so the failure arrives as an
+`{"error": …}` line, after any year lines and in place of the done line (see [Streaming](#post-apicompare-streaming-stream1)).
+A live economy whose step fails answers 500 to that step and to every later request except the list and DELETE. Its world is
 dropped, and its `SimInfo` in the list gains `stopped`, the reason (the other fields are as of the failed step); `stopped` is
 omitted while an economy runs. A refused request does not touch the economy (see `ECONSIM_SIM_TTL_HOURS`).
 A config whose bounds are out of order where the run uses them (`u_star_min` above `u_star_max`, `ebp_min` above `ebp_max`,
