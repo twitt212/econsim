@@ -7595,10 +7595,11 @@ Tests: core 632 passed, 0 failed, 2 ignored (base 623); server 82 passed (base 8
 
 **Known gaps.** `DESIGN.md` section 9 (the owner's list: the partner structure is estimated, the level is the model's, the shares are 2025 and not 2026, no announced changes, no refunds, the back-cast carries direction and about half the size).
 
-## Accounting fixes (2026-10-20): seven gated corrections, legacy in `legacy_acctfix_off.json`
+## Accounting fixes (2026-10-20): six bugs under seven keys, legacy in `legacy_acctfix_off.json`
 
-A code review of the release (60f681a) found six places where money or a measure did not follow the model's own
-accounting. Each fix is a `Config` key, default true; `scripts/profiles/legacy_acctfix_off.json` sets all seven to false
+A code review of the release (60f681a) found six bugs where money or a measure did not follow the model's own accounting.
+They are fixed under seven `Config` keys, all default true: one key per bug, except the repossession bug, whose fix has two
+(`housing_reo_nonaccrual` and `housing_reo_relist`). `scripts/profiles/legacy_acctfix_off.json` sets all seven to false
 and reproduces the release bit for bit. The keys are independent: each can be switched off alone. With either
 repossession key on, the sale of a repossession writes off its loan only while that id is still a mortgage on the house, so
 `housing_reo_relist` without `housing_reo_nonaccrual` (where the evicted borrower can repay the loan and the loan slab reuses

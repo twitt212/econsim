@@ -1204,6 +1204,29 @@ pub struct Config {
     /// S6 level calibration (energy_profit_gdp 1.13 to 1.07 and cu_level 82.6 to 80.7 on the 16-seed card). Legacy
     /// 0.10 in scripts/profiles/legacy_j2off.json.
     pub upstream_margin: f64,
+    /// Accounting fix (recorded real series): real consumption and real government purchases are deflated component by
+    /// component, each sector's nominal purchases over that sector's price relative to the base month and housing services
+    /// over the rent index, so the implied deflators (nominal over real) are Paasche indices: the expenditure-weighted
+    /// harmonic means of the relatives (`metrics::paasche_volume`). The headline then agrees with its own breakdown
+    /// (`household_purchases_real_bn_ar`, `consumption_by_sector_real`). The same applies to in-kind health care (split by
+    /// `health_sector_mix`), to the household deflator behind `consumption_by_quintile`, and, through the PCE deflator, to
+    /// the constant-margin real FISIM. Legacy: the aggregates are divided by the arithmetic mean of the relatives weighted by
+    /// current nominal spending, which overstates the deflator whenever relative prices diverge (4% of spending on energy,
+    /// energy prices +50%, quantities unchanged: real consumption -0.9%) and understates real consumption, real government
+    /// purchases and real GDP. Nominal series and the economy are unchanged, except that with the world block's trade link and
+    /// US import channel on `world/trade.rs` reads last month's `gdp_real_bn_ar`. The investment (fixed capital-goods
+    /// basket), residential (one sector), export (by sector) and import (fixed tradable weights) deflators are not this
+    /// form and are unchanged. Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub paasche_deflators: bool,
+    /// Stock-flow consistency is enforced in every build: `sim::step` panics, naming the tick and the failing identity, when
+    /// the month's `sfc_error` is set (the checks of `ledger::check_consistency` that `metrics::record` computes in its passes:
+    /// bank deposit liabilities against customer deposits, loan books against loans, finite balances, Fund shares against
+    /// household shares, mortgage links) or when the world block's identities fail (`world::check_identities`: the NIIP
+    /// residual and the bilateral current accounts). Debug builds also panic on the full `ledger::check_consistency`, as
+    /// before. The checks are computed anyway, so the cost is nil. Legacy: a release build (server, CLI, `cargo test
+    /// --release`) only records `sfc_error` and goes on with an inconsistent economy. Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub sfc_enforce: bool,
     /// Re-fit Step 5a: the CIPI fold adds back the inventory written off in bankruptcies (`Flows.bk_inventory_units`),
     /// since a write-off is an "other change in volume", not a fall in inventory investment. Legacy false.
     pub cipi_excludes_writeoffs: bool,
@@ -1755,29 +1778,6 @@ pub struct Config {
     /// `real_consumption_per_hh` can differ. With the world block's trade link and US import channel on, `world/trade.rs` reads
     /// last month's `gdp_real_bn_ar`, so the key then reaches the economy. Off = the current-margin real FISIM (legacy).
     pub fisim_constant_margin: bool,
-    /// Accounting fix (recorded real series): real consumption and real government purchases are deflated component by
-    /// component, each sector's nominal purchases over that sector's price relative to the base month and housing services
-    /// over the rent index, so the implied deflators (nominal over real) are Paasche indices: the expenditure-weighted
-    /// harmonic means of the relatives (`metrics::paasche_volume`). The headline then agrees with its own breakdown
-    /// (`household_purchases_real_bn_ar`, `consumption_by_sector_real`). The same applies to in-kind health care (split by
-    /// `health_sector_mix`), to the household deflator behind `consumption_by_quintile`, and, through the PCE deflator, to
-    /// the constant-margin real FISIM. Legacy: the aggregates are divided by the arithmetic mean of the relatives weighted by
-    /// current nominal spending, which overstates the deflator whenever relative prices diverge (4% of spending on energy,
-    /// energy prices +50%, quantities unchanged: real consumption -0.9%) and understates real consumption, real government
-    /// purchases and real GDP. Nominal series and the economy are unchanged, except that with the world block's trade link and
-    /// US import channel on `world/trade.rs` reads last month's `gdp_real_bn_ar`. The investment (fixed capital-goods
-    /// basket), residential (one sector), export (by sector) and import (fixed tradable weights) deflators are not this
-    /// form and are unchanged. Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
-    pub paasche_deflators: bool,
-    /// Stock-flow consistency is enforced in every build: `sim::step` panics, naming the tick and the failing identity, when
-    /// the month's `sfc_error` is set (the checks of `ledger::check_consistency` that `metrics::record` computes in its passes:
-    /// bank deposit liabilities against customer deposits, loan books against loans, finite balances, Fund shares against
-    /// household shares, mortgage links) or when the world block's identities fail (`world::check_identities`: the NIIP
-    /// residual and the bilateral current accounts). Debug builds also panic on the full `ledger::check_consistency`, as
-    /// before. The checks are computed anyway, so the cost is nil. Legacy: a release build (server, CLI, `cargo test
-    /// --release`) only records `sfc_error` and goes on with an inconsistent economy. Legacy `false`
-    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
-    pub sfc_enforce: bool,
     /// rz1 F1: mean lag (months) of the firms' investment user cost, when different from the households' lag. A negative value
     /// (the default, -1) means "the same as `rate_perception_months`" (legacy: one lag for firms and households). A value >= 0
     /// replaces `rate_perception_months` in the firms' smoother only (`firms::plan`); the households keep `rate_perception_months`.
@@ -2589,6 +2589,10 @@ impl Default for Config {
             upstream_tax_share: 0.08,
             upstream_royalty_share: 0.10,
             upstream_margin: 0.05,
+            // Accounting fixes of 2026-10-20 to the real-series deflators and the stock-flow check; legacy values in
+            // scripts/profiles/legacy_acctfix_off.json.
+            paasche_deflators: true,
+            sfc_enforce: true,
             // Re-fit Step 5 (bankruptcy realism); legacy values in scripts/profiles/legacy_p1off.json.
             cipi_excludes_writeoffs: true,
             cipi_excludes_nonstorable: true,
@@ -2779,9 +2783,6 @@ impl Default for Config {
             rate_perception_deposit: false,
             credit_tail_half_life_months: 0.0,
             fisim_constant_margin: false,
-            // accounting fixes; legacy values in scripts/profiles/legacy_acctfix_off.json
-            paasche_deflators: true,
-            sfc_enforce: true,
             rate_perception_firm_months: -1.0,
 
             // rz12
