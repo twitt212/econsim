@@ -18,7 +18,7 @@ All bodies are JSON. Field names are snake_case exactly as serialised by serde f
 | POST `/api/compare` | `Scenario` = `{ config?, shocks: ScheduledShock[], months?, seeds? }` | `Comparison` = `{ baseline: Metrics[], shocked: Metrics[], seeds: number[], warmup_months?: number }` (`warmup_months` only when non-zero); header `x-econsim-cache: hit\|miss` (see [Compare caching](#post-apicompare-caching-concurrency-and-pre-warm)); optional `?fields=` filters the records (see [Field filter](#field-filter-fields)); `?stream=1` answers NDJSON lines year by year, one seed only (see [Streaming](#post-apicompare-streaming-stream1)) |
 
 ```ts
-type SimInfo  = { id: string; tick: number; seed: number; n_households: number; applied_shocks: ScheduledShock[]; pending_shocks: ScheduledShock[] };
+type SimInfo  = { id: string; tick: number; seed: number; n_households: number; applied_shocks: ScheduledShock[]; pending_shocks: ScheduledShock[]; stopped?: string }; // stopped: why a step panicked, only once one has (see Errors)
 type SimState = SimInfo & { history: Metrics[] };
 type ScheduledShock = { at_month: number; shock: Shock };
 type Shock =
@@ -41,7 +41,9 @@ type Shock =
 
 Errors: HTTP 4xx/5xx with `{ "error": string }`. CORS is open (`*`). Long computations run on a blocking thread pool.
 A month that fails the stock-flow identities stops the run (`sfc_enforce`, default true): `/api/compare` answers 500 and
-caches nothing; a live economy whose step fails answers 500 to every later request except the list and DELETE.
+caches nothing; a live economy whose step fails answers 500 to every later request except the list and DELETE. Its world is
+dropped, and its `SimInfo` in the list gains `stopped`, the reason (the other fields are as of the failed step); `stopped` is
+omitted while an economy runs. A refused request does not touch the economy (see `ECONSIM_SIM_TTL_HOURS`).
 Creating a world with 20k households and burn-in takes a few seconds; `/api/compare` with 4 seeds × 60 months may take
 10–30 s.
 
@@ -86,7 +88,7 @@ Environment variables (read at startup):
 | `ECONSIM_COMPARE_CONCURRENCY` | `max(1, cores / 2)` | Compare computations allowed at once. `0` is treated as 1; a value that is not a number uses the default. |
 | `ECONSIM_WARMUP_MONTHS` | `24` (code default since joint calibration 4; `Config::warmup_months` stays 0) | Default `config.warmup_months` for compare requests that omit the key (see Warm-up above). `0` restores the pre-joint-4 behaviour. Must be 0 or a multiple of 12 up to 120; any other value is replaced by the default 24 with one line of output. A line `compare: warm-up N months by default` is printed when N > 0. Harnesses that must not depend on it pin the value (`transmission_irf.py` and `shock_irf.py` set `ECONSIM_WARMUP_MONTHS=0` on the servers they start; `tariff_check.py` and `world_check.py` send `warmup_months: 0`). |
 | `ECONSIM_WORLD_CACHE_MB` | `1024` | Byte budget (estimated, see Common worlds) of the warmed common worlds kept in memory, least recently used first. About 5.9 MB per 5,000-household world. `0` turns it off. |
-| `ECONSIM_SIM_TTL_HOURS` | `6` | Explore economies (`/api/sims`) untouched for this many hours are removed. A touch is a create, a step, a read, a shock, a fork or a snapshot; a list or a delete is not. Checked on each request and by a sweep every 60 s. A value that is not a positive number gives one line and the default. Each removal is one line: `sim ID removed: expired (untouched for 6 h)`. |
+| `ECONSIM_SIM_TTL_HOURS` | `6` | Explore economies (`/api/sims`) untouched for this many hours are removed. A touch is a create, a step, a read, a shock, a fork or a snapshot; a list or a delete is not, nor is a request refused because the economy stopped. Checked on each request and by a sweep every 60 s. A value that is not a positive number gives one line and the default. Each removal is one line: `sim ID removed: expired (untouched for 6 h)`. |
 | `ECONSIM_SIM_CAP` | `200` | Most Explore economies kept. Creating one more removes the least recently touched, with one line `sim ID removed: evicted (least recently touched; cap 200 reached)`. A value that is not a positive integer gives one line and the default. |
 | `ECONSIM_PREWARM_FILE` | unset | Path to a JSON array of compare request bodies (example: `crates/econsim-server/prewarm_example.json`). After startup, the server runs each entry through the same validated, cached path, one at a time and within the concurrency cap, and logs one line: `prewarm: N entries from PATH in T s: a computed, b already cached, c failed`. Invalid entries are logged and skipped. Skipped when nothing is stored (`ECONSIM_CACHE_MB=0` and no `ECONSIM_CACHE_DIR`). Progress is on `/api/health`. |
 

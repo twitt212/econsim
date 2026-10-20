@@ -11,7 +11,7 @@ mod fields;
 use std::collections::HashMap;
 use std::env;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -72,16 +72,56 @@ const COMPARE_RECORDS: &[&str] = &["baseline", "shocked"];
 // ------------------------------------------------------------------------------------------------
 
 struct SimEntry {
-    world: World,
+    economy: Economy,
     seed: u64,
-    /// Set when a step panicked on this economy (with `Config::sfc_enforce`, a stock-flow inconsistency): the world is
-    /// half-stepped, so it is no longer read, forked, shocked or stepped (`lock_usable`), only listed and deleted.
-    failed: Option<String>,
+}
+
+/// An economy in the `sims` map: running, or stopped by a panic.
+enum Economy {
+    Live(World),
+    /// A step panicked on it (with `Config::sfc_enforce`, a stock-flow inconsistency). Its world was half-stepped, so it is
+    /// dropped, which frees its memory; this is the economy's info at that point, `stopped` saying why. It is no longer read,
+    /// forked, shocked or stepped (`lock_usable`), only listed and deleted.
+    Stopped(SimInfo),
 }
 
 impl SimEntry {
     fn new(world: World, seed: u64) -> Self {
-        SimEntry { world, seed, failed: None }
+        SimEntry { economy: Economy::Live(world), seed }
+    }
+
+    /// The world of a running economy; `lock_usable` hands out no other.
+    fn world(&self) -> &World {
+        match &self.economy {
+            Economy::Live(w) => w,
+            Economy::Stopped(_) => unreachable!("a stopped economy has no world"),
+        }
+    }
+
+    fn world_mut(&mut self) -> &mut World {
+        match &mut self.economy {
+            Economy::Live(w) => w,
+            Economy::Stopped(_) => unreachable!("a stopped economy has no world"),
+        }
+    }
+}
+
+/// An economy shared between the `sims` map and the requests that hold it.
+struct SimCell {
+    entry: Mutex<SimEntry>,
+    /// Set when the economy stops, and read without its lock: the map does not touch a stopped economy (`SimStore::touch`), and
+    /// must not wait for a running step to find out.
+    stopped: AtomicBool,
+}
+
+impl SimCell {
+    /// Stops the economy `id` held in `g` (the first reason is kept): its info, with `why`, replaces its world.
+    fn stop(&self, id: &str, g: &mut SimEntry, why: &str) {
+        if matches!(g.economy, Economy::Live(_)) {
+            let info = SimInfo { stopped: Some(why.to_string()), ..info_of(id, g) };
+            g.economy = Economy::Stopped(info);
+        }
+        self.stopped.store(true, Ordering::Relaxed);
     }
 }
 
@@ -102,7 +142,7 @@ impl PrewarmProgress {
 
 /// One economy in the `sims` map: its world, and when and in what order it was last touched (R17 idle expiry).
 struct Sim {
-    entry: Arc<Mutex<SimEntry>>,
+    cell: Arc<SimCell>,
     touched_at: Instant,
     /// Touch order: the least recently touched economy has the smallest `seq`.
     seq: u64,
@@ -154,7 +194,8 @@ struct Removed {
 }
 
 /// The `sims` map with its idle policy (R17). A touch is a create, a step, a read, a shock, a fork or a snapshot; a list or a
-/// delete is not. An economy idle for the TTL is removed, and creating one more than the cap removes the least recently touched.
+/// delete is not, nor is a request refused because the economy stopped. An economy idle for the TTL is removed, and creating one
+/// more than the cap removes the least recently touched.
 struct SimStore {
     map: HashMap<String, Sim>,
     policy: SimPolicy,
@@ -210,24 +251,30 @@ impl SimStore {
         out
     }
 
-    /// The entry under `id`, touched now; None when there is no such economy.
-    fn touch(&mut self, id: &str) -> Option<Arc<Mutex<SimEntry>>> {
+    /// The entry under `id`, touched now unless it has stopped; None when there is no such economy. A stopped economy refuses the
+    /// request, so a client polling it must not keep it from expiring, nor ahead of running economies under the cap.
+    fn touch(&mut self, id: &str) -> Option<Arc<SimCell>> {
         let touched_at = self.clock.now();
-        let seq = self.next_touch();
-        let sim = self.map.get_mut(id)?;
-        sim.touched_at = touched_at;
-        sim.seq = seq;
-        Some(Arc::clone(&sim.entry))
+        let cell = Arc::clone(&self.map.get(id)?.cell);
+        if !cell.stopped.load(Ordering::Relaxed) {
+            let seq = self.next_touch();
+            if let Some(sim) = self.map.get_mut(id) {
+                sim.touched_at = touched_at;
+                sim.seq = seq;
+            }
+        }
+        Some(cell)
     }
 
     /// Store a new economy, touched now.
     fn insert(&mut self, id: String, entry: SimEntry) {
         let touched_at = self.clock.now();
         let seq = self.next_touch();
+        let stopped = AtomicBool::new(matches!(entry.economy, Economy::Stopped(_)));
         self.map.insert(
             id,
             Sim {
-                entry: Arc::new(Mutex::new(entry)),
+                cell: Arc::new(SimCell { entry: Mutex::new(entry), stopped }),
                 touched_at,
                 seq,
             },
@@ -267,17 +314,20 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// The economy `id` locked for a request, refused (500, JSON error) once a step has panicked on it: that world is
-/// half-stepped and must not be served or stepped on. A mutex poisoned by a panic elsewhere is treated the same way.
-fn lock_usable<'a>(id: &str, e: &'a Mutex<SimEntry>) -> Result<MutexGuard<'a, SimEntry>, ApiError> {
-    let poisoned = e.is_poisoned();
-    let mut g = lock(e);
-    if poisoned && g.failed.is_none() {
-        g.failed = Some("a request panicked while it held this simulation".to_string());
+/// The economy `id` locked for a request, refused (500, JSON error) once a step has panicked on it: that world was
+/// half-stepped and is gone. A mutex poisoned by a panic elsewhere stops the economy the same way.
+fn lock_usable<'a>(id: &str, cell: &'a SimCell) -> Result<MutexGuard<'a, SimEntry>, ApiError> {
+    let poisoned = cell.entry.is_poisoned();
+    let mut g = lock(&cell.entry);
+    if poisoned {
+        cell.stop(id, &mut g, "a request panicked while it held this simulation");
     }
-    match &g.failed {
-        None => Ok(g),
-        Some(why) => Err(ApiError::Internal(format!("simulation '{id}' stopped: {why}; it can only be deleted"))),
+    match &g.economy {
+        Economy::Live(_) => Ok(g),
+        Economy::Stopped(info) => Err(ApiError::Internal(format!(
+            "simulation '{id}' stopped: {}; it can only be deleted",
+            info.stopped.as_deref().unwrap_or_default()
+        ))),
     }
 }
 
@@ -323,7 +373,7 @@ fn register(st: &AppState, entry: SimEntry) -> SimInfo {
 }
 
 /// The entry under `id`, which this access touches (R17). An economy idle past the TTL is removed first and answers 404.
-fn get_entry(st: &AppState, id: &str) -> Result<Arc<Mutex<SimEntry>>, ApiError> {
+fn get_entry(st: &AppState, id: &str) -> Result<Arc<SimCell>, ApiError> {
     let (found, removed) = {
         let mut store = lock(&st.sims);
         let removed = store.expire();
@@ -510,16 +560,23 @@ struct SimInfo {
     n_households: usize,
     applied_shocks: Vec<ScheduledShock>,
     pending_shocks: Vec<ScheduledShock>,
+    /// Why the economy stopped (a step panicked); omitted while it runs. The other fields are then as of that step.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stopped: Option<String>,
 }
 
 fn info_of(id: &str, e: &SimEntry) -> SimInfo {
-    SimInfo {
-        id: id.to_string(),
-        tick: e.world.tick,
-        seed: e.seed,
-        n_households: e.world.households.len(),
-        applied_shocks: e.world.shocks.applied.clone(),
-        pending_shocks: e.world.shocks.schedule.clone(),
+    match &e.economy {
+        Economy::Live(w) => SimInfo {
+            id: id.to_string(),
+            tick: w.tick,
+            seed: e.seed,
+            n_households: w.households.len(),
+            applied_shocks: w.shocks.applied.clone(),
+            pending_shocks: w.shocks.schedule.clone(),
+            stopped: None,
+        },
+        Economy::Stopped(info) => info.clone(),
     }
 }
 
@@ -659,10 +716,10 @@ async fn list_sims(State(st): State<Shared>) -> Result<Json<Vec<SimInfo>>, ApiEr
     let (entries, removed) = {
         let mut store = lock(&st.sims);
         let removed = store.expire();
-        let entries: Vec<(String, Arc<Mutex<SimEntry>>)> = store
+        let entries: Vec<(String, Arc<SimCell>)> = store
             .map
             .iter()
-            .map(|(k, s)| (k.clone(), Arc::clone(&s.entry)))
+            .map(|(k, s)| (k.clone(), Arc::clone(&s.cell)))
             .collect();
         (entries, removed)
     };
@@ -670,7 +727,7 @@ async fn list_sims(State(st): State<Shared>) -> Result<Json<Vec<SimInfo>>, ApiEr
     let mut infos = blocking(move || {
         entries
             .iter()
-            .map(|(id, e)| info_of(id, &lock(e)))
+            .map(|(id, e)| info_of(id, &lock(&e.entry)))
             .collect::<Vec<SimInfo>>()
     })
     .await?;
@@ -690,7 +747,7 @@ async fn get_sim(
         let g = lock_usable(&id, &e)?;
         Ok(SimState {
             info: info_of(&id, &g),
-            history: g.world.history.clone(),
+            history: g.world().history.clone(),
         })
     })
     .await??;
@@ -728,19 +785,21 @@ async fn step_sim(
     let e = get_entry(&st, &id)?;
     let resp = blocking(move || -> Result<StepResponse, ApiError> {
         let mut g = lock_usable(&id, &e)?;
-        let before = g.world.history.len();
+        let w = g.world_mut();
+        let before = w.history.len();
         // A panic in a month (with `Config::sfc_enforce`, a stock-flow inconsistency) leaves the world half-stepped. It is
-        // caught here, while the lock is held, so the economy is marked stopped (and the mutex is not poisoned) and the
-        // client gets the panic message in a JSON 500.
-        let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sim::run(&mut g.world, req.months)));
+        // caught here, while the lock is held, so the economy is stopped (and the mutex is not poisoned) and the client gets
+        // the panic message in a JSON 500.
+        let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sim::run(w, req.months)));
         if let Err(p) = run {
-            let why = format!("a month panicked at tick {}: {}", g.world.tick, panic_text(&*p));
-            g.failed = Some(why.clone());
+            let why = format!("a month panicked at tick {}: {}", g.world().tick, panic_text(&*p));
+            e.stop(&id, &mut g, &why);
             return Err(ApiError::Internal(format!("simulation '{id}' stopped: {why}")));
         }
+        let w = g.world();
         Ok(StepResponse {
-            tick: g.world.tick,
-            metrics: g.world.history[before..].to_vec(),
+            tick: w.tick,
+            metrics: w.history[before..].to_vec(),
         })
     })
     .await??;
@@ -757,14 +816,15 @@ async fn add_shock(
     let e = get_entry(&st, &id)?;
     let info = blocking(move || -> Result<SimInfo, ApiError> {
         let mut g = lock_usable(&id, &e)?;
-        let at = req.at_month.unwrap_or(g.world.tick);
-        if at < g.world.tick {
+        let w = g.world_mut();
+        let at = req.at_month.unwrap_or(w.tick);
+        if at < w.tick {
             return Err(ApiError::BadRequest(format!(
                 "at_month {at} is in the past (current tick {})",
-                g.world.tick
+                w.tick
             )));
         }
-        g.world.shocks.schedule(ScheduledShock {
+        w.shocks.schedule(ScheduledShock {
             at_month: at,
             shock: req.shock,
         });
@@ -776,7 +836,7 @@ async fn add_shock(
 
 async fn snapshot_sim(State(st): State<Shared>, Path(id): Path<String>) -> Result<Json<Snapshot>, ApiError> {
     let e = get_entry(&st, &id)?;
-    let snap = blocking(move || lock_usable(&id, &e).map(|g| metrics::snapshot(&g.world))).await??;
+    let snap = blocking(move || lock_usable(&id, &e).map(|g| metrics::snapshot(g.world()))).await??;
     Ok(Json(snap))
 }
 
@@ -784,7 +844,7 @@ async fn fork_sim(State(st): State<Shared>, Path(id): Path<String>) -> Result<Js
     let e = get_entry(&st, &id)?;
     let copy = blocking(move || -> Result<SimEntry, ApiError> {
         let g = lock_usable(&id, &e)?;
-        Ok(SimEntry::new(g.world.clone(), g.seed))
+        Ok(SimEntry::new(g.world().clone(), g.seed))
     })
     .await??;
     Ok(Json(register(&st, copy)))
@@ -1753,8 +1813,8 @@ mod tests {
         assert_eq!(ctype, "application/json");
         let expected = {
             let e = get_entry(&st, &id).unwrap();
-            let g = lock(&e);
-            serde_json::to_vec(&SimState { info: info_of(&id, &g), history: g.world.history.clone() }).unwrap()
+            let g = lock(&e.entry);
+            serde_json::to_vec(&SimState { info: info_of(&id, &g), history: g.world().history.clone() }).unwrap()
         };
         assert_eq!(&full[..], &expected[..]);
         let (ctype, lean) = get_sim_q(&st, &id, "fields=cpi,policy_rate").await;
@@ -1809,43 +1869,88 @@ mod tests {
         (status, body["error"].as_str().unwrap().to_string())
     }
 
+    /// Moves bank 0's deposit liability in economy `id` off the sum of its customers' deposits (no ledger entry), as a stock-flow
+    /// bug would, so the economy's next month panics (`sfc_enforce`).
+    fn corrupt(st: &Shared, id: &str) {
+        let e = get_entry(st, id).unwrap();
+        let mut g = lock(&e.entry);
+        let b = &mut g.world_mut().banks[0];
+        b.deposits += 0.01 * b.deposits.abs() + 1.0;
+    }
+
+    /// The step request of `months` months on economy `id`.
+    async fn step_months(st: &Shared, id: &str, months: u32) -> Result<Response, ApiError> {
+        let body = Bytes::from(format!(r#"{{"months":{months}}}"#));
+        step_sim(State(st.clone()), Path(id.to_string()), Query(HashMap::new()), body).await
+    }
+
     /// sfc_enforce: a month that panics (here a stock-flow inconsistency injected into a live economy) answers a JSON 500 with the
     /// panic message. The half-stepped economy is then refused on every route but the list and DELETE, its mutex is not poisoned,
-    /// and the other economies are unaffected.
+    /// its world is dropped, the list says why it stopped (`stopped`, omitted for a running economy), and the other economies are
+    /// unaffected.
     #[tokio::test]
     async fn a_panicking_step_is_a_500_and_stops_the_economy() {
         let st = state(0);
         let (id, other) = (live_sim(&st), live_sim(&st));
         let e = get_entry(&st, &id).unwrap();
-        {
-            let mut g = lock(&e);
-            let b = &mut g.world.banks[0];
-            b.deposits += 0.01 * b.deposits.abs() + 1.0;
-        }
-        let step = |id: &str| step_sim(State(st.clone()), Path(id.to_string()), Query(HashMap::new()), Bytes::from_static(br#"{"months":2}"#));
-        let Err(err) = step(&id).await else { panic!("an inconsistent month must fail") };
+        corrupt(&st, &id);
+        let Err(err) = step_months(&st, &id, 2).await else { panic!("an inconsistent month must fail") };
         let (status, msg) = error_of(err).await;
         assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
         assert!(msg.contains("stock-flow inconsistency at tick 3"), "{msg}");
-        assert!(!e.is_poisoned());
+        assert!(!e.entry.is_poisoned());
+        assert!(matches!(lock(&e.entry).economy, Economy::Stopped(_)), "the half-stepped world is dropped");
         let stopped = |r: Result<(), ApiError>| async move {
             let (status, msg) = error_of(r.expect_err("a stopped economy must be refused")).await;
             assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
             assert!(msg.contains("stopped") && msg.contains("stock-flow inconsistency"), "{msg}");
         };
-        stopped(step(&id).await.map(|_| ())).await;
+        stopped(step_months(&st, &id, 2).await.map(|_| ())).await;
         stopped(get_sim(State(st.clone()), Path(id.clone()), Query(HashMap::new())).await.map(|_| ())).await;
         stopped(snapshot_sim(State(st.clone()), Path(id.clone())).await.map(|_| ())).await;
         stopped(fork_sim(State(st.clone()), Path(id.clone())).await.map(|_| ())).await;
         let shock = Bytes::from_static(br#"{"shock":{"type":"OilPrice","pct":20,"half_life_months":6}}"#);
         stopped(add_shock(State(st.clone()), Path(id.clone()), shock).await.map(|_| ())).await;
-        assert_eq!(lock(&e).world.tick, 3, "the stopped economy was not stepped again");
-        // The other economy steps on; the stopped one is still listed and can be deleted.
-        assert!(step(&other).await.is_ok());
-        let listed = list_sims(State(st.clone())).await.unwrap().0;
-        assert!(listed.iter().any(|s| s.id == id));
+        // The other economy steps on; the stopped one is still listed, as of the month that failed, and can be deleted.
+        assert!(step_months(&st, &other, 2).await.is_ok());
+        let listed = serde_json::to_value(list_sims(State(st.clone())).await.unwrap().0).unwrap();
+        let listed = listed.as_array().unwrap();
+        let info = |sim: &str| listed.iter().find(|s| s["id"] == sim).unwrap().clone();
+        let (gone, running) = (info(&id), info(&other));
+        assert_eq!(gone["tick"], 3, "the stopped economy was not stepped again");
+        assert_eq!(gone["seed"], 7);
+        let why = gone["stopped"].as_str().unwrap();
+        assert!(why.starts_with("a month panicked at tick 3: stock-flow inconsistency"), "{why}");
+        assert_eq!(running["tick"], 5);
+        assert!(running.get("stopped").is_none(), "a running economy has no `stopped` key");
         assert!(delete_sim(State(st.clone()), Path(id.clone())).await.is_ok());
         assert!(matches!(get_sim(State(st.clone()), Path(id), Query(HashMap::new())).await, Err(ApiError::NotFound(_))));
+    }
+
+    /// R17: a request that a stopped economy refuses does not touch it, so a client polling it neither keeps it from expiring nor
+    /// keeps it ahead of running economies under the cap: the next economy past the cap removes it, not the running one.
+    #[tokio::test]
+    async fn a_stopped_economy_is_not_touched_by_the_requests_it_refuses() {
+        let clock = ManualClock::new();
+        let st = state_with_sims(SimPolicy { ttl: Duration::from_secs(6 * 3600), cap: 2 }, Arc::clone(&clock));
+        let (id, other) = (live_sim(&st), live_sim(&st));
+        corrupt(&st, &id);
+        assert!(step_months(&st, &id, 1).await.is_err());
+        clock.advance(Duration::from_secs(1));
+        get_sim(State(st.clone()), Path(other.clone()), Query(HashMap::new())).await.unwrap();
+        let touched = |sim: &str| lock(&st.sims).map.get(sim).map(|s| (s.touched_at, s.seq)).unwrap();
+        let last = touched(&id);
+        for _ in 0..3 {
+            clock.advance(Duration::from_secs(3600));
+            assert!(get_sim(State(st.clone()), Path(id.clone()), Query(HashMap::new())).await.is_err());
+            assert!(snapshot_sim(State(st.clone()), Path(id.clone())).await.is_err());
+            assert!(step_months(&st, &id, 1).await.is_err());
+        }
+        assert_eq!(touched(&id), last, "a refused request touched the stopped economy");
+        let third = tiny_sim(&st, 10);
+        let mut expect = vec![other, third];
+        expect.sort();
+        assert_eq!(sim_ids(&st), expect);
     }
 
     /// A compare whose computation panics (today: `u_star_min` above `u_star_max`, which `f64::clamp` refuses in the Taylor
