@@ -1,0 +1,9 @@
+{
+  "bank_loss_carry": false,
+  "entrant_loss_cf_reset": false,
+  "housing_reo_nonaccrual": false,
+  "housing_reo_relist": false,
+  "entrant_slot_reset": false,
+  "paasche_deflators": false,
+  "sfc_enforce": false
+}
