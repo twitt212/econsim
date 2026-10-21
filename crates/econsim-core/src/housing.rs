@@ -268,7 +268,8 @@ pub struct HousingState {
     pub arrears: Vec<f64>,
     /// Households actively searching for a rental (they hold no home).
     pub seeking: Vec<bool>,
-    /// Per house: the defaulted mortgage the bank holds while the foreclosed house is unsold (REO).
+    /// Per house: the defaulted mortgage the bank holds while the foreclosed house is unsold (REO). With
+    /// `housing_reo_nonaccrual` it is not serviced (`is_reo_loan`); with `housing_reo_relist` the house stays listed.
     pub reo_loan: Vec<Option<LoanId>>,
     /// Houses under construction.
     pub projects: Vec<ConstructionProject>,
@@ -403,6 +404,16 @@ pub fn reset_household(state: &mut HousingState, h: HhId) {
     }
     if let Some(s) = state.exit_cooldown.get_mut(i) {
         *s = 0;
+    }
+}
+
+/// True when loan `id` (of kind `kind`) is the defaulted mortgage a bank holds on a repossessed house it has not sold yet
+/// (`HousingState::reo_loan`). The test goes through the house's REO slot, so a stale or reused loan id never matches.
+#[inline]
+pub fn is_reo_loan(st: &HousingState, id: LoanId, kind: LoanKind) -> bool {
+    match kind {
+        LoanKind::Mortgage { house } => st.reo_loan.get(house as usize).is_some_and(|r| *r == Some(id)),
+        _ => false,
     }
 }
 
@@ -1193,7 +1204,8 @@ fn foreclosures(w: &mut World) {
 }
 
 /// The bank takes the house, the borrower leaves, and the bank lists it at 0.85 × value. The loan stays on the
-/// books until the house sells; the write-off is then net of sale proceeds.
+/// books until the house sells; the write-off is then net of sale proceeds. With `housing_reo_nonaccrual` the former
+/// borrower no longer services it meanwhile (`banking::service_loans`).
 fn foreclose(w: &mut World, loan: LoanId, house: HouseId) {
     ensure_sizes(w);
     let Some(l) = w.loans.get(loan) else {
@@ -1272,6 +1284,9 @@ fn update_listings(w: &mut World) {
     let hpi = w.prices.hpi;
     let idio = &w.housing.house_idio;
     let norm = w.housing.idio_norm;
+    // `housing_reo_relist`: a repossession stays on the market until it sells (see the config doc).
+    let relist_reo = w.cfg.housing_reo_relist;
+    let reo = &w.housing.reo_loan;
     // Each house is aged on its own record only, so the houses are processed in parallel.
     w.houses.par_iter_mut().enumerate().for_each(|(i, hs)| {
         if !hs.for_sale {
@@ -1280,6 +1295,17 @@ fn update_listings(w: &mut World) {
         hs.months_listed += 1;
         hs.ask_price *= decay;
         if hs.months_listed >= LISTING_LIFE_MONTHS {
+            if relist_reo && matches!(hs.owner, Owner::Bank(_)) && reo.get(i).is_some_and(|r| r.is_some()) {
+                // The bank re-lists its repossession at the lower of the decayed ask and REO_ASK_FACTOR × current value,
+                // so the price keeps falling until a buyer takes it. No draw: the other houses' streams are unchanged.
+                let mult = idio.get(i).map_or(1.0, |x| (x - norm).exp());
+                let fresh = REO_ASK_FACTOR * hpi * hs.quality * mult;
+                if fresh > 0.0 && fresh < hs.ask_price {
+                    hs.ask_price = fresh;
+                }
+                hs.months_listed = 0;
+                return;
+            }
             hs.for_sale = false;
             hs.ask_price = 0.0;
             hs.months_listed = 0;
@@ -1783,6 +1809,16 @@ fn execute_purchase(w: &mut World, bid: &Bid, house: HouseId) -> Option<bool> {
         return None;
     }
 
+    // A repossession's loan id is checked before the buyer's loan is originated: with `housing_reo_nonaccrual` off the
+    // evicted borrower can repay the loan, and the slab gives its freed id to the next loan, which may be the buyer's.
+    // With either REO key the sale writes off only a loan that is still a mortgage on this house, which only the REO loan
+    // can be until the sale (`is_reo_loan` alone would also match a reused id that is another house's repossession).
+    // Both keys off: no check (the release).
+    let reo_stale = (w.cfg.housing_reo_nonaccrual || w.cfg.housing_reo_relist)
+        && w.housing.reo_loan.get(hu).copied().flatten().is_some_and(|l| {
+            !w.loans.get(l).is_some_and(|x| x.kind == LoanKind::Mortgage { house })
+        });
+
     // The seller's mortgage is unlinked while the buyer's loan is originated (a bank will not lend against a
     // house that is already encumbered); it is settled from the sale proceeds below.
     let old_loan = w.houses[hu].mortgage.take();
@@ -1839,8 +1875,8 @@ fn execute_purchase(w: &mut World, bid: &Bid, house: HouseId) -> Option<bool> {
         }
         Owner::Bank(_) => {
             reo = true;
-            // Foreclosed house: the defaulted loan is written off net of proceeds (DESIGN §16).
-            if let Some(l) = w.housing.reo_loan.get_mut(hu).and_then(|x| x.take()) {
+            // Foreclosed house: the defaulted loan is written off net of proceeds (DESIGN §16). A stale id is cleared only.
+            if let Some(l) = w.housing.reo_loan.get_mut(hu).and_then(|x| x.take()).filter(|_| !reo_stale) {
                 if let Some(loan) = w.loans.get(l) {
                     let (lb, p) = (loan.bank as usize, loan.principal);
                     let rec = p.min(price);
@@ -3204,6 +3240,130 @@ mod tests {
         assert!((l.annual_rate - market).abs() < 1e-12, "new loan not at the market rate");
         ledger::check_consistency(&w).unwrap();
         check_invariants(&w).unwrap();
+    }
+
+    /// `housing_reo_relist`: a repossession whose listing expires stays on the market, re-listed at the lower of its
+    /// decayed ask and REO_ASK_FACTOR × current value, and is never let; a later sale writes the loan off net of the price.
+    /// Legacy (off): the expired repossession becomes a bank-owned rental and its loan stays on the books.
+    #[test]
+    fn expired_repossession_is_relisted_and_sale_writes_off_loan() {
+        for on in [true, false] {
+            let mut c = cfg(500);
+            c.housing_reo_relist = on;
+            let mut w = tiny_world(c, 8);
+            ensure_sizes(&mut w);
+            let (h, house) = find_owner_occupier(&w, true);
+            let hu = house as usize;
+            let loan = w.houses[hu].mortgage.unwrap();
+            foreclose(&mut w, loan, house);
+            assert_eq!(w.housing.reo_loan[hu], Some(loan));
+            // The listing reaches the end of its life this month, after the index has halved: the fresh REO ask is the
+            // lower one.
+            w.houses[hu].months_listed = LISTING_LIFE_MONTHS - 1;
+            w.prices.hpi *= 0.5;
+            let ask0 = w.houses[hu].ask_price;
+            update_listings(&mut w);
+            let hs = &w.houses[hu];
+            if !on {
+                assert!(!hs.for_sale && hs.for_rent, "legacy: an expired repossession is let");
+                assert_eq!(w.housing.reo_loan[hu], Some(loan));
+                continue;
+            }
+            assert!(hs.for_sale && !hs.for_rent, "an expired repossession left the market");
+            assert_eq!(hs.months_listed, 0);
+            let fresh = REO_ASK_FACTOR * house_value_i(&w, house);
+            assert!((hs.ask_price - fresh).abs() <= 1e-9 * fresh, "ask {} vs fresh {fresh}", hs.ask_price);
+            assert!(hs.ask_price < ask0);
+            // With the index unchanged the decayed ask is the lower one: it is kept, and keeps falling.
+            w.houses[hu].months_listed = LISTING_LIFE_MONTHS - 1;
+            let ask1 = w.houses[hu].ask_price;
+            update_listings(&mut w);
+            assert!(w.houses[hu].for_sale && w.houses[hu].ask_price < ask1 && w.houses[hu].ask_price > 0.0);
+            // A cash buyer takes it at the ask: the loan is written off net of the price.
+            let buyer = find_renter(&w, h);
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(buyer as HhId), 10_000_000.0);
+            let price = w.houses[hu].ask_price;
+            let bank = w.loans.get(loan).unwrap().bank;
+            let principal = w.loans.get(loan).unwrap().principal;
+            let loss0 = w.banks[bank as usize].loan_losses;
+            assert_eq!(execute_purchase(&mut w, &cash_bid(buyer), house), Some(true));
+            assert!(!w.loans.contains(loan));
+            assert!(w.housing.reo_loan[hu].is_none());
+            let loss = w.banks[bank as usize].loan_losses - loss0;
+            assert!((loss - (principal - price).max(0.0)).abs() < 1e-6, "loss {loss}");
+            ledger::check_consistency(&w).unwrap();
+            check_invariants(&w).unwrap();
+        }
+    }
+
+    /// `housing_reo_relist` with `housing_reo_nonaccrual` off: the evicted borrower can repay the repossession's loan (here in
+    /// full, as at maturity), and the slab gives the freed id to the next loan. The sale then writes nothing off, whether the id
+    /// went to another owner's mortgage, to a loan that is itself another house's repossession, or to the buyer's own mortgage
+    /// at this sale. Legacy (both keys off): the sale writes off the other owner's mortgage.
+    #[test]
+    fn repossession_sale_does_not_write_off_a_loan_that_reused_its_id() {
+        for (relist, reuse) in [(true, "other"), (true, "other_reo"), (true, "buyer"), (false, "other")] {
+            let mut c = cfg(500);
+            c.housing_reo_nonaccrual = false;
+            c.housing_reo_relist = relist;
+            let mut w = tiny_world(c, 8);
+            ensure_sizes(&mut w);
+            let (h, house) = find_owner_occupier(&w, true);
+            let hu = house as usize;
+            let loan = w.houses[hu].mortgage.unwrap();
+            foreclose(&mut w, loan, house);
+            let p = w.loans.get(loan).unwrap().principal;
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(h as HhId), p);
+            ledger::repay_principal(&mut w, loan, p);
+            assert!(!w.loans.contains(loan));
+            assert_eq!(w.housing.reo_loan[hu], Some(loan), "the repossession keeps the repaid loan's id");
+            let buyer = find_renter(&w, h);
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(buyer as HhId), 10_000_000.0);
+            let price = w.houses[hu].ask_price;
+            let mut other = None;
+            let bid = if reuse == "buyer" {
+                let quote = MortgageQuote { bank: 0, rate: 0.05, max_loan: 0.5 * price };
+                Bid { hh: buyer as HhId, price, principal: 0.5 * price, quote: Some(quote), investor: false }
+            } else {
+                let (o, oh) = find_owner_occupier(&w, false);
+                let bank = w.households[o].bank;
+                let kind = LoanKind::Mortgage { house: oh };
+                assert_eq!(ledger::create_loan(&mut w, bank, Borrower::Household(o as HhId), kind, 100_000.0, 0.06, 360), loan);
+                if reuse == "other_reo" {
+                    foreclose(&mut w, loan, oh);
+                }
+                other = Some(oh);
+                cash_bid(buyer)
+            };
+            let losses0 = w.flows.loan_losses;
+            assert_eq!(execute_purchase(&mut w, &bid, house), Some(true), "{reuse}");
+            assert!(w.housing.reo_loan[hu].is_none());
+            match other {
+                None => {
+                    // The buyer's mortgage was originated at this sale under the freed id.
+                    assert_eq!(w.houses[hu].mortgage, Some(loan));
+                    assert_eq!(w.loans.get(loan).map(|l| l.borrower), Some(Borrower::Household(buyer as HhId)));
+                }
+                Some(oh) if relist => {
+                    let l = w.loans.get(loan).expect("the other loan survives the sale");
+                    assert_eq!((l.kind, l.principal), (LoanKind::Mortgage { house: oh }, 100_000.0), "{reuse}");
+                    if reuse == "other_reo" {
+                        assert_eq!(w.housing.reo_loan[oh as usize], Some(loan));
+                    } else {
+                        assert_eq!(w.houses[oh as usize].mortgage, Some(loan));
+                    }
+                }
+                Some(oh) => {
+                    assert!(!w.loans.contains(loan), "legacy: the stale id writes off the other loan");
+                    assert!(w.houses[oh as usize].mortgage.is_none());
+                }
+            }
+            if relist {
+                assert_eq!(w.flows.loan_losses, losses0, "{reuse}: no loss is booked");
+            }
+            ledger::check_consistency(&w).unwrap();
+            check_invariants(&w).unwrap();
+        }
     }
 
     /// Post-anchor delinquency (fix-housing review 5): a delinquent borrower with equity lists the house for a distressed

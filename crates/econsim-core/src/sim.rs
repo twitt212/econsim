@@ -57,10 +57,15 @@ pub fn begin_month(w: &mut World) {
         f.demand = 0.0;
         f.investment_order = 0.0;
     });
+    // `bank_loss_carry`: losses booked after last month's P&L (business write-offs in `firms::close_books`) open this
+    // month's loan losses, so the P&L recognises them once; legacy zeroes them. A dead bank has no P&L to carry into.
+    let carry = w.cfg.bank_loss_carry;
     for b in w.banks.iter_mut() {
         b.interest_income = 0.0;
         b.interest_expense = 0.0;
-        b.loan_losses = 0.0;
+        let unrecognised = b.loan_losses - b.loan_losses_recognised;
+        b.loan_losses = if carry && b.alive && unrecognised.is_finite() { unrecognised } else { 0.0 };
+        b.loan_losses_recognised = 0.0;
         b.profit = 0.0;
         b.dividends = 0.0;
     }
@@ -133,7 +138,31 @@ pub fn step(w: &mut World) {
             panic!("world identity violated at tick {}: {e}", w.tick);
         }
     }
+    if w.cfg.sfc_enforce {
+        enforce_identities(w);
+    }
     w.tick += 1;
+}
+
+/// `Config::sfc_enforce`: panics, naming the tick and the identity, when this month's record carries `sfc_error` (the
+/// checks of `ledger::check_consistency`, fused into the passes of `metrics::record`) or when the world block's identities
+/// fail. Both are already computed (the world check is O(blocs)), so a consistent month costs nothing. The full
+/// `ledger::check_consistency` runs only after the fused check has failed, to name the identity.
+fn enforce_identities(w: &World) {
+    if w.history.last().is_some_and(|m| m.sfc_error != 0.0) {
+        let what = match ledger::check_consistency(w) {
+            Err(e) => e,
+            // Only the summation order differs between the two checks, so this is a residual at the tolerance.
+            Ok(()) => "sfc_error is set: a bank's deposit liabilities or loan book, or the Fund's shares, differ from the sum \
+                       over their holders by more than 1e-6 relative (ledger::check_consistency, summing in another order, \
+                       passes)"
+                .to_string(),
+        };
+        panic!("stock-flow inconsistency at tick {}: {what} (sfc_enforce)", w.tick);
+    }
+    if let Err(e) = world::check_identities(w) {
+        panic!("world identity violated at tick {}: {e} (sfc_enforce)", w.tick);
+    }
 }
 
 /// Names of the tick phases timed by `step_timed` (21 with the world block's phase after "fx").
@@ -142,7 +171,8 @@ pub const PHASES: [&str; 21] = [
     "housing", "consumption", "gov.spend", "goods", "banking", "fiscal", "markets", "firms.close", "metrics",
 ];
 
-/// `step` with wall-clock seconds per phase accumulated into `t` (profiling).
+/// `step` with wall-clock seconds per phase accumulated into `t` (profiling). With `sfc_enforce` it stops on the same
+/// inconsistencies as `step` (untimed: the checks are already computed).
 pub fn step_timed(w: &mut World, t: &mut [f64; 21]) {
     use std::time::Instant;
     let fns: [fn(&mut World); 21] = [
@@ -185,6 +215,9 @@ pub fn step_timed(w: &mut World, t: &mut [f64; 21]) {
         let t0 = Instant::now();
         f(w);
         t[i] += t0.elapsed().as_secs_f64();
+    }
+    if w.cfg.sfc_enforce {
+        enforce_identities(w);
     }
     w.tick += 1;
 }
@@ -476,6 +509,56 @@ pub fn compare_with(sc: &Scenario, common: &(dyn Fn(u64) -> CommonWorld + Sync),
 mod tests {
     use super::*;
 
+    /// A small consistent world stepped once, then with bank 0's deposit liability moved off the sum of its customers'
+    /// deposits by 1% (no ledger entry), as a stock-flow bug would.
+    fn corrupted_world(sfc_enforce: bool) -> World {
+        let mut w = crate::testkit::tiny_world(Config { n_households: 200, sfc_enforce, ..Default::default() }, 1);
+        step(&mut w);
+        assert_eq!(w.history.last().unwrap().sfc_error, 0.0);
+        let b = &mut w.banks[0];
+        b.deposits += 0.01 * b.deposits.abs() + 1.0;
+        w
+    }
+
+    /// sfc_enforce: the next month stops with a panic that names the tick and the identity, in release builds too (the
+    /// full debug check reports the same identity first in debug builds).
+    #[test]
+    fn sfc_enforce_panics_on_an_injected_inconsistency() {
+        let mut w = corrupted_world(true);
+        let tick = w.tick;
+        let err = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| step(&mut w))).expect_err("an inconsistent month must panic");
+        let msg = err.downcast_ref::<String>().cloned().unwrap_or_default();
+        assert!(msg.starts_with(&format!("stock-flow inconsistency at tick {tick}: ")), "{msg}");
+        assert!(msg.contains("bank 0: deposit liabilities"), "{msg}");
+    }
+
+    /// sfc_enforce: `step_timed` (profiling) stops on the same inconsistency as `step`, and only with the key on.
+    #[test]
+    fn step_timed_enforces_sfc_like_step() {
+        let mut w = corrupted_world(true);
+        let tick = w.tick;
+        let mut t = [0.0; 21];
+        let err = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| step_timed(&mut w, &mut t)))
+            .expect_err("an inconsistent month must panic");
+        let msg = err.downcast_ref::<String>().cloned().unwrap_or_default();
+        assert!(msg.starts_with(&format!("stock-flow inconsistency at tick {tick}: ")), "{msg}");
+        assert!(msg.contains("bank 0: deposit liabilities"), "{msg}");
+        let mut off = corrupted_world(false);
+        step_timed(&mut off, &mut t);
+        assert_eq!(off.history.last().unwrap().sfc_error, 1.0);
+    }
+
+    /// sfc_enforce off: a release build records the inconsistency in `sfc_error` and goes on, as the release did. Debug builds
+    /// always panic on the full check, so this runs in release builds only.
+    #[cfg(not(debug_assertions))]
+    #[test]
+    fn sfc_enforce_off_records_the_inconsistency_and_goes_on() {
+        let mut w = corrupted_world(false);
+        step(&mut w);
+        step(&mut w);
+        assert!(w.history.iter().rev().take(2).all(|m| m.sfc_error == 1.0));
+    }
+
     /// Smoke test for the CLI `irf` / server compare path: a 1-seed, 12-month compare crosses the first January,
     /// where the stayer fields are null, and must average and deserialise without panicking.
     #[test]
@@ -526,6 +609,44 @@ mod tests {
             months,
             seeds: vec![1],
         }
+    }
+
+    /// `bank_loss_carry`: through the real month order, every loan loss booked (`flows.loan_losses`, which includes the
+    /// write-offs of firms failing in `firms::close_books`, after the bank P&L) reaches the bank P&L exactly once:
+    /// opening carry + losses booked = losses recognised + closing carry. Legacy drops the late write-offs.
+    #[test]
+    fn every_loan_loss_reaches_the_bank_pnl_once() {
+        let run_months = |carry: bool| -> (f64, f64, f64) {
+            let cfg = Config { n_households: 400, burn_in_months: 12, bank_loss_carry: carry, ..Default::default() };
+            let mut w = new_world(&cfg, 2);
+            let pending =
+                |w: &World| w.banks.iter().filter(|b| b.alive).map(|b| b.loan_losses - b.loan_losses_recognised).sum::<f64>();
+            let open = pending(&w);
+            // A firm with a business loan is left insolvent, so it fails in the first month's close_books.
+            let f = (0..w.firms.len()).find(|&f| w.firms[f].alive).unwrap();
+            let bank = w.firms[f].bank;
+            ledger::create_loan(&mut w, bank, Borrower::Firm(f as FirmId), LoanKind::Business, 1.0e6, 0.06, 60);
+            let d = w.firms[f].deposits;
+            ledger::pay(&mut w, ledger::Account::Firm(f as FirmId), ledger::Account::Government, d + 1.0e9);
+            let (mut booked, mut recognised) = (0.0, 0.0);
+            for t in 0..4 {
+                step(&mut w);
+                if t == 0 {
+                    assert!(!w.firms[f].alive, "the insolvent firm fails in close_books");
+                }
+                booked += w.flows.loan_losses;
+                recognised += w.banks.iter().filter(|b| b.alive).map(|b| b.loan_losses_recognised).sum::<f64>();
+            }
+            (open + booked, recognised, pending(&w))
+        };
+        let (inflow, recognised, close) = run_months(true);
+        assert!(inflow >= 1.0e6, "the failed firm's loan is written off: {inflow}");
+        assert!(
+            (inflow - recognised - close).abs() <= 1e-9 * inflow,
+            "opening carry + booked {inflow} != recognised {recognised} + closing carry {close}"
+        );
+        let (inflow, recognised, close) = run_months(false);
+        assert!(recognised + close <= inflow - 1.0e6 * (1.0 - 1e-9), "legacy: booked {inflow}, recognised {recognised} + {close}");
     }
 
     /// b9-warmup: with 0 the compare is the legacy one: reported month 0 is tick 0 at 2026.0, and the serialised

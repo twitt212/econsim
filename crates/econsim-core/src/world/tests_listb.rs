@@ -380,9 +380,16 @@ fn forecast_or_none(w: &World) -> Option<Arc<dollar::Forecast>> {
 #[test]
 fn legacy_keys_reproduce_the_4_1_link() {
     // I6 at unit scale: world_dollar_neutral false and world_rp_sat_scale 0 give the cc33f15 (stage 4-1) broad rate bit for bit. The
-    // fixture is `fx_broad` of months 0-3 of `econsim-cli run 300 4 5 12` on cc33f15 with the same keys (trade link on).
+    // fixture is `fx_broad` of months 0-3 of `econsim-cli run 300 4 5 12` on cc33f15 with the same keys (trade link on). The fixture
+    // predates `bank_loss_carry`, which moves the ABM path, so the test runs with its legacy value.
     let legacy = [102.54312580070962f64, 99.5785773023966, 99.38103646232622, 96.89806140231458];
-    let cfg = Config { world_link_trade: true, world_dollar_neutral: false, world_rp_sat_scale: 0.0, ..lcfg(12, 300) };
+    let cfg = Config {
+        world_link_trade: true,
+        world_dollar_neutral: false,
+        world_rp_sat_scale: 0.0,
+        bank_loss_carry: false,
+        ..lcfg(12, 300)
+    };
     let mut w = sim::new_world(&cfg, 5);
     for (t, want) in legacy.iter().enumerate() {
         sim::step(&mut w);

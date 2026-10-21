@@ -2222,6 +2222,12 @@ fn reborn(w: &mut World, f: usize, stats: &[SectorStats], p: &[f64; N_SECTORS]) 
     st.last_output[f] = 0.0;
     st.last_interest[f] = 0.0;
     st.last_costs[f] = 0.0;
+    // `entrant_loss_cf_reset`: the failed predecessor's tax losses died with it; the entrant starts with none.
+    if w.cfg.entrant_loss_cf_reset {
+        if let Some(cf) = w.fiscal.firm_loss_cf.get_mut(f) {
+            *cf = 0.0;
+        }
+    }
     w.flows.firm_entries += 1;
 }
 
@@ -2657,6 +2663,42 @@ mod tests {
         assert!(w.firms[f].deposits > 0.0);
         assert!(w.flows.firm_entries >= 1);
         ledger::check_consistency(&w).unwrap();
+    }
+
+    /// `entrant_loss_cf_reset`: a firm reborn in a bankrupt slot starts with no corporate-tax loss carry-forward and
+    /// pays the tax on its first profit. Legacy (`false`) hands it the failed predecessor's losses.
+    #[test]
+    fn reborn_firm_starts_with_no_loss_carry_forward() {
+        let run = |reset: bool| -> (f64, f64) {
+            let mut w = test_world(17);
+            assert!(w.cfg.entrant_loss_cf_reset, "the fix is the default");
+            w.cfg.entrant_loss_cf_reset = reset;
+            let f = (0..w.firms.len()).find(|&f| w.firms[f].sector == Sector::OtherServices).unwrap();
+            // The failing firm has piled up tax losses, and goes bankrupt.
+            w.fiscal.firm_loss_cf.resize(w.firms.len(), 0.0);
+            w.fiscal.firm_loss_cf[f] = 1.0e9;
+            let d = w.firms[f].deposits;
+            ledger::pay(&mut w, Account::Firm(f as FirmId), Account::Government, d + 1.0e9);
+            run_month(&mut w, 1.0);
+            assert!(!w.firms[f].alive, "insolvent firm should go bankrupt");
+            for _ in 0..3 {
+                run_month(&mut w, 1.0);
+            }
+            assert!(w.firms[f].alive, "slot should be reborn after the entry delay");
+            let cf = w.fiscal.firm_loss_cf[f];
+            // The entrant's first month with a pre-tax profit of 100,000.
+            sim::begin_month(&mut w);
+            w.firms[f].revenue = 1.0e5;
+            crate::fiscal::collect_and_finance(&mut w);
+            (cf, w.firms[f].taxes)
+        };
+        let (cf, tax) = run(true);
+        assert_eq!(cf, 0.0);
+        let want = Config::default().corporate_tax * 1.0e5;
+        assert!((tax - want).abs() <= 1e-9 * want, "entrant pays {tax}, want {want}");
+        let (cf, tax) = run(false);
+        assert_eq!(cf, 1.0e9, "legacy: the entrant inherits the predecessor's losses");
+        assert_eq!(tax, 0.0);
     }
 
     #[test]

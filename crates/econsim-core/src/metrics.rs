@@ -514,7 +514,7 @@ fn fisim_constant_margin_real(
     let dep_stock: f64 = dep.iter().map(|d| d.max(0.0)).sum();
     let dep_part: f64 = dep.iter().zip(w.banks.iter()).map(|(&d, b)| d.max(0.0) * (r_ref - b.deposit_rate).max(0.0)).sum();
     let (mut loan_stock, mut loan_part) = (0.0f64, 0.0f64);
-    for (_, l) in w.loans.iter().filter(|(_, l)| matches!(l.borrower, Borrower::Household(_))) {
+    for (_, l) in w.loans.iter().filter(|(_, l)| household_loan(w, l)) {
         loan_stock += l.principal.max(0.0);
         loan_part += l.principal.max(0.0) * (l.annual_rate - r_ref).max(0.0);
     }
@@ -653,6 +653,47 @@ fn div(a: f64, b: f64) -> f64 {
         }
     }
     0.0
+}
+
+/// Paasche real volume of an aggregate from its `(nominal, price relative to base)` components: each component deflated by
+/// its own relative and summed in order (component deflation, `Config::paasche_deflators`). The implied deflator,
+/// nominal over this volume (`implied_deflator`), is the expenditure-weighted harmonic mean of the relatives
+/// `Σ n / Σ (n / rel)`, the Paasche price index. A component with a zero or non-finite quotient adds nothing (as `div`).
+pub fn paasche_volume(parts: impl IntoIterator<Item = (f64, f64)>) -> f64 {
+    parts.into_iter().map(|(n, r)| div(n, r)).sum()
+}
+
+/// Implied deflator of an aggregate: nominal over real volume; 1 when the volume is not positive (no spending).
+pub fn implied_deflator(nominal: f64, real: f64) -> f64 {
+    if real > 0.0 {
+        div(nominal, real)
+    } else {
+        1.0
+    }
+}
+
+/// Legacy deflator (`paasche_deflators` off): the arithmetic mean of the relatives weighted by current nominal spending,
+/// `Σ n·rel / Σ n`; 1 when the spending is not positive. It equals the Paasche deflator when every relative is the same
+/// and exceeds it otherwise (the arithmetic mean is never below the harmonic mean), so dividing by it understates the
+/// real volume.
+pub fn arithmetic_deflator(parts: impl IntoIterator<Item = (f64, f64)>) -> f64 {
+    let (num, den) = parts.into_iter().fold((0.0f64, 0.0f64), |(a, b), (n, r)| (a + n * r, b + n));
+    if den > 0.0 {
+        num / den
+    } else {
+        1.0
+    }
+}
+
+/// Paasche volume of `nominal` split across the sectors of a role (`Config::health_sector_mix` and similar) in
+/// proportion to its weights, normalised as `types::role_mean`: `Σ_s (nominal·w_s/Σw) / rel_s`. A role held by one sector
+/// with weight 1 gives `nominal / rel` exactly; a role with no weight gives 0.
+fn role_volume(weights: &[f64; N_SECTORS], nominal: f64, rel: &[f64; N_SECTORS]) -> f64 {
+    let tot = role_sum(weights, |_| 1.0);
+    if !(tot > 0.0) {
+        return 0.0;
+    }
+    paasche_volume((0..N_SECTORS).filter(|&s| weights[s] != 0.0).map(|s| (nominal * weights[s] / tot, rel[s])))
 }
 
 /// Percentage growth from `prev` to `now`; 0 when `prev` is not positive.
@@ -960,6 +1001,19 @@ fn in_tenure_base(h: &Household) -> bool {
     }
 }
 
+/// `housing_reo_nonaccrual`: a repossession's loan (`housing::is_reo_loan`) is left out of the household-mortgage
+/// measures, since the former borrower no longer owns the house or services the loan. Always false with the key off.
+#[inline]
+fn reo_excluded(w: &World, l: &Loan) -> bool {
+    w.cfg.housing_reo_nonaccrual && crate::housing::is_reo_loan(&w.housing, l.id, l.kind)
+}
+
+/// A household borrower's loan for the FISIM loan leg (repossessions excluded as in `reo_excluded`).
+#[inline]
+fn household_loan(w: &World, l: &Loan) -> bool {
+    matches!(l.borrower, Borrower::Household(_)) && !reo_excluded(w, l)
+}
+
 /// Tenure, unhoused and mortgage-delinquency counts for the Round 7 metrics (serial, cheap: one pass per record).
 #[derive(Default)]
 struct TenureExtras {
@@ -995,7 +1049,7 @@ fn tenure_extras(w: &World) -> TenureExtras {
             Some(_) => {}
         }
     }
-    for (_, l) in w.loans.iter() {
+    for (_, l) in w.loans.iter().filter(|(_, l)| !reo_excluded(w, l)) {
         if let (LoanKind::Mortgage { .. }, Borrower::Household(_)) = (l.kind, l.borrower) {
             e.mort_total += 1;
             if l.months_delinquent >= 3 {
@@ -1362,11 +1416,15 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
     let c_vol_nom = goods_c_vol + housing_nom;
     // consumption deflator: spending-weighted sector prices and the rent index (household-level real consumption
     // still uses the nominal series, duties included)
-    let c_price: f64 = (0..N_CONSUMER).map(|j| fl.consumption[j] * rel[j]).sum::<f64>() + housing_nom * rent_rel;
-    let d_cons = if c_nom > 0.0 { c_price / c_nom } else { 1.0 };
-    let c_price_vol: f64 = (0..N_CONSUMER).map(|j| cons_vol[j] * rel[j]).sum::<f64>() + housing_nom * rent_rel;
-    let d_cons_vol = if c_vol_nom > 0.0 { c_price_vol / c_vol_nom } else { 1.0 };
-    let c_real = div(c_vol_nom, d_cons_vol);
+    let paasche = w.cfg.paasche_deflators;
+    let parts = |n: [f64; N_CONSUMER]| (0..N_CONSUMER).map(move |j| (n[j], rel[j])).chain([(housing_nom, rent_rel)]);
+    let (d_cons, c_real) = if paasche {
+        // Component deflation (Paasche): each consumer sector over its own price relative, housing services over the rent
+        // index. `d_cons` (duties included) is the implied deflator of the duty-inclusive series, for the household rows.
+        (implied_deflator(c_nom, paasche_volume(parts(fl.consumption))), paasche_volume(parts(cons_vol)))
+    } else {
+        (arithmetic_deflator(parts(fl.consumption)), div(c_vol_nom, arithmetic_deflator(parts(cons_vol))))
+    };
     let purchases_real: f64 = (0..N_CONSUMER).map(|j| div(cons_vol[j], rel[j])).sum();
 
     let inv_nom = fl.investment;
@@ -1383,7 +1441,13 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
     // fraction (equal to the planned amount when orders are filled in full).
     let health_frac = if w.fiscal.purchases_month > 0.0 { w.fiscal.health_month / w.fiscal.purchases_month } else { 0.0 };
     let in_kind_nom = health_frac * gov_nom;
-    let in_kind_real = div(in_kind_nom, role_mean(&w.cfg.health_sector_mix, |s| rel[s]));
+    // Health purchases are split by `health_sector_mix` in nominal terms (fiscal::plan_spending): with the fix each part is
+    // deflated by its own sector price (the same for the default single-sector mix).
+    let in_kind_real = if paasche {
+        role_volume(&w.cfg.health_sector_mix, in_kind_nom, &rel)
+    } else {
+        div(in_kind_nom, role_mean(&w.cfg.health_sector_mix, |s| rel[s]))
+    };
     // Government purchase deflator (integration fix, correctness finding): the non-health purchases the government makes
     // from each sector, weighted by this month's orders net of the health purchases (health_frac of total orders, split
     // by `Config::health_sector_mix`). Health is deflated by its own sector mix above, so it does not enter this price.
@@ -1391,6 +1455,7 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
     let gov_orders_tot: f64 = gov_orders.iter().sum();
     let health_mix_tot: f64 = w.cfg.health_sector_mix.iter().sum();
     let (mut gnum, mut gden) = (0.0f64, 0.0f64);
+    let mut gov_wts = [0.0f64; N_SECTORS];
     for s in 0..N_SECTORS {
         let health_s = if health_mix_tot > 0.0 {
             health_frac * gov_orders_tot * w.cfg.health_sector_mix[s] / health_mix_tot
@@ -1398,16 +1463,27 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
             0.0
         };
         let wt = (gov_orders[s] - health_s).max(0.0);
+        gov_wts[s] = wt;
         gnum += wt * rel[s];
         gden += wt;
     }
+    // With `paasche_deflators` the orders (nominal budgets) are deflated sector by sector and the deflator is the implied
+    // one (the order-weighted harmonic mean of the relatives); legacy: their order-weighted arithmetic mean.
     let d_gov = if gden > 0.0 {
-        gnum / gden
+        if paasche {
+            implied_deflator(gden, paasche_volume((0..N_SECTORS).map(|s| (gov_wts[s], rel[s]))))
+        } else {
+            gnum / gden
+        }
     } else {
         // No non-health orders this month: fall back to the price of all government orders, then to the mean sector price.
         let all: f64 = gov_orders.iter().sum();
         if all > 0.0 {
-            (0..N_SECTORS).map(|s| gov_orders[s] * rel[s]).sum::<f64>() / all
+            if paasche {
+                implied_deflator(all, paasche_volume((0..N_SECTORS).map(|s| (gov_orders[s], rel[s]))))
+            } else {
+                (0..N_SECTORS).map(|s| gov_orders[s] * rel[s]).sum::<f64>() / all
+            }
         } else {
             rel.iter().sum::<f64>() / N_SECTORS as f64
         }
@@ -1430,7 +1506,7 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
         let loan_part: f64 = w
             .loans
             .iter()
-            .filter(|(_, l)| matches!(l.borrower, Borrower::Household(_)))
+            .filter(|(_, l)| household_loan(w, l))
             .map(|(_, l)| l.principal.max(0.0) * (l.annual_rate - r_ref).max(0.0))
             .sum();
         (dep_part + loan_part) / 12.0
@@ -1640,8 +1716,11 @@ fn compute(w: &World, st: &mut MetricsState) -> Metrics {
         }
         match l.kind {
             LoanKind::Mortgage { .. } => {
-                mort_total += l.principal;
-                mort_rate_wsum += l.principal * l.annual_rate;
+                // A repossession's loan stays in the bank's book (and risk weights), not in household mortgage debt.
+                if !reo_excluded(w, l) {
+                    mort_total += l.principal;
+                    mort_rate_wsum += l.principal * l.annual_rate;
+                }
                 mort_by_bank[l.bank as usize] += l.principal;
             }
             LoanKind::Business => {
@@ -2797,7 +2876,7 @@ fn fill_observations(w: &World, st: &mut MetricsState, m: &mut Metrics, loc: &Ob
             (_, LoanKind::Consumer) => consumer += l.principal,
             _ => {}
         }
-        if let LoanKind::Mortgage { .. } = l.kind {
+        if let (LoanKind::Mortgage { .. }, false) = (l.kind, reo_excluded(w, l)) {
             mort += l.principal;
             if l.months_delinquent >= 1 {
                 d30 += l.principal;
@@ -3156,7 +3235,7 @@ pub fn snapshot(w: &World) -> Snapshot {
     // mortgage rates by borrower age bucket
     let mut mr_sum = [0.0f64; 6];
     let mut mr_n = [0usize; 6];
-    for (_, l) in w.loans.iter() {
+    for (_, l) in w.loans.iter().filter(|(_, l)| !reo_excluded(w, l)) {
         if let (LoanKind::Mortgage { .. }, Borrower::Household(hid)) = (l.kind, l.borrower) {
             if let Some(b) = bucket_of(u32::from(w.households[hid as usize].age_months / 12)) {
                 mr_sum[b] += l.annual_rate;
@@ -3595,6 +3674,102 @@ mod tests {
     use crate::config::Config;
     use crate::testkit::tiny_world;
 
+    // paasche_deflators: quantities unchanged, one price up 50%. Energy is 4% of base spending (96 + 4 at base prices); its
+    // relative goes to 1.5, so nominal energy spending is 6. Component deflation gives the base volume back exactly; the legacy
+    // spending-weighted arithmetic deflator (105 / 102) shows a spurious fall of about 0.9%.
+    #[test]
+    fn paasche_volume_is_unchanged_when_only_a_price_moves() {
+        let base = [(96.0, 1.0), (4.0, 1.0)];
+        let now = [(96.0, 1.0), (6.0, 1.5)];
+        assert_eq!(paasche_volume(base), 100.0);
+        assert_eq!(paasche_volume(now).to_bits(), 100.0f64.to_bits(), "the real volume must not move");
+        assert_eq!(implied_deflator(102.0, paasche_volume(now)), 1.02);
+        let legacy_real = 102.0 / arithmetic_deflator(now);
+        assert!((legacy_real / 100.0 - 1.0 + 0.00914).abs() < 1e-4, "legacy real volume {legacy_real}");
+        // The arithmetic mean of the relatives is above the harmonic (Paasche) mean whenever they differ.
+        assert!(arithmetic_deflator(now) > implied_deflator(102.0, paasche_volume(now)));
+    }
+
+    // paasche_deflators: with every relative equal, the Paasche deflator is the legacy (arithmetic) deflator, and both are that
+    // relative. Exactly representable cases are equal to the bit; the others to rounding.
+    #[test]
+    fn paasche_deflator_equals_the_legacy_one_when_relatives_are_equal() {
+        for r in [1.0, 1.25, 0.5] {
+            let parts: Vec<(f64, f64)> = [10.0, 20.0, 30.0, 40.0, 50.0].iter().map(|&n| (n * r, r)).collect();
+            let nominal: f64 = parts.iter().map(|p| p.0).sum();
+            assert_eq!(implied_deflator(nominal, paasche_volume(parts.iter().copied())), r);
+            assert_eq!(arithmetic_deflator(parts.iter().copied()), r);
+        }
+        for r in [0.913, 1.0371, 1.6180339887] {
+            let parts: Vec<(f64, f64)> = [12.7, 0.03, 341.9, 88.8, 5.5e3, 1e-3].iter().map(|&n| (n, r)).collect();
+            let nominal: f64 = parts.iter().map(|p| p.0).sum();
+            let (p, a) = (implied_deflator(nominal, paasche_volume(parts.iter().copied())), arithmetic_deflator(parts.iter().copied()));
+            assert!((p / a - 1.0).abs() < 1e-14 && (p / r - 1.0).abs() < 1e-14, "r {r}: Paasche {p}, arithmetic {a}");
+        }
+        // No spending: both deflators are 1 and the volume is 0.
+        assert_eq!(paasche_volume([(0.0, 1.3), (0.0, 0.7)]), 0.0);
+        assert_eq!(implied_deflator(0.0, 0.0), 1.0);
+        assert_eq!(arithmetic_deflator([(0.0, 1.3)]), 1.0);
+    }
+
+    // paasche_deflators: a role's nominal is split by its normalised weights and each part deflated by its sector's relative.
+    #[test]
+    fn role_volume_deflates_each_part_of_the_split() {
+        let mut rel = [1.0; N_SECTORS];
+        rel[Sector::HealthEducation.idx()] = 1.37;
+        rel[Sector::OtherServices.idx()] = 2.0;
+        let mut one = [0.0; N_SECTORS];
+        one[Sector::HealthEducation.idx()] = 1.0;
+        // A single sector with weight 1 is the legacy `nominal / role_mean` exactly.
+        let x = 123.456;
+        assert_eq!(role_volume(&one, x, &rel).to_bits(), div(x, role_mean(&one, |s| rel[s])).to_bits());
+        // Two sectors, weights 3:1 (not normalised): 0.75 x / 1.37 + 0.25 x / 2.
+        let mut two = [0.0; N_SECTORS];
+        two[Sector::HealthEducation.idx()] = 0.6;
+        two[Sector::OtherServices.idx()] = 0.2;
+        let want = 0.75 * x / 1.37 + 0.25 * x / 2.0;
+        assert!((role_volume(&two, x, &rel) / want - 1.0).abs() < 1e-14);
+        assert!(role_volume(&two, x, &rel) > div(x, role_mean(&two, |s| rel[s])), "Paasche volume above the legacy one");
+        assert_eq!(role_volume(&[0.0; N_SECTORS], x, &rel), 0.0);
+    }
+
+    // paasche_deflators: on a world, the key changes only the recorded real series that are built from these deflators, and it
+    // raises real consumption and real government purchases (the harmonic mean is never above the arithmetic mean).
+    #[test]
+    fn paasche_deflators_change_only_the_real_series() {
+        let run_with = |on: bool| {
+            let mut w = tiny_world(Config { n_households: 400, paasche_deflators: on, ..Default::default() }, 3);
+            crate::sim::run(&mut w, 14);
+            w.history.iter().map(|m| serde_json::to_value(m).unwrap()).collect::<Vec<_>>()
+        };
+        let (off, on) = (run_with(false), run_with(true));
+        let mut differing = std::collections::BTreeSet::new();
+        for (a, b) in off.iter().zip(on.iter()) {
+            for (k, va) in a.as_object().unwrap() {
+                if va != &b[k] {
+                    differing.insert(k.clone());
+                }
+            }
+        }
+        let allowed = [
+            "consumption_real_bn_ar",
+            "gdp_real_bn_ar",
+            "gdp_real_growth_yoy",
+            "real_consumption_per_hh",
+            "government_real_bn_ar",
+            "consumption_by_quintile",
+            "consumption_gini",
+        ];
+        assert!(differing.iter().all(|k| allowed.contains(&k.as_str())), "unexpected fields differ: {differing:?}");
+        assert!(differing.contains("consumption_real_bn_ar") && differing.contains("government_real_bn_ar"), "{differing:?}");
+        let f = |h: &serde_json::Value, k: &str| h[k].as_f64().unwrap();
+        for (t, (a, b)) in off.iter().zip(on.iter()).enumerate() {
+            for k in ["consumption_real_bn_ar", "government_real_bn_ar"] {
+                assert!(f(b, k) >= f(a, k) * (1.0 - 1e-12), "month {t} {k}: on {} < off {}", f(b, k), f(a, k));
+            }
+        }
+    }
+
     // rz1 F1b: the pure margin logic.
     #[test]
     fn fisim_real_first_call_is_legacy_then_follows_stocks_at_the_base_margins() {
@@ -3819,6 +3994,46 @@ mod tests {
             total * w.cfg.effective_scale() / 1e9
         };
         assert!((m.obs.overdraft_balance_bn - want_bn).abs() <= 1e-9 * (1.0 + want_bn.abs()));
+    }
+
+    /// `housing_reo_nonaccrual`: a repossession's loan leaves the household-mortgage measures (mortgage debt and the
+    /// delinquency count and balance shares) and stays in the bank's book. Off: the release definitions, which count it as
+    /// a household mortgage.
+    #[test]
+    fn repossession_loan_leaves_household_mortgage_measures() {
+        let mut w = tiny_world(Config { n_households: 500, ..Default::default() }, 1);
+        // Repossess a mortgaged owner-occupied house as housing::foreclose leaves it (90+ days delinquent).
+        let (h, house) = (0..w.houses.len())
+            .find_map(|i| match w.houses[i].owner {
+                Owner::Household(h) if w.houses[i].occupant == Some(h) && w.houses[i].mortgage.is_some() => {
+                    Some((h, i as HouseId))
+                }
+                _ => None,
+            })
+            .expect("a mortgaged owner-occupier");
+        let loan = w.houses[house as usize].mortgage.unwrap();
+        let bank = w.loans.get(loan).unwrap().bank;
+        w.houses[house as usize].occupant = None;
+        w.houses[house as usize].for_sale = true;
+        w.households[h as usize].home = None;
+        w.households[h as usize].tenure = Tenure::WithParents;
+        crate::ledger::transfer_house(&mut w, house, Owner::Bank(bank));
+        w.housing.reo_loan.resize(w.houses.len(), None);
+        w.housing.reo_loan[house as usize] = Some(loan);
+        w.loans.get_mut(loan).unwrap().months_delinquent = 4;
+        let principal = w.loans.get(loan).unwrap().principal;
+        let mut on = w.clone();
+        on.cfg.housing_reo_nonaccrual = true;
+        w.cfg.housing_reo_nonaccrual = false;
+        record(&mut on);
+        record(&mut w);
+        let (a, b) = (&on.history[0], &w.history[0]);
+        let stock = w.cfg.effective_scale() / 1e9;
+        let gap = b.mortgage_debt_bn - a.mortgage_debt_bn;
+        assert!((gap - principal * stock).abs() <= 1e-9 * (1.0 + b.mortgage_debt_bn), "gap {gap}");
+        assert!(a.mortgage_delinquent_90 < b.mortgage_delinquent_90, "the repossession still counts as delinquent");
+        assert!(a.obs.mortgage_delinquent_90_share < b.obs.mortgage_delinquent_90_share);
+        assert_eq!(a.bank_capital_ratio.to_bits(), b.bank_capital_ratio.to_bits(), "the bank side changed");
     }
 
     #[test]

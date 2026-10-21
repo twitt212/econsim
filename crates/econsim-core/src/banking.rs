@@ -738,7 +738,8 @@ fn gather_loan(w: &World, id: LoanId) -> LoanGather {
 }
 
 /// Scheduled P&I for every loan (§11.3). Household borrowers short of cash sell Fund shares first; any
-/// remaining shortfall is paid interest-first and counted as delinquency. Unpaid interest is not capitalised.
+/// remaining shortfall is paid interest-first and counted as delinquency. Unpaid interest is not capitalised. With
+/// `housing_reo_nonaccrual` a repossession's loan (`housing::is_reo_loan`) is left untouched until the house sells.
 ///
 /// The read-only facts (scheduled payment, household borrower's alive flag and deposits) are gathered in parallel
 /// up front. A household's gathered values are used only until one of its loans has been processed: no other loan
@@ -751,20 +752,38 @@ fn service_loans(w: &mut World) {
         let wr: &World = w;
         ids.par_iter().map(|&id| gather_loan(wr, id)).collect()
     };
+    // `housing_reo_nonaccrual`: a repossession's loan (the bank owns the house until it sells) is a non-accruing asset. It
+    // is skipped by every path below: no payment, shortfall, miss or Fund sale, and it is not counted as the household's
+    // loan. Off: no loan is skipped (the release).
+    let reo: Vec<bool> = if w.cfg.housing_reo_nonaccrual {
+        let wr: &World = w;
+        ids.par_iter()
+            .map(|&id| wr.loans.get(id).is_some_and(|l| crate::housing::is_reo_loan(&wr.housing, id, l.kind)))
+            .collect()
+    } else {
+        vec![false; ids.len()]
+    };
     // Fast path: a household's only loan, an amortising mortgage that is not in its final month and that the
     // borrower can pay in full from deposits. Such a payment cannot trigger a Fund sale, a shortfall or a payoff,
     // and no other loan touches the household, so it is settled with the balance updates `ledger::pay_interest` and
     // `ledger::repay_principal` would make: loans and lender banks in loan order, borrower debits in parallel.
     let nh = w.households.len();
     let mut n_loans = vec![0u8; nh];
-    for &id in &ids {
+    for (k, &id) in ids.iter().enumerate() {
+        if reo[k] {
+            continue;
+        }
         if let Some(Loan { borrower: Borrower::Household(h), .. }) = w.loans.get(id) {
             n_loans[*h as usize] = n_loans[*h as usize].saturating_add(1);
         }
     }
     let fast: Vec<Option<(HhId, f64, f64, f64)>> = {
         let wr: &World = w;
-        ids.par_iter().zip(gathered.par_iter()).map(|(&id, g)| fast_mortgage_payment(wr, id, g, &n_loans)).collect()
+        ids.par_iter()
+            .zip(gathered.par_iter())
+            .zip(reo.par_iter())
+            .map(|((&id, g), &skip)| if skip { None } else { fast_mortgage_payment(wr, id, g, &n_loans) })
+            .collect()
     };
     let mut debit = vec![0.0; nh];
     for (k, &id) in ids.iter().enumerate() {
@@ -887,7 +906,7 @@ fn service_loans(w: &mut World) {
 
     let mut touched = vec![false; w.households.len()];
     for (k, &id) in ids.iter().enumerate() {
-        if fast[k].is_some() || biz_fast[k] {
+        if fast[k].is_some() || biz_fast[k] || reo[k] {
             continue;
         }
         let g = gathered[k];
@@ -1232,6 +1251,8 @@ fn service_bank_pnl(w: &mut World, wage_sum: &[f64]) {
             w.banks[b].interest_income - w.banks[b].interest_expense - w.banks[b].loan_losses - opex[b],
         );
         w.banks[b].profit = profit;
+        // Losses booked after this point are left for next month's P&L (`bank_loss_carry`, see `sim::begin_month`).
+        w.banks[b].loan_losses_recognised = w.banks[b].loan_losses;
         // Payout: a share of profit when adequately capitalised, plus a gradual distribution of capital above the
         // management target (buybacks/special dividends), so bank equity does not accumulate without bound.
         let cr = capital_ratio(w, b as BankId);
@@ -1670,6 +1691,74 @@ mod tests {
         assert!((w.fund.dividends_received + w.fund.special_dividends - paid).abs() < 1e-6 * (1.0 + paid));
     }
 
+    /// `bank_loss_carry`: a business write-off booked after the month's P&L (as `firms::close_books` books a failed
+    /// firm's loans) lowers the next month's bank profit, dividends and bank tax by exactly that loss, once. Legacy
+    /// (`false`) drops it from the P&L.
+    #[test]
+    fn late_write_off_reaches_next_months_bank_pnl_once() {
+        let month = |x: &mut World| {
+            crate::sim::begin_month(x);
+            set_rates(x);
+            service(x);
+        };
+        let mut w = world(9);
+        assert!(w.cfg.bank_loss_carry, "the fix is the default");
+        month(&mut w);
+        // Size the loss well inside next month's tax bases (after and before operating expenses), from a dry run.
+        let mut dry = w.clone();
+        month(&mut dry);
+        let base = |b: &Bank| b.profit.min(b.interest_income - b.interest_expense - b.loan_losses);
+        let bank = (0..dry.banks.len()).max_by(|&a, &b| base(&dry.banks[a]).total_cmp(&base(&dry.banks[b]))).unwrap();
+        assert!(base(&dry.banks[bank]) > 0.0, "a bank with a positive tax base");
+        let loss = 0.25 * base(&dry.banks[bank]);
+        // A business loan of that bank written off after the P&L, in both worlds.
+        let f = (0..w.firms.len()).find(|&f| w.firms[f].alive).unwrap();
+        let lid = ledger::create_loan(&mut w, bank as BankId, Borrower::Firm(f as FirmId), LoanKind::Business, loss, 0.06, 60);
+        let mut legacy = w.clone();
+        legacy.cfg.bank_loss_carry = false;
+        for x in [&mut w, &mut legacy] {
+            assert_eq!(x.banks[bank].loan_losses_recognised, x.banks[bank].loan_losses);
+            let pre = x.banks[bank].loan_losses;
+            assert_eq!(ledger::write_off(x, lid), loss);
+            assert_eq!(x.banks[bank].loan_losses, pre + loss);
+        }
+        // A dead bank carries nothing.
+        let mut dead = w.clone();
+        dead.banks[bank].alive = false;
+        crate::sim::begin_month(&mut dead);
+        assert_eq!(dead.banks[bank].loan_losses, 0.0);
+
+        // Next month: only the fixed P&L recognises the loss; interest flows and operating expenses are identical.
+        let carried = w.banks[bank].loan_losses - w.banks[bank].loan_losses_recognised;
+        month(&mut w);
+        month(&mut legacy);
+        let (on, off) = (&w.banks[bank], &legacy.banks[bank]);
+        assert_eq!(on.loan_losses.to_bits(), carried.to_bits());
+        assert!((carried - loss).abs() <= 1e-12 * loss, "carried {carried} vs written off {loss}");
+        assert_eq!(off.loan_losses, 0.0);
+        assert_eq!(on.interest_income.to_bits(), off.interest_income.to_bits());
+        assert_eq!(on.interest_expense.to_bits(), off.interest_expense.to_bits());
+        assert!((off.profit - on.profit - loss).abs() <= 1e-9 * loss, "profit falls by the loss: {}", off.profit - on.profit);
+        assert!(on.dividends <= off.dividends && off.dividends - on.dividends <= loss * (1.0 + 1e-9));
+        assert!(on.dividends < off.dividends, "the loss is not paid out as a dividend");
+        // The bank tax base is lower by the loss on both bases (after operating expenses, and the legacy one before).
+        let cit = w.cfg.corporate_tax;
+        for after_opex in [true, false] {
+            let tax = |x: &World| {
+                let mut x = x.clone();
+                x.cfg.bank_tax_after_opex = after_opex;
+                crate::fiscal::collect_and_finance(&mut x);
+                x.fiscal.bank_tax_month
+            };
+            let d = tax(&legacy) - tax(&w);
+            assert!((d - cit * loss).abs() <= 1e-9 * cit * loss, "after_opex {after_opex}: tax falls by {d}, want {}", cit * loss);
+        }
+        // Recognised once: the month after, nothing is left to carry.
+        month(&mut w);
+        assert_eq!(w.banks[bank].loan_losses, 0.0);
+        ledger::check_consistency(&w).unwrap();
+    }
+
     // rz1 F2: the credit-spread tail reaches both loan rates through `set_rates`.
     #[test]
     fn credit_tail_reaches_mortgage_and_business_rates() {
@@ -1925,5 +2014,103 @@ mod tests {
         for k in 0..a.banks.len() {
             assert_eq!(a.banks[k].mortgage_rate.to_bits(), b.banks[k].mortgage_rate.to_bits());
         }
+    }
+
+    /// A mortgaged owner-occupier's home repossessed as `housing::foreclose` leaves it: the household moves out, the lender
+    /// owns the house (listed for sale) and holds the loan as the repossession's loan, 4 months delinquent. The household
+    /// has no other loan. Returns (household, loan).
+    fn repossess_for_test(w: &mut World) -> (HhId, LoanId) {
+        let (h, house) = (0..w.houses.len())
+            .find_map(|i| match w.houses[i].owner {
+                Owner::Household(h)
+                    if w.houses[i].occupant == Some(h)
+                        && w.houses[i].mortgage.is_some()
+                        && w.households[h as usize].properties.len() == 1 =>
+                {
+                    Some((h, i as HouseId))
+                }
+                _ => None,
+            })
+            .expect("tiny world has a mortgaged owner-occupier with one property");
+        let loan = w.houses[house as usize].mortgage.unwrap();
+        let bank = w.loans.get(loan).unwrap().bank;
+        let hs = &mut w.houses[house as usize];
+        hs.occupant = None;
+        hs.for_sale = true;
+        hs.for_rent = false;
+        let hh = &mut w.households[h as usize];
+        hh.home = None;
+        hh.tenure = Tenure::WithParents;
+        ledger::transfer_house(w, house, Owner::Bank(bank));
+        w.housing.reo_loan.resize(w.houses.len(), None);
+        w.housing.reo_loan[house as usize] = Some(loan);
+        w.loans.get_mut(loan).unwrap().months_delinquent = 4;
+        assert!(crate::housing::is_reo_loan(&w.housing, loan, w.loans.get(loan).unwrap().kind));
+        assert!(!w.loans.iter().any(|(id, l)| id != loan && l.borrower == Borrower::Household(h)));
+        (h, loan)
+    }
+
+    /// `housing_reo_nonaccrual`: the evicted borrower does not service the repossession's loan. With no cash and Fund
+    /// shares to sell, no shares are sold, no interest or principal is paid, and the loan's balance and delinquency are
+    /// left as they were until the house sells. Legacy (off): the former borrower sells shares and pays in full on a house
+    /// the bank owns, which also clears the delinquency.
+    #[test]
+    fn repossession_loan_is_not_serviced_by_the_former_borrower() {
+        for on in [true, false] {
+            let mut w = world(6);
+            w.cfg.housing_reo_nonaccrual = on;
+            set_rates(&mut w);
+            let (h, loan) = repossess_for_test(&mut w);
+            let hu = h as usize;
+            // Deposits to zero, then Fund shares worth far more than a payment.
+            let dep = w.households[hu].deposits;
+            ledger::pay(&mut w, Account::Household(h), Account::Government, dep);
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(h), 1.0e6);
+            ledger::fund_buy(&mut w, h, 1.0e6);
+            let (dep0, shares0) = (w.households[hu].deposits, w.households[hu].shares);
+            let p0 = w.loans.get(loan).unwrap().principal;
+            service_loans(&mut w);
+            ledger::check_consistency(&w).unwrap();
+            let l = w.loans.get(loan).expect("the loan stays on the books until the house sells");
+            if on {
+                assert_eq!(l.principal.to_bits(), p0.to_bits(), "principal was paid on a repossession's loan");
+                assert_eq!(l.months_delinquent, 4, "delinquency moved on a non-accruing loan");
+                assert_eq!(w.households[hu].shares.to_bits(), shares0.to_bits(), "Fund shares were sold to pay it");
+                assert_eq!(w.households[hu].deposits.to_bits(), dep0.to_bits(), "the former borrower paid");
+            } else {
+                assert!(l.principal < p0, "legacy: the former borrower repays principal");
+                assert_eq!(l.months_delinquent, 0, "legacy: paid in full from Fund shares");
+                assert!(w.households[hu].shares < shares0, "legacy: Fund shares are sold to pay");
+            }
+        }
+    }
+
+    /// `housing_reo_nonaccrual`: whoever holds the slot later (the former borrower after buying again, or an entrant who
+    /// took the dead borrower's slot) pays only the slot's own mortgage; the repossession's loan is not charged and does
+    /// not count as a second loan of the household.
+    #[test]
+    fn repossession_loan_is_not_charged_to_the_slots_next_mortgage() {
+        let mut w = world(7);
+        set_rates(&mut w);
+        let (h, loan) = repossess_for_test(&mut w);
+        let hu = h as usize;
+        // The slot's household has cash and a new mortgage on another house.
+        ledger::pay(&mut w, Account::CentralBank, Account::Household(h), 1.0e6);
+        let other = (0..w.houses.len())
+            .find(|&i| matches!(w.houses[i].owner, Owner::Household(o) if o != h) && w.houses[i].mortgage.is_none())
+            .expect("an unmortgaged house") as HouseId;
+        ledger::transfer_house(&mut w, other, Owner::Household(h));
+        let bank = w.households[hu].bank;
+        let own = ledger::create_loan(&mut w, bank, Borrower::Household(h), LoanKind::Mortgage { house: other }, 50_000.0, 0.06, 360);
+        let (p_reo, p_own) = (w.loans.get(loan).unwrap().principal, w.loans.get(own).unwrap().principal);
+        let dep0 = w.households[hu].deposits;
+        service_loans(&mut w);
+        ledger::check_consistency(&w).unwrap();
+        assert_eq!(w.loans.get(loan).unwrap().principal.to_bits(), p_reo.to_bits());
+        let l = w.loans.get(own).unwrap();
+        assert!(l.principal < p_own && l.months_delinquent == 0, "the slot's own mortgage was not serviced");
+        let paid = dep0 - w.households[hu].deposits;
+        let due = p_own * 0.06 / 12.0 + (p_own - l.principal);
+        assert!((paid - due).abs() < 1e-6, "paid {paid}, own mortgage due {due}");
     }
 }

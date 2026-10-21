@@ -7594,3 +7594,72 @@ Tests: core 632 passed, 0 failed, 2 ignored (base 623); server 82 passed (base 8
 | Reported | R5: 5,000 households read first-year GDP effects 0.08 to 0.19 more negative than 10,000 (2 to 4 SE); O3: at 25 points the card reads GDP -0.25 against -0.10 for the old Today's card; cost 2.11 CPU s a seed (1.57 times Today's without the block, 2.2 times the typical start); 1,014 MB after 160 requests |
 
 **Known gaps.** `DESIGN.md` section 9 (the owner's list: the partner structure is estimated, the level is the model's, the shares are 2025 and not 2026, no announced changes, no refunds, the back-cast carries direction and about half the size).
+
+## Accounting fixes (2026-10-20): six bugs under seven keys, legacy in `legacy_acctfix_off.json`
+
+A code review of the release (60f681a) found six bugs where money or a measure did not follow the model's own accounting.
+They are fixed under seven `Config` keys, all default true: one key per bug, except the repossession bug, whose fix has two
+(`housing_reo_nonaccrual` and `housing_reo_relist`). `scripts/profiles/legacy_acctfix_off.json` sets all seven to false
+and reproduces the release bit for bit. The keys are independent: each can be switched off alone. With either
+repossession key on, the sale of a repossession writes off its loan only while that id is still a mortgage on the house, so
+`housing_reo_relist` without `housing_reo_nonaccrual` (where the evicted borrower can repay the loan and the loan slab reuses
+its id) writes off no other loan.
+
+| Key | What was wrong | What the key does |
+|---|---|---|
+| `bank_loss_carry` | Business-loan write-offs are booked in `firms::close_books`, after `banking::service_bank_pnl` has computed bank profit, dividends and the bank-tax base, and `begin_month` zeroed them. Bank equity fell, but profit, dividends and tax never saw the loss (21 to 59 % of booked losses on seeds 1-3) | Losses booked after the month's P&L enter the next month's P&L (`Bank::loan_losses_recognised`). Business charge-offs reach `bank_profits_bn_ar` one month after `loan_losses_bn_ar` |
+| `entrant_loss_cf_reset` | A firm slot reborn after a bankruptcy inherited its predecessor's tax-loss carry-forward (`fiscal.firm_loss_cf`) | `firms::reborn` clears it |
+| `housing_reo_nonaccrual` | After foreclosure the loan stayed with the evicted household and `banking::service_loans` kept charging it (interest, principal, Fund-share sales); a later entrant in a dead borrower's slot paid it too | Repossession loans (the house's `reo_loan`) are not serviced and do not accrue; the bank keeps them at face until the house sells. They leave household mortgage debt, the average outstanding rate, delinquency and FISIM (the Z.1 household-debt concept); they stay in the bank's loan book and capital ratio |
+| `housing_reo_relist` | An unsold repossession became a rental after its listing expired and the loan stayed on the books for good | An expired repossession stays for sale at the lower of its decayed ask and `REO_ASK_FACTOR` × value, so it eventually sells through the net-of-proceeds write-off |
+| `entrant_slot_reset` | An entrant placed in a dead household's slot inherited its previous-month capital income (taxed in `fiscal`, 0.4 of it added to the budget), windfall stock, patience type, unemployment-spell flag, labour memory, tax arrears and cost basis | `demography::add_entrants` resets the slot's memory (`consumption::reset_household`, `labor::reset_household`, fiscal per-slot state). Inheritance is unchanged |
+| `paasche_deflators` | Real consumption and real government purchases were nominal divided by a spending-weighted *arithmetic* mean of price relatives, which overstates the deflator when relative prices diverge (one price +50 % at a 4 % share and unchanged quantities read −0.91 %). Real GDP and `gdp_real_growth_yoy` inherited it; the sector breakdown did not | Component deflation (Σ nominalⱼ / relⱼ, housing over the rent index), the implied Paasche deflator. CPI and core PCE (the Taylor rule's input) are fixed-weight indices in `goods.rs` and are unchanged; the one model path is the world trade block's import-demand gap |
+| `sfc_enforce` | Release builds computed `sfc_error` each month and never acted on it (only debug builds panicked) | A month with `sfc_error` set panics with the tick and the failing identity (from `ledger::check_consistency`); `world::check_identities` also runs in release. Cost about 0.001 % of instructions. All 76 profiles pass (2,000 households × 36 months on seed 1; 120 months on seeds 1-3) |
+
+**Proofs.** Linux x86-64, glibc, rustc 1.97 and 1.99 (this platform's raw md5 differs from the macOS values elsewhere in
+this file for every profile, the release default included):
+
+```
+run 5000 60 3, release 60f681a                         1a76b12271eee590b51c6f247312627d   (macOS: 9f90c88a...)
+this tree, legacy_acctfix_off.json, RAYON 1 and 8      1a76b12271eee590b51c6f247312627d
+this tree, defaults, RAYON 1, 4 and 8                  a06730ec789aa0742f2052eeb64e631b
+```
+
+Tests: core 648 passed and 2 ignored, server 86, cli 10 (21 new; four existing tests pin the release path for a key that
+moves them and now set that key false: `legacy_keys_reproduce_the_4_1_link`, `with_no_change_the_block_holds_todays_state`,
+`rv_world_metrics_are_in_their_stated_units`, `rv_a_burn_in_worlds_first_update_is_checked_not_waived`).
+
+**Measured (defaults against `legacy_acctfix_off.json`, same seeds).** `run 5000 60`, seeds 1-6, months 12-59, mean ± SE
+of the paired difference:
+
+| Series | Legacy | Fixed − legacy |
+|---|---|---|
+| Real consumption, $bn ar | 18,255 | +299 ± 63 (+1.6 %) |
+| Real GDP, $bn ar | 28,232 | +358 ± 92 (+1.3 %) |
+| Real GDP growth, % yoy | 2.63 | +0.09 ± 0.13 |
+| Unemployment, % | 4.16 | −0.02 ± 0.07 |
+| Policy rate, % | 2.91 | +0.11 ± 0.09 |
+| Core PCE inflation, % | 2.07 | +0.09 ± 0.04 |
+| Bank profits, $bn ar | 412 | −12.6 ± 5.9 |
+| Bank capital ratio, % | 21.79 | +0.75 ± 0.21 |
+| Loan losses, $bn ar | 27.1 | −5.0 ± 2.9 |
+| Firm corporate tax, $bn ar | 734 | +5.2 ± 3.7 |
+| Foreclosures, thousands ar | 128 | −4 ± 16 |
+| Home-ownership, % | 67.36 | −0.03 ± 0.08 |
+
+The level of real consumption and GDP is the deflator; its gap grows over a run (+0.6 % at month 0, +1.8 % at month 59
+on seed 3) because base prices are latched in the first burn-in month. The capital ratio rises because banks above their
+target paid out the overstated profit. Repossessions are rare at the defaults (none outstanding at month 60 on 8 seeds);
+under stress they mattered: with the term premium +300 bp, 8 repossessions (8 seeds together) were outstanding at month 60
+and evicted households had repaid $133k of principal on them; with the policy rate held at 10 %, 23 and $309k.
+
+Scenario effects (10,000 households, 6 seeds, 24 months, warm-up 24; mean ± SE): oil +50 % real consumption m3 −0.35 ±
+0.16 (legacy) against −0.12 ± 0.10 (fixed), real GDP m3 −0.45 ± 0.16 against −0.46 ± 0.12; policy +100 bp real GDP m3
+−0.54 ± 0.10 against −0.55 ± 0.08, m12 −0.37 ± 0.17 against −0.58 ± 0.19, unemployment m12 +0.25 ± 0.08 against +0.29 ±
+0.11. On `irf 5000 24 8` about 40-50 % of the oil shock's month-3 fall in real GDP was the deflator.
+
+**Known gaps.** The macOS fingerprint of the new default is not measured. The measured column of `SCENARIOS.md`, the
+stylised-facts scorecard and the joint gates were measured on the legacy accounting and are not re-run here. The
+website's request overlay (`README.md`, "Reproduce a result") does not set these keys, so it gets the fixes. Not changed:
+base prices are never re-based; banks have no tax-loss carry-forward; the import deflator uses domestic prices; with
+both repossession keys off (the release), a repossession loan paid off at maturity leaves a stale `reo_loan` id, and a later
+sale writes off whatever loan has reused that id.

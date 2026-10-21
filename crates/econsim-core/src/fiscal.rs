@@ -114,7 +114,8 @@ pub struct FiscalState {
     pub hh_arrears: Vec<f64>,
     /// Unpaid bank corporate tax carried forward, per bank.
     pub bank_arrears: Vec<f64>,
-    /// Corporate-tax loss carry-forward per firm.
+    /// Corporate-tax loss carry-forward per firm slot (a dead slot keeps it; `firms::reborn` clears it for the entrant
+    /// when `entrant_loss_cf_reset` is on).
     pub firm_loss_cf: Vec<f64>,
     /// Bank corporate tax paid this month (model units); observation only, for after-tax bank net income.
     pub bank_tax_month: f64,

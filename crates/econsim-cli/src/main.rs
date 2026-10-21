@@ -14,7 +14,8 @@ fn arg<T: std::str::FromStr>(args: &[String], i: usize, d: T) -> T {
 }
 
 /// The ECONSIM_CFG overlay, refused with exit status 2 when the combination is not supported (stage 4-1, S4-R14): the dollar link
-/// without the trade link. The same check the server makes (`Config::validate_world_links`).
+/// without the trade link. The same checks the server makes (`Config::validate_world_links`, `validate_rz2`, and
+/// `validate_clamp_bounds` for bound pairs that would panic in the run).
 fn config_from_env() -> Config {
     let cfg = Config::from_env();
     if let Err(e) = cfg.validate_world_links() {
@@ -22,6 +23,10 @@ fn config_from_env() -> Config {
         std::process::exit(2);
     }
     if let Err(e) = cfg.validate_rz2() {
+        eprintln!("econsim-cli: {e}");
+        std::process::exit(2);
+    }
+    if let Err(e) = cfg.validate_clamp_bounds() {
         eprintln!("econsim-cli: {e}");
         std::process::exit(2);
     }

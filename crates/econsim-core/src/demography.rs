@@ -876,6 +876,9 @@ fn add_entrants(w: &mut World, st: &mut DemographyState) {
         let id = i as HhId;
         crate::housing::reset_household(&mut w.housing, id);
         w.hh_month[i] = HhMonth::default();
+        if w.cfg.entrant_slot_reset {
+            reset_slot_memory(w, id);
+        }
         let age = if native {
             draw_native_entry_age(&mut mrng, &cdf)
         } else {
@@ -888,6 +891,25 @@ fn add_entrants(w: &mut World, st: &mut DemographyState) {
         }
         endow_from_parent(w, st, id, &mut mrng);
         w.flows.births += 1;
+    }
+}
+
+/// `Config::entrant_slot_reset`: clear the per-slot memory the other modules keep for slot `h`, which an entrant is
+/// taking (housing bookkeeping and `hh_month` are cleared by `add_entrants` in any case). Without it, an entrant in a slot
+/// freed this month is taxed on the decedent's last-month distributions, spends at the capital-income MPC out of the
+/// decedent's capital income, and keeps the decedent's windfall stock, UI-spell flag and impatience type when it is not
+/// younger, plus the job-search sector and pay multiplier. The fiscal state is also cleared here, so the birth-month test
+/// in `fiscal::occupant_changes` is not needed for it (it misses an entrant born in the decedent's month). Slots appended
+/// this month have no entries yet, and the vectors grow with zeros. The estate itself passed to the heirs at death.
+fn reset_slot_memory(w: &mut World, h: HhId) {
+    let i = h as usize;
+    crate::consumption::reset_household(&mut w.consumption, h);
+    crate::labor::reset_household(&mut w.labor, h);
+    let f = &mut w.fiscal;
+    for v in [&mut f.hh_arrears, &mut f.ytd_wages, &mut f.fund_shares_prev, &mut f.fund_basis, &mut f.cg_loss_cf] {
+        if let Some(x) = v.get_mut(i) {
+            *x = 0.0;
+        }
     }
 }
 
@@ -1248,6 +1270,87 @@ mod entry_tracking_tests {
         assert!(entrants_for(cfg.clone(), 0.0, 0.0, 30.0) >= 1, "a rise in dissolutions produced no entrants");
         let off = Config { native_entry_tracks_dissolutions: false, ..cfg };
         assert_eq!(entrants_for(off, 0.0, 0.0, 30.0), 0, "the switch-off path changed entry");
+    }
+
+    /// `entrant_slot_reset`: an entrant placed in the slot of a household that died this month starts with none of the
+    /// decedent's per-slot memory, so it pays no tax on the decedent's last-month dividends; its impatience type is
+    /// redrawn although it is older than the decedent was. Legacy (off): the memory carries over and the entrant is taxed
+    /// on the decedent's distributions.
+    #[test]
+    fn entrant_in_reused_slot_starts_clean() {
+        for reset in [true, false] {
+            let cfg = Config { n_households: 500, immigration_annual: 0.0, entrant_slot_reset: reset, ..Default::default() };
+            let mut w = tiny_world(cfg, 9);
+            step(&mut w);
+            let n = w.households.len();
+            // The lowest dead slot, or a household without home, property, job or partner that dies now.
+            let i = match (0..n).find(|&i| !w.households[i].alive) {
+                Some(i) => i,
+                None => {
+                    let i = (0..n)
+                        .find(|&i| {
+                            let hh = &w.households[i];
+                            hh.home.is_none() && hh.properties.is_empty() && hh.employer.is_none() && !hh.partnered
+                        })
+                        .expect("a household with no home or job");
+                    // As `process_death` leaves it: the estate (deposits and Fund shares) is gone to the heirs.
+                    ledger::fund_sell(&mut w, i as HhId, f64::MAX);
+                    let dep = w.households[i].deposits;
+                    ledger::pay(&mut w, Account::Household(i as HhId), Account::Government, dep);
+                    w.households[i].alive = false;
+                    i
+                }
+            };
+            // The decedent's memory, as the modules leave it at the end of its last month.
+            let cs = &mut w.consumption;
+            cs.distributions_prev.resize(n, 0.0);
+            cs.capital_income_prev.resize(n, 0.0);
+            cs.windfall_stock.resize(n, 0.0);
+            cs.ui_spell.resize(n, false);
+            cs.type_age.resize(n, 0);
+            cs.distributions_prev[i] = 50_000.0;
+            cs.capital_income_prev[i] = 80_000.0;
+            cs.windfall_stock[i] = 9_000.0;
+            cs.ui_spell[i] = true;
+            cs.type_age[i] = 0;
+            w.labor.last_sector.resize(n, None);
+            w.labor.last_sector[i] = Some(Sector::Energy);
+            w.fiscal.hh_arrears.resize(n, 0.0);
+            w.fiscal.hh_arrears[i] = 1_234.0;
+            // Exactly one native entrant this month, into the lowest dead slot.
+            let mut st = std::mem::take(&mut w.demography);
+            st.base_entrants = Some(0.0);
+            st.diss0 = 0.0;
+            st.diss_now = 0.0;
+            st.pent_up = 0.0;
+            st.native_acc = 1.0;
+            st.immigrant_acc = 0.0;
+            add_entrants(&mut w, &mut st);
+            w.demography = st;
+            assert!(w.households[i].alive, "the entrant did not take slot {i}");
+            let cs = &w.consumption;
+            if reset {
+                assert_eq!(cs.distributions_prev[i], 0.0);
+                assert_eq!(cs.capital_income_prev[i], 0.0);
+                assert_eq!(cs.windfall_stock[i], 0.0);
+                assert!(!cs.ui_spell[i]);
+                assert_eq!(cs.type_age[i], u32::MAX, "the impatience type is not redrawn for an older entrant");
+                assert_eq!(w.labor.last_sector[i], None);
+                assert_eq!(w.fiscal.hh_arrears[i], 0.0);
+            } else {
+                assert_eq!(cs.distributions_prev[i], 50_000.0, "legacy: the decedent's distributions carry over");
+                assert_eq!(w.labor.last_sector[i], Some(Sector::Energy));
+            }
+            // Tax this month: the entrant has no income of its own (its month record is fresh) and enough cash to pay.
+            ledger::pay(&mut w, Account::CentralBank, Account::Household(i as HhId), 1.0e6);
+            crate::fiscal::collect_and_finance(&mut w);
+            let tax = w.hh_month[i].taxes;
+            if reset {
+                assert_eq!(tax, 0.0, "the entrant paid tax on the decedent's dividends");
+            } else {
+                assert!(tax > 0.0, "legacy: the entrant is taxed on the decedent's distributions");
+            }
+        }
     }
 
     /// b6-reentry M4b/M4c: the hazard is the legacy OLF_OUTFLOW at the defaults, and the recent and scar classes apply

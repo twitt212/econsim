@@ -120,6 +120,14 @@ pub struct Config {
     /// Log change in native household formation per pp of unemployment gap (u* − u); 2008–11: a ≈5pp gap cut
     /// formation ≈60% (JCHS), ≈0.18. 0 makes formation acyclical.
     pub household_formation_cyclicality: f64,
+    /// An entrant placed in a reused household slot (`demography::add_entrants`) starts with none of the previous
+    /// occupant's per-slot memory: last month's capital income and taxable distributions (otherwise taxed in the
+    /// entrant's name and spent at the capital-income MPC), the windfall stock, UI-spell flag and impatience type (redrawn
+    /// even when the entrant is not younger than the decedent, which the "age falls" test missed), the labour-market
+    /// sector that targets job applications, the job's pay multiplier, and the tax arrears, year-to-date wages, Fund cost
+    /// basis and loss carry-forward. Inheritance is unchanged: the estate still passes to the heirs at death. Legacy
+    /// `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub entrant_slot_reset: bool,
 
     // --- labour ---
     pub min_wage_monthly: f64,
@@ -462,6 +470,14 @@ pub struct Config {
     pub business_spread: f64,
     pub capital_requirement: f64,
     pub bank_payout_ratio: f64,
+    /// Loan losses booked after the month's bank P&L are recognised in the next month's P&L. Business write-offs of
+    /// failed firms are booked in `firms::close_books`, which runs after `banking::service` has computed profit and
+    /// dividends and after the bank tax, and `sim::begin_month` used to zero them. They cut bank equity but never
+    /// bank profit, dividends or the bank tax base (bank_profits_bn_ar left out the business charge-offs that
+    /// loan_losses_bn_ar counts). With the key on, `sim::begin_month` keeps the part of `Bank.loan_losses` that the
+    /// P&L has not recognised, so every loss reaches the P&L exactly once, one month late when it is booked late.
+    /// Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub bank_loss_carry: bool,
     pub discount_spread: f64,
     /// Lender balance-sheet premium (excess bond premium), added to a bank's business loan base rate. Loss term:
     /// percentage points of premium per pp by which the expected loss rate on the bank's business loans (loan-weighted
@@ -841,6 +857,11 @@ pub struct Config {
     pub employer_benefits: f64,
     pub payroll_cap_annual: f64,
     pub corporate_tax: f64,
+    /// A firm reborn in a dead slot (`firms::reborn`, which reuses the slot's id) starts with no corporate-tax loss
+    /// carry-forward. The dead predecessor's `FiscalState::firm_loss_cf` was kept, so the entrant paid no corporate tax
+    /// until it had used up the failed firm's losses (households in a reused slot already start clean). Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub entrant_loss_cf_reset: bool,
     /// Monthly pull of wage offers toward the firm's initial labour share (log gap).
     pub labor_share_pull: f64,
     /// Share of the gap to target inventory that production closes each month (partial adjustment ≈20–30% a
@@ -1095,6 +1116,22 @@ pub struct Config {
     /// distressed sale. A borrower's own home is vacated at listing (an owner exit); a let unit is only listed, and its
     /// owner keeps the home they live in.
     pub housing_distress_sale_prob: f64,
+    /// A repossession's defaulted loan (`HousingState::reo_loan`, held from foreclosure until the bank sells the house) is
+    /// a non-accruing bank asset: the evicted borrower, or an entrant who later takes that household slot, is not charged
+    /// interest or principal on it, has no shortfall, miss or Fund-share sale for it, and it does not count as that
+    /// household's loan in servicing. It also leaves the household-mortgage measures (mortgage debt, average outstanding
+    /// rate, delinquency counts and shares, the FISIM loan leg and the mortgage rate by age), since the borrower no
+    /// longer owns the house; it stays in the bank's loan book and capital until the sale writes it off net of proceeds.
+    /// Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub housing_reo_nonaccrual: bool,
+    /// A repossession whose listing reaches the end of its life stays on the market (`housing::update_listings`): it is
+    /// re-listed at the lower of its decayed ask and `REO_ASK_FACTOR` × current value, instead of being let as a
+    /// bank-owned rental that nothing ever offers for sale again. The bank keeps cutting the price until a buyer takes it,
+    /// so every repossession is resolved through the sale path that writes the loan off net of proceeds. With
+    /// `housing_reo_nonaccrual` off the evicted borrower can repay the loan before the sale, which then writes nothing off:
+    /// with either key the sale checks that the loan id is still a mortgage on the house. Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub housing_reo_relist: bool,
     /// Owner-to-renter exit hazard elasticity to the user cost relative to its anchor: exits scale by (uc / uc0)^e.
     /// Higher mortgage rates raise exits, so ownership falls and rental demand rises when rates rise.
     pub housing_exit_uc_elasticity: f64,
@@ -1167,6 +1204,29 @@ pub struct Config {
     /// S6 level calibration (energy_profit_gdp 1.13 to 1.07 and cu_level 82.6 to 80.7 on the 16-seed card). Legacy
     /// 0.10 in scripts/profiles/legacy_j2off.json.
     pub upstream_margin: f64,
+    /// Accounting fix (recorded real series): real consumption and real government purchases are deflated component by
+    /// component, each sector's nominal purchases over that sector's price relative to the base month and housing services
+    /// over the rent index, so the implied deflators (nominal over real) are Paasche indices: the expenditure-weighted
+    /// harmonic means of the relatives (`metrics::paasche_volume`). The headline then agrees with its own breakdown
+    /// (`household_purchases_real_bn_ar`, `consumption_by_sector_real`). The same applies to in-kind health care (split by
+    /// `health_sector_mix`), to the household deflator behind `consumption_by_quintile`, and, through the PCE deflator, to
+    /// the constant-margin real FISIM. Legacy: the aggregates are divided by the arithmetic mean of the relatives weighted by
+    /// current nominal spending, which overstates the deflator whenever relative prices diverge (4% of spending on energy,
+    /// energy prices +50%, quantities unchanged: real consumption -0.9%) and understates real consumption, real government
+    /// purchases and real GDP. Nominal series and the economy are unchanged, except that with the world block's trade link and
+    /// US import channel on `world/trade.rs` reads last month's `gdp_real_bn_ar`. The investment (fixed capital-goods
+    /// basket), residential (one sector), export (by sector) and import (fixed tradable weights) deflators are not this
+    /// form and are unchanged. Legacy `false` (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub paasche_deflators: bool,
+    /// Stock-flow consistency is enforced in every build: `sim::step` panics, naming the tick and the failing identity, when
+    /// the month's `sfc_error` is set (the checks of `ledger::check_consistency` that `metrics::record` computes in its passes:
+    /// bank deposit liabilities against customer deposits, loan books against loans, finite balances, Fund shares against
+    /// household shares, mortgage links) or when the world block's identities fail (`world::check_identities`: the NIIP
+    /// residual and the bilateral current accounts). Debug builds also panic on the full `ledger::check_consistency`, as
+    /// before. The checks are computed anyway, so the cost is nil. Legacy: a release build (server, CLI, `cargo test
+    /// --release`) only records `sfc_error` and goes on with an inconsistent economy. Legacy `false`
+    /// (scripts/profiles/legacy_acctfix_off.json) reproduces the release.
+    pub sfc_enforce: bool,
     /// Re-fit Step 5a: the CIPI fold adds back the inventory written off in bankruptcies (`Flows.bk_inventory_units`),
     /// since a write-off is an "other change in volume", not a fall in inventory investment. Legacy false.
     pub cipi_excludes_writeoffs: bool,
@@ -1846,6 +1906,33 @@ impl Config {
         Ok(())
     }
 
+    /// Bound pairs that reach `f64::clamp`, which panics when the lower bound is above the upper one (before this check the
+    /// server answered such a config with a 500 from the panic): `u_star_min` and `u_star_max` (the natural-rate estimate,
+    /// every month), `ebp_min` and `ebp_max` (the lender premium, every month), `mortgage_spread_min_adj` and
+    /// `mortgage_spread_max_adj` (only with a mortgage-spread gain), and `r_star_est_min` against the fixed upper bound of the r*
+    /// estimate, `monetary::R_STAR_EST_MAX` (only with `r_star_adapt` > 0). A pair the run does not use is not checked. Equal
+    /// bounds pass. The server calls this before it runs a request, and the CLI before it runs a config.
+    pub fn validate_clamp_bounds(&self) -> Result<(), String> {
+        fn ordered(lo_name: &str, lo: f64, hi_name: &str, hi: f64) -> Result<(), String> {
+            if lo <= hi {
+                Ok(())
+            } else {
+                Err(format!("{lo_name} = {lo} is above {hi_name} = {hi}"))
+            }
+        }
+        ordered("u_star_min", self.u_star_min, "u_star_max", self.u_star_max)?;
+        ordered("ebp_min", self.ebp_min, "ebp_max", self.ebp_max)?;
+        if self.mortgage_spread_vol_gain != 0.0 || self.mortgage_spread_stress_gain != 0.0 {
+            let (lo, hi) = (self.mortgage_spread_min_adj, self.mortgage_spread_max_adj);
+            ordered("mortgage_spread_min_adj", lo, "mortgage_spread_max_adj", hi).map_err(|e| format!("{e} (a mortgage-spread gain is set)"))?;
+        }
+        if self.r_star_adapt > 0.0 {
+            let max = crate::monetary::R_STAR_EST_MAX;
+            ordered("r_star_est_min", self.r_star_est_min, "the r* estimate's upper bound", max).map_err(|e| format!("{e} (r_star_adapt > 0)"))?;
+        }
+        Ok(())
+    }
+
     /// Stage 5 (S2-R7, D57): `world_import_gap_offset` is empty or holds twelve finite values in [-10, 10] (pp; the term it centres is clamped to +-10).
     pub fn validate_world_import_gap_offset(&self) -> Result<(), String> {
         let v = &self.world_import_gap_offset;
@@ -2000,6 +2087,7 @@ impl Default for Config {
             // Net immigrant households per household per year (US net international migration ≈1M people/yr, CBO).
             immigration_annual: 0.0035,
             household_formation_cyclicality: 0.18,
+            entrant_slot_reset: true,
 
             min_wage_monthly: 1_260.0,
             // exogenous E→U separations (CPS flows ≈1.1–1.3%/month incl. layoffs, which are endogenous here)
@@ -2207,6 +2295,7 @@ impl Default for Config {
             business_spread: 0.014,
             capital_requirement: 0.105,
             bank_payout_ratio: 0.5,
+            bank_loss_carry: true,
             discount_spread: 0.001,
             ebp_loss_sens: 3.0,
             ebp_capital_sens: 1.0,
@@ -2321,6 +2410,7 @@ impl Default for Config {
             payroll_cap_annual: 176_100.0,
             // effective rate on book profits (US corporate receipts ≈ 1.7% of GDP; statutory 21%)
             corporate_tax: 0.13,
+            entrant_loss_cf_reset: true,
             labor_share_pull: 0.0,
             inventory_adjust: 0.12,
             demand_adapt: 0.4,
@@ -2470,6 +2560,8 @@ impl Default for Config {
             construction_rate_elasticity: 0.16,
             housing_foreclosure_prob: 0.45,
             housing_distress_sale_prob: 0.10,
+            housing_reo_nonaccrual: true,
+            housing_reo_relist: true,
             housing_exit_uc_elasticity: 2.0,
             housing_price_uc_gain: 0.9,
             housing_rent_price_anchor: 0.08,
@@ -2497,6 +2589,10 @@ impl Default for Config {
             upstream_tax_share: 0.08,
             upstream_royalty_share: 0.10,
             upstream_margin: 0.05,
+            // Accounting fixes of 2026-10-20 to the real-series deflators and the stock-flow check; legacy values in
+            // scripts/profiles/legacy_acctfix_off.json.
+            paasche_deflators: true,
+            sfc_enforce: true,
             // Re-fit Step 5 (bankruptcy realism); legacy values in scripts/profiles/legacy_p1off.json.
             cipi_excludes_writeoffs: true,
             cipi_excludes_nonstorable: true,
