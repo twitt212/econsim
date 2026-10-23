@@ -89,9 +89,7 @@ curl -s -X POST 'http://localhost:8787/api/compare?fields=equity_value_by_sector
   -d '{"config":{"n_households":5000},"shocks":[{"at_month":0,"shock":{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}}],"months":36,"seeds":[1]}'
 ```
 
-**Release.** In this repository the input is on the branch `feat/share-prices`. It would ship as the release after `v2026.10.21`
-(by the date scheme `v2026.10.22`, if it is tagged that day; the tag, and the version in `CITATION.cff` and the README's citation line,
-are the owner's to set). It changes no default: the default and the legacy-profile fingerprints in the README are unchanged
+**Release.** The input shipped in `v2026.10.23`, the release after `v2026.10.21`. It changes no default: the default and the legacy-profile fingerprints in the README are unchanged
 (`6a56affe5fa25d7fcf1fa0ba7197234e` and `9f90c88a2c8b653857029d235cd6b0a6` on macOS, at `RAYON_NUM_THREADS=1` and `8`).
 
 ## POST /api/compare: caching, concurrency and pre-warm

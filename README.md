@@ -121,7 +121,7 @@ checks that name other fingerprints say which profile they belong to.
 
 ## Cite
 
-See [CITATION.cff](CITATION.cff). In short: Wittmann, T. (2026). *EconSim*, version 2026.10.18 (Apache-2.0). Describe the
+See [CITATION.cff](CITATION.cff). In short: Wittmann, T. (2026). *EconSim*, version 2026.10.23 (Apache-2.0). Describe the
 results as a simulated economy, not a forecast.
 
 ## Licence

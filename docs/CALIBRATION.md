@@ -7739,6 +7739,5 @@ impact, in US-scale $bn; the consumption figures are real consumption.
 - **Not in the model** (gaps): firms issue no equity, so a price fall does not touch their financing directly; dividends do not respond to the
   price, so a permanent -80% leaves the dividend yield five times higher for as long as it lasts; the effect on consumption is the Fund-wealth
   term only (no collateral channel for firms, no confidence channel).
-- **Release.** This is the branch `feat/share-prices`. It would ship as the release after `v2026.10.21` (by the date scheme `v2026.10.22`,
-  if tagged that day; the tag and the version in `CITATION.cff` and the README's citation line are the owner's to set). Defaults and fingerprints
-  are unchanged, so the README's fingerprint paragraph needs no edit.
+- **Release.** Shipped in `v2026.10.23`, the release after `v2026.10.21`. Defaults and fingerprints are unchanged, so the README's
+  fingerprint paragraph needs no edit.
