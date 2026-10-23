@@ -289,6 +289,9 @@ pub fn pay_transfers(w: &mut World) {
         w.fiscal.ss_seeded = true;
     }
     let heli = nonneg(w.cb.helicopter_per_household);
+    // RZ23: the Treasury-financed one-off payment of a `Rebate` shock (0 unless one is in force): credited as the helicopter payment is,
+    // paid out of the TGA with the government's other payments, and refilled by the bond auction of `collect_and_finance`.
+    let reb = nonneg(w.shocks.rebate_per_household(tick));
     let nb = w.banks.len();
     // b5-udur M5: extended UI months for this month (0 when off), from the last ≤3 monthly unemployment rates.
     let ext_on = w.cfg.udur_ui_ext_t1 < 99.0;
@@ -303,7 +306,7 @@ pub fn pay_transfers(w: &mut World) {
     // One parallel pass over fixed household chunks. Each household's government transfer and helicopter money
     // are credited to its own deposits and income in place. Neither payer can run short (the TGA is restored
     // later and the central bank creates reserves), so the TGA, bank and totals are reduced per chunk in chunk order.
-    let parts: Vec<(Vec<f64>, f64, f64, u32)> = w
+    let parts: Vec<(Vec<f64>, f64, f64, u32, f64)> = w
         .households
         .par_chunks_mut(FISCAL_CHUNK)
         .zip(w.hh_month.par_chunks_mut(FISCAL_CHUNK))
@@ -312,6 +315,7 @@ pub fn pay_transfers(w: &mut World) {
             let mut bank = vec![0.0; nb];
             let mut gov_sum = 0.0;
             let mut heli_sum = 0.0;
+            let mut reb_sum = 0.0;
             let mut ext_n = 0u32;
             for ((hh, mon), uist) in hhs.iter_mut().zip(mons.iter_mut()).zip(uis_c.iter_mut()) {
                 if !hh.alive {
@@ -412,25 +416,37 @@ pub fn pay_transfers(w: &mut World) {
                     mon.income.windfall += heli; // fix-households: transitory windfall, not permanent income
                     heli_sum += heli;
                 }
+                // RZ23: a Treasury-financed one-off payment is credited exactly as the helicopter payment is (so the first month is the
+                // same to the last bit), is a transitory windfall, and is counted with the government's payments after the loop: it
+                // comes out of the TGA, not from the central bank.
+                if reb > 0.0 {
+                    hh.deposits += reb;
+                    bank[hh.bank as usize] += reb;
+                    mon.income.windfall += reb;
+                    reb_sum += reb;
+                }
             }
-            (bank, gov_sum, heli_sum, ext_n)
+            (bank, gov_sum, heli_sum, ext_n, reb_sum)
         })
         .collect();
 
     let mut bank_net = vec![0.0; nb];
     let mut gov_paid = 0.0;
     let mut heli_total = 0.0;
+    let mut reb_total = 0.0;
     let mut ui_ext_n = 0u32;
-    for (b, g, h, e) in &parts {
+    for (b, g, h, e, r) in &parts {
         for (a, x) in bank_net.iter_mut().zip(b) {
             *a += x;
         }
         gov_paid += g;
         heli_total += h;
+        reb_total += r;
         ui_ext_n += e;
     }
     w.flows.udur_ui_ext_n += ui_ext_n;
     apply_bank_net(w, &bank_net);
+    gov_paid += reb_total; // RZ23: the rebate is a government payment (zero unless a `Rebate` shock is in force)
     w.cb.tga -= gov_paid;
     w.gov.transfers += gov_paid;
     w.gov.outlays += gov_paid;
@@ -445,6 +461,11 @@ pub fn pay_transfers(w: &mut World) {
     if heli > 0.0 {
         w.cb.helicopter_total += heli_total;
         w.flows.helicopter += heli_total;
+    }
+    // RZ23: the Treasury-financed payment is reported in the one-off-payment series (`helicopter_bn_ar`) so that a response per dollar can
+    // be read as for the helicopter, but it is not central-bank money: `cb.helicopter_total` is not touched.
+    if reb > 0.0 {
+        w.flows.helicopter += reb_total;
     }
 }
 
@@ -1212,6 +1233,85 @@ mod tests {
         ledger::check_consistency(&w).unwrap();
     }
 
+    // ---- RZ23: Shock::Rebate, the Treasury-financed one-off payment ----
+
+    fn schedule_rebate(w: &mut World, per_household: f64, months: u32) {
+        let tick = w.tick;
+        w.shocks.schedule(crate::shocks::ScheduledShock { at_month: tick, shock: crate::shocks::Shock::Rebate { per_household, months } });
+        w.shocks.activate_due(tick);
+    }
+
+    #[test]
+    fn rebate_is_paid_from_the_tga_creates_no_central_bank_money_and_is_a_windfall() {
+        let mut w = world(11);
+        schedule_rebate(&mut w, 100.0, 1);
+        assert_eq!(w.cb.helicopter_per_household, 0.0, "the helicopter input is untouched");
+        let (dep0, res0, tga0) = (total_deposits(&w), total_reserves(&w), w.cb.tga);
+
+        pay_transfers(&mut w);
+
+        let n_alive = w.households.iter().filter(|h| h.alive).count() as f64;
+        let reb = 100.0 * n_alive;
+        // Reported in the one-off-payment series, but not central-bank money.
+        assert!((w.flows.helicopter - reb).abs() < 1e-6);
+        assert_eq!(w.cb.helicopter_total, 0.0);
+        assert!(w.hh_month.iter().zip(w.households.iter()).filter(|(_, h)| h.alive).all(|(m, _)| m.income.windfall >= 100.0));
+        // It comes out of the TGA with the government's other payments (the TGA falls by everything the government paid).
+        let gov_paid = w.gov.transfers;
+        assert!(gov_paid >= reb - 1e-6, "transfers {gov_paid} include the rebate {reb}");
+        assert!((tga0 - w.cb.tga - gov_paid).abs() < 1e-6 * (1.0 + tga0.abs()));
+        assert!((w.gov.outlays - gov_paid).abs() < 1e-6 * (1.0 + gov_paid));
+        // Deposits and reserves of the banking system rise by the same amount (the reserves come from the TGA).
+        let (dep_gain, res_gain) = (total_deposits(&w) - dep0, total_reserves(&w) - res0);
+        assert!((dep_gain - gov_paid).abs() < 1e-6 * (1.0 + dep_gain.abs()));
+        assert!((res_gain - gov_paid).abs() < 1e-6 * (1.0 + res_gain.abs()));
+        ledger::check_consistency(&w).unwrap();
+    }
+
+    #[test]
+    fn rebate_is_financed_by_the_bond_auction_that_refills_the_tga() {
+        let mut quiet = world(12);
+        let mut paid = world(12);
+        schedule_rebate(&mut paid, 2_000.0, 1);
+        for w in [&mut quiet, &mut paid] {
+            // Empty the TGA through the ledger, so that the auction has to refill it from nothing in both worlds.
+            let tga = w.cb.tga;
+            ledger::pay(w, Account::Government, Account::CentralBank, tga);
+            pay_transfers(w);
+            plan_spending(w);
+            collect_and_finance(w);
+        }
+        let n_alive = paid.households.iter().filter(|h| h.alive).count() as f64;
+        let reb = 2_000.0 * n_alive;
+        // The TGA is back at its target in both worlds. The target follows the smoothed outlays, so the month with the rebate
+        // leaves a larger one: the extra debt is the rebate plus that larger balance, and the deficit is the rebate.
+        for w in [&quiet, &paid] {
+            assert!((w.cb.tga - w.fiscal.tga_target).abs() < 1e-6 * (1.0 + w.fiscal.tga_target));
+        }
+        let tga_gain = paid.cb.tga - quiet.cb.tga;
+        assert!(tga_gain >= -1e-6 && tga_gain < reb, "the larger target {tga_gain} is part of the rebate {reb}");
+        assert!((paid.gov.debt_face - quiet.gov.debt_face - reb - tga_gain).abs() < 1e-6 * reb, "debt {} vs {}", paid.gov.debt_face, quiet.gov.debt_face);
+        assert!((paid.gov.deficit - quiet.gov.deficit - reb).abs() < 1e-6 * reb);
+        ledger::check_consistency(&paid).unwrap();
+    }
+
+    #[test]
+    fn rebate_runs_for_its_months_only_and_off_it_changes_nothing() {
+        let mut w = world(13);
+        schedule_rebate(&mut w, 50.0, 2);
+        let tick0 = w.tick;
+        assert_eq!(w.shocks.rebate_per_household(tick0), 50.0);
+        assert_eq!(w.shocks.rebate_per_household(tick0 + 1), 50.0);
+        assert_eq!(w.shocks.rebate_per_household(tick0 + 2), 0.0);
+        // No rebate in force: the month's payments are exactly those of a world that never heard of the shock.
+        let (mut a, mut b) = (world(14), world(14));
+        pay_transfers(&mut a);
+        pay_transfers(&mut b);
+        assert_eq!(a.gov.transfers.to_bits(), b.gov.transfers.to_bits());
+        assert_eq!(a.flows.helicopter, 0.0);
+        assert!(a.hh_month.iter().all(|m| m.income.windfall == 0.0));
+    }
+
     #[test]
     fn purchases_follow_trend_gdp_and_sector_split() {
         let mut w = world(2);
@@ -1575,5 +1675,164 @@ mod tests {
         pay_transfers(&mut w);
         assert_eq!(w.fiscal.ui_ext[h], 2, "displaced worker was not extended");
         assert_eq!(w.households[h].benefit_months_left, 2);
+    }
+}
+
+#[cfg(test)]
+mod rz23_tests {
+    //! RZ23: the Treasury-financed `Rebate` shock and the windfall run-down, through whole months (paired worlds at 1,500 households).
+    use crate::config::Config;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim::{self, Comparison, Scenario};
+    use std::sync::OnceLock;
+
+    const N: usize = 1500;
+    const SEEDS: [u64; 2] = [1, 2];
+
+    fn cfg() -> Config {
+        Config { n_households: N, ..Config::default() }
+    }
+
+    static WORLDS: OnceLock<Vec<crate::types::World>> = OnceLock::new();
+
+    /// Built once on the test thread (a world build uses rayon; building one from inside a worker of `compare_with` can deadlock).
+    fn worlds() {
+        WORLDS.get_or_init(|| SEEDS.iter().map(|&s| sim::common_world(&cfg(), s).0).collect());
+    }
+
+    /// Two arms from one common world per seed; `tweak` changes the common world's configuration before both arms run from it (the
+    /// scenario's own `config` is not applied to a world that is already built).
+    fn paired(tweak: &(dyn Fn(&mut Config) + Sync), shocks: Vec<ScheduledShock>, months: u32, seeds: &[u64]) -> Comparison {
+        worlds();
+        let sc = Scenario { config: cfg(), shocks, months, seeds: seeds.to_vec() };
+        let common = |seed: u64| -> sim::CommonWorld {
+            let ws = WORLDS.get().expect("worlds() ran first");
+            let mut w = ws[SEEDS.iter().position(|&s| s == seed).expect("a test seed")].clone();
+            tweak(&mut w.cfg);
+            (w, None)
+        };
+        assert!(sc.config.sfc_enforce, "the stock-flow checks are on, so a bad month would stop the run");
+        sim::compare_with(&sc, &common, &mut |_| {})
+    }
+
+    fn keep(_: &mut Config) {}
+
+    fn at0(shock: Shock) -> Vec<ScheduledShock> {
+        vec![ScheduledShock { at_month: 0, shock }]
+    }
+
+    fn json<T: serde::Serialize>(x: &T) -> String {
+        serde_json::to_string(x).unwrap()
+    }
+
+    fn cum_cons_gap(c: &Comparison, a: usize, b: usize) -> f64 {
+        (a..b).map(|t| c.shocked[t].consumption_real_bn_ar - c.baseline[t].consumption_real_bn_ar).sum()
+    }
+
+    fn c_debt(c: &Comparison) -> f64 {
+        c.shocked[11].gov_debt_bn - c.baseline[11].gov_debt_bn
+    }
+
+    fn close(a: f64, b: f64) -> bool {
+        (a - b).abs() <= 1e-9 * (1.0 + a.abs().max(b.abs()))
+    }
+
+    #[test]
+    fn a_zero_rebate_and_a_world_without_one_are_byte_identical() {
+        for seed in SEEDS {
+            let none = paired(&keep, vec![], 6, &[seed]);
+            let zero = paired(&keep, at0(Shock::Rebate { per_household: 0.0, months: 3 }), 6, &[seed]);
+            assert_eq!(json(&none.baseline), json(&zero.baseline), "seed {seed}");
+            assert_eq!(json(&none.baseline), json(&zero.shocked), "seed {seed}: the zero rebate changed the history");
+        }
+    }
+
+    #[test]
+    fn the_windfall_keys_do_nothing_without_a_one_off_payment() {
+        // Candidate A and the repair B change only the run-down and the two MPCs of the windfall rule; the windfall stock is zero
+        // in a run with no payment, so the history is the same byte for byte. With a payment it is not.
+        let changed = |c: &mut Config| {
+            c.windfall_decay = 0.0;
+            c.mpc_windfall_low = 0.42;
+            c.mpc_windfall_high = 0.10;
+        };
+        for seed in SEEDS {
+            let a = paired(&keep, vec![], 8, &[seed]);
+            let b = paired(&changed, vec![], 8, &[seed]);
+            assert_eq!(json(&a.baseline), json(&b.baseline), "seed {seed}: windfall keys moved a run with no payment");
+            let paid = Shock::Rebate { per_household: 2_000.0, months: 1 };
+            let c = paired(&keep, at0(paid.clone()), 8, &[seed]);
+            let d = paired(&changed, at0(paid), 8, &[seed]);
+            assert_eq!(json(&c.baseline), json(&d.baseline), "seed {seed}: the baseline arm is the same");
+            assert_ne!(json(&c.shocked), json(&d.shocked), "seed {seed}: with a payment the keys matter");
+        }
+    }
+
+    #[test]
+    fn rebate_and_helicopter_pay_the_same_first_month_and_differ_in_what_they_leave() {
+        for seed in SEEDS {
+            let heli = paired(&keep, at0(Shock::Helicopter { per_household: 2_000.0, months: 1 }), 12, &[seed]);
+            let reb = paired(&keep, at0(Shock::Rebate { per_household: 2_000.0, months: 1 }), 12, &[seed]);
+            // The payment, its spending in the month it arrives and the paired baseline are the same: one windfall rule (the sums
+            // are added in another order, so equal to rounding).
+            assert!(close(heli.shocked[0].helicopter_bn_ar, reb.shocked[0].helicopter_bn_ar), "seed {seed}");
+            assert!(reb.shocked[0].helicopter_bn_ar > 0.0 && reb.shocked[1].helicopter_bn_ar == 0.0);
+            // Household spending is decided before the Treasury sells its bonds; only the imputed financial services in measured
+            // consumption see the buyers' deposits (8e-7 of consumption here), so the match is to 1e-4, not to the bit.
+            let (ch, cr) = (heli.shocked[0].consumption_real_bn_ar, reb.shocked[0].consumption_real_bn_ar);
+            assert!((ch - cr).abs() < 1e-4 * ch.abs(), "seed {seed}: first-month spending {ch} vs {cr}");
+            assert_eq!(json(&heli.baseline), json(&reb.baseline));
+            // The Treasury borrowed it: the debt ratio is above the helicopter's from the first month (the rebate adds to the debt, the
+            // helicopter does not), and so is the gross debt at the end of the year.
+            let debt_gap = |c: &Comparison, t: usize| c.shocked[t].gov_debt_gdp - c.baseline[t].gov_debt_gdp;
+            assert!(debt_gap(&reb, 2) > debt_gap(&heli, 2) + 0.3, "seed {seed}: helicopter {} rebate {}", debt_gap(&heli, 2), debt_gap(&reb, 2));
+            assert!(c_debt(&reb) > c_debt(&heli), "seed {seed}: gross debt");
+            // Neither stops the run on a stock-flow identity.
+            for m in reb.shocked.iter().chain(heli.shocked.iter()) {
+                assert_eq!(m.sfc_error, 0.0, "seed {seed}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_run_down_adds_spending_after_the_first_quarter_and_zero_removes_it() {
+        let paid = Shock::Rebate { per_household: 2_000.0, months: 1 };
+        // The mechanism at the pre-RZ23 calibration (MPCs 0.65 and 0.15, run-down 0.03), against the same MPCs with no run-down. RZ23 made 0.39, 0.09 and
+        // no run-down the defaults (v2026.10.23.1); at those MPCs the unspent payment is spent through the buffer rule instead, so this test pins the old ones.
+        let with_run_down = |c: &mut Config| {
+            c.mpc_windfall_low = 0.65;
+            c.mpc_windfall_high = 0.15;
+            c.windfall_decay = 0.03;
+        };
+        let off = |c: &mut Config| {
+            c.mpc_windfall_low = 0.65;
+            c.mpc_windfall_high = 0.15;
+            c.windfall_decay = 0.0;
+        };
+        for seed in SEEDS {
+            let on = paired(&with_run_down, at0(paid.clone()), 24, &[seed]);
+            let zero = paired(&off, at0(paid.clone()), 24, &[seed]);
+            // The first month does not use the run-down (the stock is empty); months 4-24 spend clearly more with it.
+            assert_eq!(cum_cons_gap(&on, 0, 1).to_bits(), cum_cons_gap(&zero, 0, 1).to_bits(), "seed {seed}: the first month");
+            let (late_on, late_zero) = (cum_cons_gap(&on, 3, 24), cum_cons_gap(&zero, 3, 24));
+            assert!(late_on > late_zero * 1.15, "seed {seed}: months 4-24 {late_on} with the run-down, {late_zero} without");
+        }
+    }
+
+    #[test]
+    fn a_three_month_rebate_keeps_the_ledger_and_the_housing_invariants_for_two_years() {
+        worlds();
+        for seed in SEEDS {
+            let mut w = WORLDS.get().unwrap()[SEEDS.iter().position(|&s| s == seed).unwrap()].clone();
+            let t0 = w.tick;
+            w.shocks.schedule(ScheduledShock { at_month: t0, shock: Shock::Rebate { per_household: 2_000.0, months: 3 } });
+            for k in 0..24 {
+                sim::step(&mut w);
+                crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("seed {seed} month {k}: {e}"));
+                crate::housing::check_invariants(&w).unwrap_or_else(|e| panic!("seed {seed} month {k}: {e}"));
+                assert_eq!(w.history.last().unwrap().sfc_error, 0.0, "seed {seed} month {k}");
+            }
+            assert!(w.gov.debt_face > 0.0 && w.history.iter().all(|m| m.consumption_real_bn_ar.is_finite() && m.gdp_real_bn_ar.is_finite()));
+        }
     }
 }

@@ -7741,3 +7741,29 @@ impact, in US-scale $bn; the consumption figures are real consumption.
   term only (no collateral channel for firms, no confidence channel).
 - **Release.** Shipped in `v2026.10.23`, the release after `v2026.10.21`. Defaults and fingerprints are unchanged, so the README's
   fingerprint paragraph needs no edit.
+
+## RZ23 (2026-10-23): `Rebate`, a Treasury-financed one-off payment; the windfall rule against the research on stimulus checks
+
+**What changed.** One new input and no new config key. `{"type":"Rebate","per_household":2000,"months":1}` (`shocks.rs`, `fiscal.rs::pay_transfers`) pays every household a one-off amount out of the
+Treasury's account: it is credited to the household's deposits and `income.windfall` exactly as the helicopter payment is, counted with the government's other payments (it lowers `cb.tga`, shows in outlays and in the deficit), and the account is refilled
+by the usual bond auction (`collect_and_finance`, `auction_shares`: banks 30%, the Fund 45%, the rest of the world 25%). No central-bank money is created (`cb.helicopter_total` untouched). The amount is reported in `helicopter_bn_ar` (the fingerprint is the md5 of the
+`Metrics` record, so no field is added). Bounds: `per_household` in [0, 100000], `months` >= 1. `docs/API.md` ("Rebate") and §12 above describe it. Why: the research on stimulus checks (Parker et al. 2013 and 2022, Sahm et al., Orchard et al.)
+is on payments the Treasury borrowed, while `Helicopter` is paid by printing money, so the scorecard's FP07/FP08 were not a like-for-like test. Measured (with the website's realism settings, seeds 1-32): the first quarter is identical (the same windfall rule), the twelve-month response is
+0.52 against 0.55 and the three-year response 0.60 against 0.74; the debt ratio is higher and the 10-year yield 2-3 basis points higher with the rebate. Money persisting as deposits explains about 0.03 of the tail, not the bulk.
+
+**Defaults unchanged.** Default fingerprint `6a56affe5fa25d7fcf1fa0ba7197234e` and `legacy_acctfix_off.json` `9f90c88a2c8b653857029d235cd6b0a6`, `run 5000 60 3 --json | tail -n 1 | md5`, at `RAYON_NUM_THREADS=1` and `8`, on the build with the shock:
+all four match. An unused shock moves no draw: a rebate of 0 and a world without one give byte-identical histories (test).
+
+**Tests.** `cargo test --release --workspace`. New: `shocks::tests` (2: validation at and past the bounds and the JSON; state follows its schedule), `fiscal::tests` (3: paid from the TGA with no central-bank money and a windfall;
+refilled by the auction; runs for its months only and a world without it is untouched), `fiscal::rz23_tests` (5, paired worlds at 1,500 households: a zero rebate is byte-identical; the windfall keys do nothing without a payment and change the path with one; the rebate and
+the helicopter pay the same first month and differ in the debt they leave; the run-down adds spending after the first quarter; a 3-month rebate keeps `ledger::check_consistency`, `housing::check_invariants` and `sfc_error` 0 for 24 months), server (2), CLI (2).
+
+**The windfall rule and the research.** `consumption.rs:849-867`: a one-off payment is spent at `mpc_windfall_low` 0.65 by the third of households with under two months of income in liquid wealth and at `mpc_windfall_high` 0.15 by the rest
+(0.318 of the payment in the first month), and 3% a month of the unspent stock (`windfall_decay`) on top of the ordinary buffer rule, which spends the same unspent deposits again from month 2. The tail is 0.20 of the payment in a year from the run-down alone. The research
+puts almost nothing after the first quarter (Parker et al. 2022; Orchard et al.'s corrected six-month MPC; Sahm et al.). The profile that sets `windfall_decay` 0, `mpc_windfall_low` 0.39 and `mpc_windfall_high` 0.09 (the three-month non-durable MPC at the median of the identified
+estimates, 0.21) is the candidate of RZ23; it uses existing keys. **Pre-registered run, once, on seeds 83001-83128: PASS**. Treasury-paid $2,000: non-durable spending in months 1-3 0.315 to 0.210 (band 0.10-0.30), response over 12 months 0.548 to 0.321
+(0.25-0.40); $600: 0.341 to 0.232; no guard flagged; the project's scorecard of research benchmarks (224 rows, run with the realism settings the EconSim website sends) goes from 101 / 16 / 107 to 105 / 16 / 103 (PASS / NEAR / FAIL) with no row worse. Not reached, declared before the run: Orchard et al.'s seven-month ceiling of 0.2 (0.45 to 0.28).
+**Adopted in v2026.10.23.1.** The three keys are now the defaults: `mpc_windfall_low` 0.39, `mpc_windfall_high` 0.09 and `windfall_decay` 0 (were 0.65, 0.15 and 0.03). No run without a payment reads them, so both fingerprints are unchanged (re-measured at `RAYON_NUM_THREADS=1` and `8`). The run-down test pins the old calibration to test the mechanism.
+
+**Taxes and spending cuts (no change).** The diagnosis finds no lever with a literature basis (tax transmission is disposable income only; the month-24 consumption of a permanent cut is the Fed's offset through the rate-sensitive consumption that the rate rows were calibrated on).
+The re-examined bands: the tax multiplier reads -0.87 against -3.0 to -1.1 from the identified income-tax estimates; consumption at month 24 after a permanent spending cut reads -0.04 against -0.95 to -0.19 (Guajardo, Leigh & Pescatori's spending-based estimate). Both are named limits.

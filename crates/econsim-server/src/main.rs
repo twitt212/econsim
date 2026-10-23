@@ -1483,6 +1483,49 @@ mod tests {
         assert!((tech[0] / tech[1] - 0.2).abs() < 1e-9, "tech value ratio {}", tech[0] / tech[1]);
     }
 
+    /// RZ23: a `Rebate` shock (the Treasury-financed one-off payment) passes on `/api/compare` at its bounds and past them is refused with 400
+    /// and a message that names the shock and the bounds.
+    #[test]
+    fn rebate_shock_is_validated_on_compare() {
+        let body = |shock: &str| {
+            format!(r#"{{"config":{{"n_households":1000}},"shocks":[{{"at_month":0,"shock":{shock}}}],"months":3,"seeds":[1]}}"#)
+        };
+        for ok in [
+            r#"{"type":"Rebate","per_household":2000,"months":1}"#,
+            r#"{"type":"Rebate","per_household":0,"months":1}"#,
+            r#"{"type":"Rebate","per_household":100000,"months":600}"#,
+        ] {
+            assert!(parse_compare(body(ok).as_bytes(), 0).is_ok(), "refused {ok}");
+        }
+        for bad in [
+            r#"{"type":"Rebate","per_household":-1,"months":1}"#,
+            r#"{"type":"Rebate","per_household":100001,"months":1}"#,
+            r#"{"type":"Rebate","per_household":2000,"months":0}"#,
+        ] {
+            match parse_compare(body(bad).as_bytes(), 0) {
+                Err(ApiError::BadRequest(m)) => assert!(m.contains("Rebate: per_household in [0, 100000] and months >= 1"), "{m}"),
+                _ => panic!("accepted {bad}"),
+            }
+        }
+    }
+
+    /// RZ23: `/api/compare` runs a `Rebate` shock. The payment shows in the one-off-payment series for the month it is paid and only then, the
+    /// first month's spending follows the windfall rule, and the second request is a cache hit with the same answer.
+    #[tokio::test]
+    async fn compare_runs_a_rebate_shock() {
+        let st = state(64 << 20);
+        let req = r#"{"config":{"n_households":1000},"shocks":[{"at_month":0,"shock":{"type":"Rebate","per_household":2000,"months":1}}],"months":3,"seeds":[1]}"#;
+        let (first, a) = call(&st, req).await;
+        let (second, b) = call(&st, req).await;
+        assert_eq!((first.as_str(), second.as_str()), ("miss", "hit"));
+        assert_eq!(a, b);
+        let v: Value = serde_json::from_slice(&a).unwrap();
+        let h = |arm: &str, m: usize| v[arm][m]["helicopter_bn_ar"].as_f64().unwrap();
+        assert!(h("shocked", 0) > 0.0 && h("shocked", 1) == 0.0 && h("baseline", 0) == 0.0);
+        let c = |arm: &str| v[arm][0]["consumption_real_bn_ar"].as_f64().unwrap();
+        assert!(c("shocked") > c("baseline"), "the payment is spent in the month it arrives");
+    }
+
     /// Stage 4-2 (list A', S4-R22, review D2): an out-of-range finance value is refused with 400, on the create route (`validate_config`)
     /// and on `/api/compare`, and the message names the key. The defaults pass. NaN and infinity fail as well.
     #[test]

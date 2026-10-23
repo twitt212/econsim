@@ -112,3 +112,33 @@ fn share_price_shocks_at_their_bounds_run() {
         assert_eq!(String::from_utf8_lossy(&out.stdout).lines().count(), 4, "{shock}: a header and three months");
     }
 }
+
+/// RZ23: the same bounds for the Treasury-financed `Rebate` shock (per_household in [0, 100000], months >= 1): a shock file with an entry
+/// outside them exits with status 2 and one line that names the shock and the entry; the bounds themselves run.
+#[test]
+fn out_of_range_rebate_shocks_exit_with_an_error() {
+    for (tag, shock) in [
+        ("rebate_neg", r#"{"type":"Rebate","per_household":-1,"months":1}"#),
+        ("rebate_big", r#"{"type":"Rebate","per_household":100000.5,"months":1}"#),
+        ("rebate_zero_months", r#"{"type":"Rebate","per_household":2000,"months":0}"#),
+    ] {
+        let out = world_dump_with_shock(tag, shock);
+        assert_eq!(out.status.code(), Some(2), "{shock}");
+        let err = String::from_utf8_lossy(&out.stderr);
+        assert!(err.contains("entry 0: Rebate"), "{shock}: stderr: {err}");
+        assert!(out.stdout.is_empty(), "{shock}: nothing on stdout");
+    }
+}
+
+#[test]
+fn rebate_shocks_at_their_bounds_run() {
+    for (tag, shock) in [
+        ("rebate_ok_zero", r#"{"type":"Rebate","per_household":0,"months":1}"#),
+        ("rebate_ok_2000", r#"{"type":"Rebate","per_household":2000,"months":1}"#),
+        ("rebate_ok_max", r#"{"type":"Rebate","per_household":100000,"months":3}"#),
+    ] {
+        let out = world_dump_with_shock(tag, shock);
+        assert!(out.status.success(), "{shock}: stderr: {}", String::from_utf8_lossy(&out.stderr));
+        assert_eq!(String::from_utf8_lossy(&out.stdout).lines().count(), 4, "{shock}: a header and three months");
+    }
+}

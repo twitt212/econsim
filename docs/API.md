@@ -29,6 +29,7 @@ type Shock =
   | { type: "TermPremium"; tenor_idx: number; bps: number; half_life_months: number } // 0=3m 1=2y 2=5y 3=10y 4=30y
   | { type: "QE"; tenor_idx: number; monthly_face_pct_gdp: number; months: number }
   | { type: "Helicopter"; per_household: number; months: number }   // per_household in t=0 dollars (not wage-indexed; deferred)
+  | { type: "Rebate"; per_household: number; months: number }       // a Treasury-financed one-off payment, see "Rebate" below
   | { type: "MbsQE"; monthly_face_pct_gdp: number; months: number }   // agency-MBS purchases, % of annual GDP per month (negative = sales); moves the mortgage spread, no money moved
   | { type: "GovSpending"; pct: number; months: number }
   | { type: "IncomeTax"; pp: number; months: number }
@@ -53,6 +54,26 @@ A config whose bounds are out of order where the run uses them (`u_star_min` abo
 panic in the run.
 Creating a world with 20k households and burn-in takes a few seconds; `/api/compare` with 4 seeds × 60 months may take
 10–30 s.
+
+## Rebate: a Treasury-financed payment
+
+`{ "type": "Rebate", "per_household": 2000, "months": 1 }` pays every household `per_household` dollars (t=0 dollars, as `Helicopter`) in each of `months`
+months, out of the Treasury's account. It is for "everyone gets a $2,000 stimulus check" or "a tax rebate", the payments the research on stimulus
+checks measures (the 2001, 2008 and 2020 payments were paid by borrowing). `Helicopter` is paid by the central bank, which creates the money.
+`Rebate` creates none: the payment is a government outlay, the Treasury's account is refilled by the usual bond auctions
+(`auction_shares`: banks, the Fund, the rest of the world), so the deficit and the debt rise by the payment (and by a larger working balance in
+the Treasury's account for a while, because that target follows the smoothed outlays). Households spend it by the same windfall rule as
+the helicopter payment (`mpc_windfall_low`, `mpc_windfall_high`, `windfall_decay`); the paid amount is reported in the same series
+(`helicopter_bn_ar`, "one-off payments"), so that a response per dollar is read the same way for both.
+
+| Field | Type | Meaning | Allowed range |
+|---|---|---|---|
+| `per_household` | number | Dollars per household per month, in t=0 dollars | 0 to 100000 |
+| `months` | number | How many months the payment is made | 1 or more |
+
+- **Unused.** A request without the shock, or with one that fires after the run ends, runs exactly as before: no draw and no record changes (the
+  default fingerprint is unchanged).
+- **Errors.** Out of range answers 400 `Rebate: per_household in [0, 100000] and months >= 1`; on a live economy a refused shock is not scheduled.
 
 ## SharePrices: a share-price input
 

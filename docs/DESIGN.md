@@ -393,6 +393,7 @@ Code layout: `monetary.rs` (policy rule, r*/u*, yield curve, markets), `equity.r
 | TermPremium { tenor_idx, bps, half_life_months } | shifts one tenor (neighbours get 50% interpolated) |
 | QE { tenor_idx, monthly_face_pct_gdp, months } | CB bond purchases (negative = QT); the priced duration counts each purchased lot λ = `qe_duration_weight` times (1.5 since joint3) |
 | Helicopter { per_household, months } | central-bank-financed transfers |
+| Rebate { per_household, months } | Treasury-financed one-off payment (RZ23): paid from the TGA with the government's other payments, refilled by the bond auction; no central-bank money; spent by the same windfall rule as `Helicopter` (`consumption::decide`); reported in `helicopter_bn_ar` |
 | GovSpending { pct, months } | purchases multiplier |
 | IncomeTax { pp, months } | add pp to all brackets |
 | MacroPrudential { max_ltv, max_dti } | mortgage limits |

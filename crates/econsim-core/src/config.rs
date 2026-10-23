@@ -2185,10 +2185,13 @@ impl Default for Config {
             mpc_wealth_below: 0.05,
             mpc_housing_wealth_annual: 0.03,
             mpc_fund_wealth_annual: 0.02,
-            // fix-households: one-off payments are spent 50% at once when liquid wealth is below the buffer, 15% otherwise
-            mpc_windfall_low: 0.65,
-            mpc_windfall_high: 0.15,
-            windfall_decay: 0.03,
+            // fix-households: a one-off payment is spent at once at `mpc_windfall_low` when liquid wealth is below the buffer, at `mpc_windfall_high`
+            // otherwise. RZ23 (adopted 2026-10-23 in v2026.10.23.1; docs/CALIBRATION.md, "RZ23"): 0.39 and 0.09 with no decaying tail (was 0.65, 0.15 and 0.03), so the
+            // three-month non-durable spending out of a payment is the median of the identified estimates (0.21: Parker et al. 2013 and 2022,
+            // Sahm, Shapiro & Slemrod, Orchard, Ramey & Wieland) and the 12-month response lands in 0.25-0.40. A run with no payment is unchanged.
+            mpc_windfall_low: 0.39,
+            mpc_windfall_high: 0.09,
+            windfall_decay: 0.0,
             windfall_liquid_months: 2.0,
             windfall_sector_mix: [0.0, 0.15, 0.12, 0.33, 0.10, 0.10, 0.0, 0.20],
             energy_elasticity_long: 0.9,

@@ -31,6 +31,11 @@ pub enum Shock {
     QE { tenor_idx: usize, monthly_face_pct_gdp: f64, months: u32 },
     /// Central-bank-financed transfer of `per_household` $ per household per month for `months`.
     Helicopter { per_household: f64, months: u32 },
+    /// RZ23: Treasury-financed one-off payment (a "stimulus check" or tax rebate) of `per_household` $ (t=0 dollars, as `Helicopter`) to
+    /// every household per month for `months`. It is paid out of the Treasury's account and the account is refilled by the usual bond
+    /// auctions (`fiscal::collect_and_finance`), so unlike `Helicopter` it creates no central-bank money: the deficit and the debt rise
+    /// and the buyers' deposits fall. The households spend it by the same windfall rule as `Helicopter` (`consumption::decide`).
+    Rebate { per_household: f64, months: u32 },
     /// Government purchases multiplied by (1+pct/100) for `months`.
     GovSpending { pct: f64, months: u32 },
     /// Add `pp` percentage points to every income-tax bracket for `months`.
@@ -141,6 +146,10 @@ impl Shock {
             Shock::Helicopter { per_household, months } => ok(
                 fin(*per_household) && (0.0..=100_000.0).contains(per_household) && *months >= 1,
                 "Helicopter: per_household in [0, 100000] and months >= 1",
+            ),
+            Shock::Rebate { per_household, months } => ok(
+                fin(*per_household) && (0.0..=100_000.0).contains(per_household) && *months >= 1,
+                "Rebate: per_household in [0, 100000] and months >= 1",
             ),
             Shock::GovSpending { pct, months } => ok(
                 fin(*pct) && *pct > -100.0 && *pct <= 500.0 && *months >= 1,
@@ -267,6 +276,9 @@ pub struct ShockState {
     #[serde(default)]
     pub mbs: Vec<(f64, u32)>,
     pub helicopter: Option<(f64, u32)>,
+    /// RZ23: active Treasury-financed one-off payment: (per household $, until tick). None unless a `Rebate` shock has fired.
+    #[serde(default)]
+    pub rebate: Option<(f64, u32)>,
     pub gov_spending: Option<(f64, u32)>,
     pub income_tax_pp: Option<(f64, u32)>,
     pub macroprudential: Option<(f64, f64)>,
@@ -368,6 +380,9 @@ impl ShockState {
                 }
                 Shock::Helicopter { per_household, months } => {
                     self.helicopter = Some((*per_household, tick + months));
+                }
+                Shock::Rebate { per_household, months } => {
+                    self.rebate = Some((*per_household, tick + months));
                 }
                 Shock::GovSpending { pct, months } => {
                     self.gov_spending = Some((1.0 + pct / 100.0, tick + months));
@@ -477,6 +492,10 @@ impl ShockState {
             .map(|(a, until)| if tick < until { a } else { 0.0 })
             .unwrap_or(0.0)
     }
+    /// RZ23: the Treasury-financed payment per household this month (0 unless a `Rebate` shock is in force).
+    pub fn rebate_per_household(&self, tick: u32) -> f64 {
+        self.rebate.map(|(a, until)| if tick < until { a } else { 0.0 }).unwrap_or(0.0)
+    }
     pub fn gov_spending_mult(&self, tick: u32) -> f64 {
         self.gov_spending
             .map(|(m, until)| if tick < until { m } else { 1.0 })
@@ -580,6 +599,36 @@ mod tests {
         assert!((st.qe_announced_duration(0) - 0.6).abs() < 1e-12);
         assert!((st.qe_announced_duration(6) - 0.3).abs() < 1e-12);
         assert_eq!(st.qe_announced_duration(12), 0.0);
+    }
+
+    // ---- RZ23: Rebate ----
+
+    #[test]
+    fn rebate_validation_and_json() {
+        let ok = |a: f64, m: u32| Shock::Rebate { per_household: a, months: m }.validate();
+        assert!(ok(0.0, 1).is_ok() && ok(2_000.0, 12).is_ok() && ok(100_000.0, 600).is_ok());
+        for bad in [ok(-0.01, 1), ok(100_000.01, 1), ok(f64::NAN, 1), ok(f64::INFINITY, 1), ok(2_000.0, 0)] {
+            assert!(bad.unwrap_err().starts_with("Rebate: per_household in [0, 100000] and months >= 1"));
+        }
+        let s: Shock = serde_json::from_str(r#"{"type":"Rebate","per_household":2000,"months":1}"#).unwrap();
+        assert_eq!(s, Shock::Rebate { per_household: 2000.0, months: 1 });
+        assert!(serde_json::to_string(&s).unwrap().contains(r#""type":"Rebate""#));
+        let file = r#"[{"at_month":3,"shock":{"type":"Rebate","per_household":600,"months":1}}]"#;
+        assert_eq!(parse_schedule(file).unwrap()[0].shock, Shock::Rebate { per_household: 600.0, months: 1 });
+        assert!(parse_schedule(&file.replace("600", "-1")).unwrap_err().contains("entry 0: Rebate"));
+    }
+
+    #[test]
+    fn rebate_state_follows_its_schedule_and_is_none_without_one() {
+        let mut st = ShockState::default();
+        assert_eq!(st.rebate_per_household(0), 0.0);
+        st.schedule(ScheduledShock { at_month: 2, shock: Shock::Rebate { per_household: 2_000.0, months: 3 } });
+        for t in 0..8u32 {
+            st.activate_due(t);
+            let want = if (2..5).contains(&t) { 2_000.0 } else { 0.0 };
+            assert_eq!(st.rebate_per_household(t), want, "t {t}");
+        }
+        assert_eq!(st.helicopter_per_household(3), 0.0, "the helicopter input is a different shock");
     }
 
     fn credit_state(bps: f64, months: u32) -> ShockState {
