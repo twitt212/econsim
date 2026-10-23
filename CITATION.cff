@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "Wittmann"
     given-names: "Tyson"
-version: "2026.10.23.2"
+version: "2026.10.23.3"
 date-released: "2026-10-23"
 repository-code: "https://github.com/twitt212/econsim"
 license: Apache-2.0

@@ -1629,6 +1629,51 @@ mod tests {
         }
     }
 
+    /// rz20: the equity-channel keys are range-checked on the compare path; the off values and in-range values are accepted.
+    #[test]
+    fn rz20_keys_validation() {
+        let body = |k: &str, v: &str| format!(r#"{{"config":{{"n_households":1000,"{k}":{v}}}}}"#);
+        for (k, v) in [
+            ("fund_wealth_tail_weight", "0.04"),
+            ("fund_wealth_tail_weight", "1.1"),
+            ("fund_wealth_ewma_span", "1.5"),
+            ("fund_wealth_ewma_span", "61"),
+            ("investment_q_sens_all", "-0.1"),
+            ("investment_q_sens_all", "1.5"),
+            ("ebp_equity_sens", "-0.001"),
+            ("ebp_equity_sens", "0.06"),
+            ("rerate_wealth_mpc_annual", "0.3"),
+            ("rerate_wealth_mpc_annual", "-0.01"),
+            ("rerate_q_sens", "1.2"),
+            ("rerate_ebp_sens", "0.1"),
+        ] {
+            match parse_compare(body(k, v).as_bytes(), 0) {
+                Err(e) => assert!(e.message().starts_with(k), "{k}={v}: {}", e.message()),
+                Ok(_) => panic!("{k}={v} accepted"),
+            }
+        }
+        for (k, v) in [
+            ("fund_wealth_tail_weight", "0.35"),
+            ("fund_wealth_tail_weight", "1"),
+            ("fund_wealth_tail_weight", "0.05"),
+            ("fund_wealth_ewma_span", "12"),
+            ("fund_wealth_ewma_span", "24"),
+            ("fund_wealth_ewma_span", "2"),
+            ("investment_q_sens_all", "0"),
+            ("investment_q_sens_all", "0.16"),
+            ("investment_q_sens_all", "1"),
+            ("ebp_equity_sens", "0"),
+            ("ebp_equity_sens", "0.024"),
+            ("ebp_equity_sens", "0.05"),
+            ("rerate_wealth_mpc_annual", "0"),
+            ("rerate_wealth_mpc_annual", "0.025"),
+            ("rerate_q_sens", "0.16"),
+            ("rerate_ebp_sens", "0.024"),
+        ] {
+            assert!(parse_compare(body(k, v).as_bytes(), 0).is_ok(), "{k}={v} rejected");
+        }
+    }
+
     /// rz12: the perception stage counts are range-checked on the compare path; the off values and in-range values are accepted.
     #[test]
     fn rz12_keys_validation() {

@@ -601,6 +601,21 @@ pub struct Fund {
     /// seeding; 0 until set. Not used when the switch is off.
     #[serde(default)]
     pub sector_cap_ref: [f64; N_SECTORS],
+    /// rz20: ln of the Fund's current (unsmoothed) aggregate q relative to normal: the equity-value-weighted mean over the sectors of
+    /// ln(q / q0) from this month's valuation (equity::value_sectors). 0 until the first valuation. Read by the lender premium's equity term
+    /// (`ebp_equity_sens`); not read when that key is 0.
+    #[serde(default)]
+    pub q_raw_log: f64,
+    /// rz20 (re-rating form): `rerate_log` is the equity-value-weighted mean over the sectors of the log of the `SharePrices` wedge in force this month (equity::value_sectors; 0
+    /// with no re-rating in force). `rerate_q` is its EWMA with `q_signal_decay`, read by the re-rating investment term (`rerate_q_sens`). `rerate_w` is the EWMA (span
+    /// `fund_wealth_ewma_span`) of the wealth, in dollars, that the re-rating takes from one Fund share (the wedge's equity loss over the Fund's shares; positive for a fall), read by
+    /// the re-rating wealth term (`rerate_wealth_mpc_annual`). All three stay exactly 0 in a run with no re-rating.
+    #[serde(default)]
+    pub rerate_log: f64,
+    #[serde(default)]
+    pub rerate_w: f64,
+    #[serde(default)]
+    pub rerate_q: f64,
 }
 
 fn unit_q() -> [f64; N_SECTORS] {

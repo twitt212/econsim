@@ -64,6 +64,18 @@ fn concave_wealth(x: f64, scale: f64) -> f64 {
     }
 }
 
+/// rz20: `concave_wealth` with the tail weight as an argument (the Fund-wealth term reads `Config::fund_wealth_tail_weight`; 0.35 is the
+/// legacy constant, so the default is bit-identical).
+#[inline]
+fn concave_wealth_w(x: f64, scale: f64, tail_weight: f64) -> f64 {
+    let kink = WEALTH_KINK * scale;
+    if x <= kink {
+        x
+    } else {
+        kink + tail_weight * (x - kink)
+    }
+}
+
 #[inline]
 fn concave_capital_income(x: f64, scale: f64) -> f64 {
     let kink = CAPITAL_INCOME_KINK * scale;
@@ -750,7 +762,15 @@ fn decide_one(
             + cfg.mpc_housing_wealth_annual / 12.0 * concave_wealth(house_equity.max(0.0), ks)
             // p1-equity: the Fund-wealth term reads the 12-month EWMA of the share price, not this month's price.
             + cfg.mpc_fund_wealth_annual / 12.0
-                * concave_wealth(finite_or(hh.shares * crate::equity::smoothed_share_price(w), 0.0), ks)
+                * concave_wealth_w(finite_or(hh.shares * crate::equity::smoothed_share_price(w), 0.0), ks, cfg.fund_wealth_tail_weight)
+    };
+    // rz20 (re-rating form): the extra propensity out of the wealth that a `SharePrices` re-rating has taken from (or added to) the household's Fund shares (shares x the smoothed
+    // loss per share). Zero, and not
+    // computed, with the key off or with no re-rating in force (`rerate_w` is exactly 0).
+    let core = if cfg.rerate_wealth_mpc_annual > 0.0 && w.fund.rerate_w != 0.0 {
+        core - cfg.rerate_wealth_mpc_annual / 12.0 * finite_or(hh.shares * w.fund.rerate_w, 0.0)
+    } else {
+        core
     };
     let core = finite_or(core, 0.0);
     // Pass-through spending (landlords' operating costs out of rent, employer health benefits) is funded by the matching

@@ -1,0 +1,6 @@
+{
+ "rerate_wealth_mpc_annual": 0.025,
+ "fund_wealth_ewma_span": 24.0,
+ "rerate_q_sens": 0.16,
+ "rerate_ebp_sens": 0.024
+}

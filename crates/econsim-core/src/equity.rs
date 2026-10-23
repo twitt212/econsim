@@ -26,6 +26,16 @@ const LOG_CAP_GUARD: f64 = 0.005;
 /// p1-equity: monthly decay of the 12-month EWMA of the Fund share price (span 12: alpha = 2/13 per month).
 const SHARE_PRICE_EWMA_DECAY: f64 = 11.0 / 13.0;
 
+/// rz20: the weight on the previous value of the EWMAs of the Fund's share price and of a re-rating: (span - 1) / (span + 1), with the legacy 11 / 13 returned as the
+/// constant itself at span 12.
+pub(crate) fn price_ewma_decay(span: f64) -> f64 {
+    if span == 12.0 {
+        SHARE_PRICE_EWMA_DECAY
+    } else {
+        (span - 1.0) / (span + 1.0)
+    }
+}
+
 /// p1-equity: the smoothed Fund share price that households' wealth effect reads when `fund_wealth_ewma` is on (the
 /// 12-month EWMA, or the current price before the EWMA is set; the current price when the switch is off). The EWMA is
 /// updated at the start of `revalue_fund_equity` with the close of the previous month, and households decide before
@@ -149,6 +159,9 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
     let seeding = seed_equity >= 0.0;
     // R51-E: the `SharePrices` shock's wedge on each sector's valuation (None, and never read below, unless one is active).
     let wedge = w.shocks.share_price_wedge();
+    let span_w = cfg.fund_wealth_ewma_span;
+    // rz20 (re-rating form): the equity-weighted mean log of the wedge of a `SharePrices` re-rating in force (0 with none).
+    let (mut rr_num, mut rr_den, mut rr_loss) = (0.0f64, 0.0f64, 0.0f64);
     let fund = &w.fund;
 
     // Dividends by sector: firms' regular payouts, plus the bank residual to OtherServices.
@@ -260,7 +273,14 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
         // the capitalisation rate above are untouched, so the shock is a level wedge on the price, not a change in earnings or rates
         // (and it works the same in the 1/cap and the log-linear form, and where LOG_CAP_GUARD binds).
         let e = match &wedge {
-            Some(wd) => e * wd[s],
+            Some(wd) => {
+                if e.is_finite() && e > 0.0 && wd[s] > 0.0 {
+                    rr_num += e * wd[s].ln();
+                    rr_den += e;
+                    rr_loss += e * (1.0 - wd[s]);
+                }
+                e * wd[s]
+            }
             None => e,
         };
         sd_new[s] = if sd.is_finite() { sd } else { 0.0 };
@@ -273,6 +293,8 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
     // init::build_world rebases to when the burn-in ends inside a boom.
     let mut q0 = w.fund.sector_q0;
     let mut q_rel = [1.0; N_SECTORS];
+    // rz20: the unsmoothed aggregate q (equity-value-weighted mean of ln(q / q0) over the sectors that have a q this month).
+    let (mut raw_num, mut raw_den) = (0.0f64, 0.0f64);
     let q_decay = cfg.q_signal_decay.clamp(0.0, 0.999);
     for s in 0..N_SECTORS {
         let repl = cap_units[s] * p_cap;
@@ -282,6 +304,10 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
                 q0[s] = q;
             }
             let raw = q / q0[s];
+            if raw > 0.0 && raw.is_finite() {
+                raw_num += eq_new[s] * raw.ln();
+                raw_den += eq_new[s];
+            }
             // The normal q is a slow average of non-boom valuations (12-month half-life), frozen while a boom runs. It
             // is the reference that init::build_world rebases to, so one month's (or the unconverged early burn-in's)
             // valuation does not set it.
@@ -304,6 +330,20 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
     w.fund.sector_news = news_new;
     w.fund.sector_q0 = q0;
     w.fund.sector_q_rel = q_rel;
+    w.fund.q_raw_log = if raw_den > 0.0 { raw_num / raw_den } else { 0.0 };
+    // rz20 (re-rating form): the current re-rating and its two smoothed states. With no re-rating all three are 0 and stay 0 (0 x decay + 0).
+    let rr = if rr_den > 0.0 { rr_num / rr_den } else { 0.0 };
+    w.fund.rerate_log = rr;
+    if rr != 0.0 || w.fund.rerate_w != 0.0 {
+        // the wealth the re-rating takes from one Fund share, in dollars (positive for a fall; the wedge's equity loss over the Fund's shares), smoothed with the share-price span
+        let ts = w.fund.total_shares;
+        let loss_ps = if ts > 0.0 && ts.is_finite() { rr_loss / ts } else { 0.0 };
+        let d = price_ewma_decay(span_w);
+        w.fund.rerate_w = d * w.fund.rerate_w + (1.0 - d) * if loss_ps.is_finite() { loss_ps } else { 0.0 };
+    }
+    if rr != 0.0 || w.fund.rerate_q != 0.0 {
+        w.fund.rerate_q = q_decay * w.fund.rerate_q + (1.0 - q_decay) * rr;
+    }
     if cap_log {
         w.fund.sector_cap_ref = cap_ref_new;
     }
@@ -320,8 +360,10 @@ pub fn revalue_fund_equity(w: &mut World, div_received: f64, special: f64) -> f6
     let p = w.fund.share_price;
     if p.is_finite() && p > 0.0 {
         let prev = w.fund.share_price_ewma;
+        // rz20: `fund_wealth_ewma_span` is the span of the EWMA in months (12 = the legacy constant: (12 - 1) / (12 + 1) is exactly 11 / 13).
+        let decay = price_ewma_decay(w.cfg.fund_wealth_ewma_span);
         w.fund.share_price_ewma = if prev > 0.0 && prev.is_finite() {
-            SHARE_PRICE_EWMA_DECAY * prev + (1.0 - SHARE_PRICE_EWMA_DECAY) * p
+            decay * prev + (1.0 - decay) * p
         } else {
             p
         };
@@ -690,6 +732,235 @@ mod share_price_tests {
                 crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("{label}, month {k}: {e}"));
             }
             assert!(w.fund.share_price.is_finite() && w.fund.share_price > 0.0);
+        }
+    }
+}
+
+#[cfg(test)]
+mod rz20_tests {
+    //! RZ20: the equity channel. Four keys, all off by default: `fund_wealth_tail_weight` (0.35), `investment_q_sens_all` (0), `ebp_equity_sens` (0) and, as
+    //! the candidate sets them, the existing `mpc_fund_wealth_annual` and `fund_wealth_ewma`. The default fingerprint is checked by the acceptance scripts
+    //! (the realism program's acceptance identity checks), not here.
+    use super::*;
+    use crate::config::Config;
+    use crate::metrics::Metrics;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim::{self, Comparison, Scenario};
+    use std::sync::OnceLock;
+
+    const N: usize = 1500;
+    const SEEDS: [u64; 3] = [1, 2, 3];
+
+    /// The five candidate settings of RZ20's general form (scripts/profiles/rz20-equity.json) on top of the default configuration.
+    fn cand() -> Config {
+        Config {
+            n_households: N,
+            mpc_fund_wealth_annual: 0.032,
+            fund_wealth_tail_weight: 1.0,
+            fund_wealth_ewma: true,
+            fund_wealth_ewma_span: 24.0,
+            investment_q_sens_all: 0.16,
+            ebp_equity_sens: 0.024,
+            ..Config::default()
+        }
+    }
+
+    // The control: the RZ20 keys all off, as before the adoption of the re-rating form (v2026.10.23.3), which made the re-rating keys and span 24 the defaults.
+    fn base() -> Config {
+        Config { n_households: N, rerate_wealth_mpc_annual: 0.0, rerate_q_sens: 0.0, rerate_ebp_sens: 0.0, fund_wealth_ewma_span: 12.0, ..Config::default() }
+    }
+
+    static BASE_WORLDS: OnceLock<Vec<World>> = OnceLock::new();
+    static CAND_WORLDS: OnceLock<Vec<World>> = OnceLock::new();
+
+    /// Common worlds are built once per configuration, from the test thread (building a world uses rayon: not from inside a rayon worker).
+    fn build(cfg: &Config) -> Vec<World> {
+        SEEDS.iter().map(|&s| sim::common_world(cfg, s).0).collect()
+    }
+
+    fn paired(which: &'static OnceLock<Vec<World>>, cfg: Config, shocks: Vec<ScheduledShock>, seeds: &[u64], months: u32) -> Comparison {
+        let worlds = which.get_or_init(|| build(&cfg));
+        let sc = Scenario { config: cfg, shocks, months, seeds: seeds.to_vec() };
+        assert!(sc.config.sfc_enforce, "the stock-flow checks are on");
+        sim::compare_with(&sc, &|seed| (worlds[SEEDS.iter().position(|&s| s == seed).expect("a test seed")].clone(), None), &mut |_| {})
+    }
+
+    fn pb(shocks: Vec<ScheduledShock>, seeds: &[u64], months: u32) -> Comparison {
+        paired(&BASE_WORLDS, base(), shocks, seeds, months)
+    }
+
+    fn pc(shocks: Vec<ScheduledShock>, seeds: &[u64], months: u32) -> Comparison {
+        paired(&CAND_WORLDS, cand(), shocks, seeds, months)
+    }
+
+    fn crash(pct: f64, hl: f64) -> Vec<ScheduledShock> {
+        vec![ScheduledShock { at_month: 0, shock: Shock::SharePrices { sector: None, pct, half_life_months: hl } }]
+    }
+
+    fn gap(c: &Comparison, f: impl Fn(&Metrics) -> f64, from: usize, to: usize) -> f64 {
+        c.shocked[from..to].iter().zip(&c.baseline[from..to]).map(|(s, b)| f(s) - f(b)).sum::<f64>() / (to - from) as f64
+    }
+
+    #[test]
+    fn the_keys_are_off_by_default_and_the_off_values_change_nothing() {
+        // The general form stays off by default; the re-rating form is on since v2026.10.23.3 (its own test below holds it inert without a re-rating).
+        let c = Config::default();
+        assert_eq!((c.fund_wealth_tail_weight, c.investment_q_sens_all, c.ebp_equity_sens, c.fund_wealth_ewma_span), (0.35, 0.0, 0.0, 24.0));
+        assert_eq!((c.rerate_wealth_mpc_annual, c.rerate_q_sens, c.rerate_ebp_sens), (0.025, 0.16, 0.024));
+        assert!(!c.fund_wealth_ewma && c.mpc_fund_wealth_annual == 0.02);
+        // Naming the off values is the same configuration as naming nothing: the whole record of a shocked run is byte for byte equal.
+        let explicit = Config { fund_wealth_tail_weight: 0.35, fund_wealth_ewma_span: 12.0, investment_q_sens_all: 0.0, ebp_equity_sens: 0.0, ..base() };
+        let a = pb(crash(-40.0, 12.0), &[1], 10);
+        let b = paired(&BASE_WORLDS, explicit, crash(-40.0, 12.0), &[1], 10);
+        assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b).unwrap());
+    }
+
+    #[test]
+    fn a_crash_gives_a_wider_spread_a_deeper_fall_of_consumption_and_of_investment_with_the_keys_on() {
+        let s = crash(-30.0, 0.0);
+        let (b, k) = (pb(s.clone(), &SEEDS, 30), pc(s, &SEEDS, 30));
+        // The wealth term: consumption falls more in the second year (the smoothed price builds up), and the cents per dollar are larger.
+        let (ck, cb) = (gap(&k, |m| m.consumption_real_bn_ar, 12, 24), gap(&b, |m| m.consumption_real_bn_ar, 12, 24));
+        assert!(ck < cb, "consumption gap in the second year {ck} (keys on) vs {cb} (off)");
+        // Investment: the sectors without their own q now follow the Fund's q (Tech had it already).
+        let rest = |m: &Metrics| m.investment_real_bn_ar - m.tech_investment_bn_ar;
+        assert!(gap(&k, rest, 12, 24) < gap(&b, rest, 12, 24) - 1.0, "non-Tech investment {} vs {}", gap(&k, rest, 12, 24), gap(&b, rest, 12, 24));
+        // Credit: the lender premium (and with it the spread) is higher, and by more than the legacy channels give.
+        assert!(gap(&k, |m| m.credit_spread, 3, 12) > gap(&b, |m| m.credit_spread, 3, 12) + 0.15, "spread {} vs {}", gap(&k, |m| m.credit_spread, 3, 12), gap(&b, |m| m.credit_spread, 3, 12));
+        // And the total: output and employment are lower than with the keys off.
+        assert!(gap(&k, |m| m.gdp_real_bn_ar, 12, 24) < gap(&b, |m| m.gdp_real_bn_ar, 12, 24), "gdp");
+    }
+
+    /// The re-rating form of the three levers (docs/CALIBRATION.md, RZ20): the settings of the repair profile.
+    fn rerate_cfg() -> Config {
+        Config { rerate_wealth_mpc_annual: 0.025, fund_wealth_ewma_span: 24.0, rerate_q_sens: 0.16, rerate_ebp_sens: 0.024, ..base() }
+    }
+
+    static RERATE_WORLDS: OnceLock<Vec<World>> = OnceLock::new();
+
+    #[test]
+    fn the_rerating_keys_change_nothing_in_a_run_with_no_rerating_and_the_state_stays_zero() {
+        // Keys on, no shock, and a shock that never fires inside the run: every record byte for byte the keys-off run, and the three states exactly 0.
+        for shocks in [Vec::new(), vec![ScheduledShock { at_month: 500, shock: Shock::SharePrices { sector: None, pct: -80.0, half_life_months: 0.0 } }]] {
+            let a = pb(shocks.clone(), &[1, 2], 12);
+            let b = paired(&RERATE_WORLDS, rerate_cfg(), shocks, &[1, 2], 12);
+            assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b).unwrap());
+        }
+        let mut w = build(&rerate_cfg()).remove(0);
+        for _ in 0..6 {
+            sim::step(&mut w);
+        }
+        assert_eq!((w.fund.rerate_log, w.fund.rerate_w, w.fund.rerate_q), (0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn a_rerating_with_the_rerating_keys_on_lowers_consumption_investment_and_raises_the_premium() {
+        let s = crash(-30.0, 0.0);
+        let (b, k) = (pb(s.clone(), &SEEDS, 30), paired(&RERATE_WORLDS, rerate_cfg(), s, &SEEDS, 30));
+        assert!(gap(&k, |m| m.consumption_real_bn_ar, 12, 24) < gap(&b, |m| m.consumption_real_bn_ar, 12, 24), "consumption");
+        let rest = |m: &Metrics| m.investment_real_bn_ar - m.tech_investment_bn_ar;
+        assert!(gap(&k, rest, 12, 24) < gap(&b, rest, 12, 24) - 1.0, "non-Tech investment");
+        assert!(gap(&k, |m| m.credit_spread, 3, 12) > gap(&b, |m| m.credit_spread, 3, 12) + 0.15, "spread");
+        // The log of the wedge is exact: ln(0.7) on impact, in the world itself.
+        let mut w = build(&rerate_cfg()).remove(0);
+        w.shocks.share_price_log.push((None, 0.7f64.ln(), 1.0));
+        sim::step(&mut w);
+        assert!((w.fund.rerate_log - 0.7f64.ln()).abs() < 1e-12, "{}", w.fund.rerate_log);
+        assert!(w.fund.rerate_w > 0.0 && w.fund.rerate_q < 0.0 && w.fund.rerate_q > w.fund.rerate_log, "wealth state {} q state {}", w.fund.rerate_w, w.fund.rerate_q);
+    }
+
+    #[test]
+    fn the_stock_flow_checks_hold_at_minus_80_with_the_rerating_keys_on() {
+        let c = paired(&RERATE_WORLDS, rerate_cfg(), crash(-80.0, 24.0), &SEEDS, 36);
+        assert_eq!(c.shocked.len(), 36);
+        assert!(c.shocked.iter().chain(&c.baseline).all(|m| m.sfc_error == 0.0 && m.gdp_real_bn_ar.is_finite()), "sfc and finite");
+        let mut w = build(&rerate_cfg()).remove(0);
+        w.shocks.schedule(ScheduledShock { at_month: w.tick, shock: Shock::SharePrices { sector: None, pct: -80.0, half_life_months: 0.0 } });
+        for k in 0..36 {
+            sim::step(&mut w);
+            crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("month {k}: {e}"));
+        }
+    }
+
+    #[test]
+    fn the_ewma_span_sets_the_lag_of_the_smoothed_price_and_12_is_the_legacy_span() {
+        // With the smoothing on, the smoothed Fund price after a one-off re-rating closes the gap to the price at weight 2 / (span + 1) a month: a longer span moves less.
+        let mk = |span: f64| Config { fund_wealth_ewma: true, fund_wealth_ewma_span: span, ..base() };
+        let mut gaps = Vec::new();
+        for span in [12.0, 24.0] {
+            let mut w = sim::common_world(&mk(span), 1).0;
+            let p0 = w.fund.share_price;
+            w.shocks.share_price_log.push((None, 0.5f64.ln(), 1.0));
+            for _ in 0..6 {
+                sim::step(&mut w);
+            }
+            let e = smoothed_share_price(&w);
+            assert!(e > w.fund.share_price && e.is_finite() && p0 > 0.0, "span {span}: smoothed {e} price {}", w.fund.share_price);
+            gaps.push(e - w.fund.share_price);
+        }
+        assert!(gaps[1] > gaps[0], "the 24-month span lags more: {} vs {}", gaps[1], gaps[0]);
+        // 12 is exactly the legacy constant (11 / 13), so the explicit span changes nothing.
+        let legacy = Config { fund_wealth_ewma: true, ..base() };
+        let a = serde_json::to_string(&paired(&BASE_WORLDS, legacy, crash(-40.0, 12.0), &[1], 8)).unwrap();
+        let b = serde_json::to_string(&paired(&BASE_WORLDS, mk(12.0), crash(-40.0, 12.0), &[1], 8)).unwrap();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn the_aggregate_q_follows_the_rerating_exactly_on_impact() {
+        // Every sector is scaled by the same factor, so the equity-weighted mean of ln(q / q0) moves by ln(0.7) against the paired baseline.
+        let mut worlds = build(&cand());
+        let mut hit = worlds.remove(0);
+        let mut base = hit.clone();
+        hit.shocks.share_price_log.push((None, 0.7f64.ln(), 1.0));
+        sim::step(&mut base);
+        sim::step(&mut hit);
+        assert!((hit.fund.q_raw_log - base.fund.q_raw_log - 0.7f64.ln()).abs() < 1e-12, "{} vs {}", hit.fund.q_raw_log, base.fund.q_raw_log);
+        // The smoothed aggregate (what investment reads) has moved the same way but by less in the first month.
+        let (a, b) = (crate::banking::fund_q_log(&hit), crate::banking::fund_q_log(&base));
+        assert!(a < b && a > b + 0.7f64.ln(), "smoothed {a} vs {b}");
+    }
+
+    #[test]
+    fn the_premium_has_no_equity_term_at_the_start_or_with_the_key_off() {
+        let mut worlds = build(&base());
+        let w = worlds.remove(0);
+        let (mut off, mut on) = (w.clone(), w.clone());
+        on.cfg.ebp_equity_sens = 0.05;
+        off.shocks.share_price_log.push((None, 0.5f64.ln(), 1.0));
+        on.shocks.share_price_log.push((None, 0.5f64.ln(), 1.0));
+        for _ in 0..3 {
+            sim::step(&mut off);
+            sim::step(&mut on);
+        }
+        let ebp = |w: &World| w.banks.iter().map(|b| b.ebp).sum::<f64>() / w.banks.len() as f64;
+        assert!(ebp(&on) > ebp(&off) + 0.002, "premium on {} off {}", ebp(&on), ebp(&off));
+        assert!(w.fund.q_raw_log.is_finite());
+    }
+
+    #[test]
+    fn the_stock_flow_checks_hold_and_no_month_is_stopped_at_minus_80_with_the_keys_on() {
+        for (label, hl) in [("hl 24", 24.0), ("permanent", 0.0)] {
+            let c = pc(crash(-80.0, hl), &SEEDS, 36);
+            assert_eq!(c.shocked.len(), 36, "{label}: the run was cut short");
+            assert!(c.shocked.iter().chain(&c.baseline).all(|m| m.sfc_error == 0.0), "{label}: sfc_error");
+            assert!(c.shocked.iter().all(|m| m.gdp_real_bn_ar.is_finite() && m.credit_spread.is_finite() && m.fund_share_price > 0.0), "{label}: finite");
+            let mut w = build(&cand()).remove(0);
+            w.shocks.schedule(ScheduledShock { at_month: w.tick, shock: Shock::SharePrices { sector: None, pct: -80.0, half_life_months: hl } });
+            for k in 0..36 {
+                sim::step(&mut w);
+                crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("{label}, month {k}: {e}"));
+            }
+        }
+    }
+
+    #[test]
+    fn runs_with_the_keys_on_are_deterministic_and_do_not_depend_on_the_thread_count() {
+        let a = serde_json::to_string(&pc(crash(-40.0, 12.0), &[1, 2], 8)).unwrap();
+        for threads in [1usize, 4] {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+            let c = pool.install(|| serde_json::to_string(&pc(crash(-40.0, 12.0), &[1, 2], 8)).unwrap());
+            assert_eq!(a, c, "{threads} threads");
         }
     }
 }

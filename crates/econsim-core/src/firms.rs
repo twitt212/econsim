@@ -690,9 +690,17 @@ fn plan_firm(w: &World, f: usize, ctx: &PlanCtx) -> Option<FirmPlan> {
     let full_demand = ed_plan.max(finite_or(st.last_demand[f], 0.0));
     // Tobin's-q link (stage 4): a sector whose equity is high relative to its normal replacement value wants more
     // capital. Bounded, and off unless `investment_q_sens[j]` is set (sector equity from markets, last month).
+    // rz20: `investment_q_sens_all` > 0 makes the sectors without their own q-sensitivity (`investment_q_sens[j]` = 0) respond to the Fund's
+    // aggregate q (the equity-value-weighted mean of ln q_rel over the sectors, `banking::fund_q_log`) with that elasticity; a sector with
+    // its own sensitivity (Tech) keeps its own q. The factor is bounded as the sector factor is.
     let q_sens = cfg.investment_q_sens[j];
     let q_factor = if q_sens != 0.0 && w.fund.sector_q0[j] > 0.0 {
         w.fund.sector_q_rel[j].max(1e-6).powf(q_sens).clamp(0.75, 1.33)
+    } else if q_sens == 0.0 && cfg.investment_q_sens_all > 0.0 {
+        (cfg.investment_q_sens_all * banking::fund_q_log(w)).exp().clamp(0.75, 1.33)
+    } else if q_sens == 0.0 && cfg.rerate_q_sens > 0.0 && w.fund.rerate_q != 0.0 {
+        // rz20 (re-rating form): the same bounded factor, read from the smoothed log of a `SharePrices` re-rating only.
+        (cfg.rerate_q_sens * w.fund.rerate_q).exp().clamp(0.75, 1.33)
     } else {
         1.0
     };

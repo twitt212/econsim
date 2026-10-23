@@ -205,6 +205,12 @@ fn update_lender_premium(w: &mut World) {
     let (adjust, pmin, pmax) = (w.cfg.ebp_adjust, w.cfg.ebp_min, w.cfg.ebp_max);
     let (norm_adapt, norm_init) = (w.cfg.loss_norm_adapt, w.cfg.loss_norm_initial);
     let expected = expected_loss_rates(w);
+    // rz20: the equity term, the same for every bank (0 and never computed with the key off).
+    let mut eq_term = if w.cfg.ebp_equity_sens > 0.0 { w.cfg.ebp_equity_sens * (-w.fund.q_raw_log).max(0.0) } else { 0.0 };
+    // rz20 (re-rating form): the same term from the log of a `SharePrices` re-rating only (0 with no re-rating in force).
+    if w.cfg.rerate_ebp_sens > 0.0 && w.fund.rerate_log < 0.0 {
+        eq_term += w.cfg.rerate_ebp_sens * (-w.fund.rerate_log);
+    }
     for b in 0..w.banks.len() {
         let cr = capital_ratio(w, b as BankId);
         let bank = &mut w.banks[b];
@@ -218,11 +224,32 @@ fn update_lender_premium(w: &mut World) {
         }
         let rate = expected.get(b).copied().unwrap_or(0.0);
         let shortfall = (req + buffer - cr).max(0.0);
-        step_premium(bank, rate, shortfall, &PremiumParams { loss_sens, cap_sens, adjust, pmin, pmax, norm_adapt, norm_init });
+        step_premium(bank, rate, shortfall, &PremiumParams { eq_term, loss_sens, cap_sens, adjust, pmin, pmax, norm_adapt, norm_init });
+    }
+}
+
+/// rz20: ln of the Fund's sector q relative to normal, averaged over the sectors with a q and weighted by their equity value (0 when no sector
+/// has one yet). Negative when equity is valued below its normal level. Finite whatever the inputs.
+pub fn fund_q_log(w: &World) -> f64 {
+    let f = &w.fund;
+    let (mut num, mut den) = (0.0f64, 0.0f64);
+    for s in 0..N_SECTORS {
+        let (e, q) = (f.sector_equity[s], f.sector_q_rel[s]);
+        if f.sector_q0[s] > 0.0 && e > 0.0 && e.is_finite() && q.is_finite() {
+            num += e * q.max(1e-6).ln();
+            den += e;
+        }
+    }
+    if den > 0.0 {
+        num / den
+    } else {
+        0.0
     }
 }
 
 struct PremiumParams {
+    /// rz20: the equity term of the target (`ebp_equity_sens` x the fall of the Fund's q; 0 with the key off).
+    eq_term: f64,
     loss_sens: f64,
     cap_sens: f64,
     adjust: f64,
@@ -241,7 +268,11 @@ fn step_premium(bank: &mut Bank, rate: f64, shortfall: f64, p: &PremiumParams) {
     }
     let loss_gap = if loans > 1e-6 { rate - bank.biz_loss_norm } else { 0.0 };
     bank.biz_loss_norm += p.norm_adapt * (rate - bank.biz_loss_norm);
-    let target = (p.loss_sens * loss_gap + p.cap_sens * shortfall).clamp(p.pmin, p.pmax);
+    let mut target = p.loss_sens * loss_gap + p.cap_sens * shortfall;
+    if p.eq_term != 0.0 {
+        target += p.eq_term;
+    }
+    let target = target.clamp(p.pmin, p.pmax);
     bank.ebp = finite_or_zero(bank.ebp + p.adjust * (target - bank.ebp)).clamp(p.pmin, p.pmax);
 }
 
@@ -1647,6 +1678,7 @@ mod tests {
         let w = world(8);
         let cfg = &w.cfg;
         let p = PremiumParams {
+            eq_term: 0.0,
             loss_sens: cfg.ebp_loss_sens,
             cap_sens: cfg.ebp_capital_sens,
             adjust: cfg.ebp_adjust,

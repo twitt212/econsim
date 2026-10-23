@@ -1,0 +1,8 @@
+{
+ "mpc_fund_wealth_annual": 0.032,
+ "fund_wealth_tail_weight": 1.0,
+ "fund_wealth_ewma": true,
+ "fund_wealth_ewma_span": 24.0,
+ "investment_q_sens_all": 0.16,
+ "ebp_equity_sens": 0.024
+}

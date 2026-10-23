@@ -136,7 +136,8 @@ with `g_s^e = clamp(long_growth + ext_s + news_weight × news_s, [−2%, +6%])`.
 The total Fund equity is Σ E_s. The wealth channel and the Fund share price are unchanged in form. Sector Tobin's
 q = E_s ÷ (capital of sector s × capital price), relative to its normal level at the first valuation, feeds back to
 investment (firms.rs): desired capital is multiplied by `q_rel^investment_q_sens`, clamped to [0.75, 1.33]. Only Tech
-has a nonzero sensitivity (0.5).
+has a nonzero sensitivity (0.5). (RZ20) `investment_q_sens_all` (0 by default) makes the sectors with no sensitivity of their own follow the Fund's aggregate q, the
+equity-value-weighted mean of ln q_rel, with that elasticity (factor `exp(sens x it)`, same clamp); Tech keeps its own q.
 
 **Round 7 (final HEAD; `sector_cycle.py` and `consumption_cycle.py`, 8 seeds).** Energy employment relative sd is 4.62 (BLS 2.50) and Energy consumption relative sd is 1.14 (US 0.50). Equity (`equity_check.py`, 8 seeds): P/E 20.1, equity/GDP 2.33, price-return sd 10.0% and total-return sd 12.7%. The stage-4 figures below are the calibration history; the round-7 values are these.
 

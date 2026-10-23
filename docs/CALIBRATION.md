@@ -7790,3 +7790,44 @@ the EconSim website sends candidate C with every request** (with its other reali
 (+0.18 per point of duty), core PCE inflation is about 0.2 points a year above its no-tariff path in year 5, and the retail pass-through shape is slightly slower. On the
 Today's-US-economy start the no-change path itself moves a little from year 2 (output 0.2-0.4% lower, the policy rate 0.1-0.2 points higher), because the duty already in
 force is still passing into retail prices and the rule now looks through it.
+
+## RZ20 (2026-10-23): the equity channel, three levers behind keys that are off by default
+
+**Why.** "The stock market falls 80%" (R51-E `SharePrices`, all sectors) gave real GDP -1.3% in year 1 and -1.5% to -2.0% in year 2, unemployment +0.7 and +0.9 to +1.1 pp,
+a credit spread 0.07 to 0.12 pp wider and no move in house prices, for a loss of equity wealth of about $50 tn (150% to 180% of GDP). Research puts the response to a loss of
+that size several times higher. The diagnosis (seeds 1-64, the project's validation records): the Fund-wealth term of the consumption rule is 2% a year but `concave_wealth`
+counts Fund wealth above $1 million at 35%, so the marginal propensity of the dollars lost is 0.7 cents (research: 3.2 cents a year, Chodorow-Reich, Nenov and Simsek 2021, AER 111(5);
+consensus 3, range 1 to 5, Poterba 2000, JEP 14(2)), and households read last month's price; only Tech's desired capital answers to its q (`investment_q_sens` 0.2, nothing in the other eight
+sectors) and run-down of capital is capped; nothing ties the lender premium to equity values. The model's own wealth term carries 74% of its year-1 loss of GDP and 52% to 56% of the year-2 loss.
+
+**What changed (all keys off by default; the default fingerprint is unchanged).** Four new `Config` keys and two existing keys set to new values in the candidate:
+
+| Lever | Key (off value -> candidate) | Where | Source of the value |
+|---|---|---|---|
+| wealth | `mpc_fund_wealth_annual` 0.02 -> 0.032 (existing) | `consumption.rs` | 3.2 cents a year per dollar of stock wealth (CNS 2021: 3.23 at a two-year horizon) |
+| | `fund_wealth_tail_weight` 0.35 -> 1.0 (new, range 0.05 to 1) | `consumption.rs` (`concave_wealth_w`) | no concavity for Fund wealth: the estimates are of the aggregate propensity of the households who own the stock |
+| | `fund_wealth_ewma` false -> true (existing); `fund_wealth_ewma_span` 12 -> 24 (new, 2 to 60 months) | `equity.rs` (`price_ewma_decay`) | the labour-market effect builds over quarters 4 to 8 (CNS); adjustment costs (Poterba 2000) |
+| investment | `investment_q_sens_all` 0 -> 0.16 (new, 0 to 1) | `firms.rs`, `banking.rs` (`fund_q_log`) | the sectors with no q-sensitivity of their own follow the Fund's aggregate q, with the elasticity of Barro (1990: 0.31 with profit controls) and Blanchard, Rhee and Summers (1993: 0.37 on valuation), mean 0.34, divided by the model's mapping (gross investment moves 2.08 per unit of desired capital) |
+| credit | `ebp_equity_sens` 0 -> 0.024 (new, 0 to 0.05) | `banking.rs` (`step_premium`), `equity.rs` (`Fund::q_raw_log`) | the default-risk part of the spread's rise per unit of log fall of households' equities: 1.50 pp (2000-02) and 3.87 pp (2007-09), geometric mean 2.41 pp (Gilchrist and Zakrajsek 2012; the Fed's EBP file; Fed Z.1) |
+
+A second, narrower form of the same three levers acts on a `SharePrices` re-rating only (`rerate_wealth_mpc_annual`, `rerate_q_sens`, `rerate_ebp_sens`, all 0 by default, with `fund_wealth_ewma_span`): with those keys on, a run with no re-rating is bit-identical.
+
+**Defaults unchanged.** `run 5000 60 3 --json | tail -n 1 | md5` at RAYON 1 and 8, standard and alternative codegen: default `6a56affe5fa25d7fcf1fa0ba7197234e`, `legacy_acctfix_off.json`
+`9f90c88a2c8b653857029d235cd6b0a6`, c3 `9917d0f9f2b5267edb3f65e29e125fe8` (c3 plus the new keys at their off values: the same). The candidate (c3 plus the six settings) reads `048962846baded65704a7549779bbc4a`.
+
+**Tests** (`cargo test --release --workspace`): in `econsim-core` `config::rz20_config_tests` (2: defaults, serialisation, ranges of all keys) and `equity::rz20_tests` (10: the off values change nothing byte for byte; a fall gives a wider spread, a deeper fall of
+consumption and of non-Tech investment; the aggregate q follows a re-rating exactly on impact; the smoothing span; the premium has no equity term with the key off; stock-flow checks and no stopped month at -80%, half-life 24 and permanent, with the
+ledger checked every month; determinism at 1 and 4 threads; the scoped form is inert with no re-rating and acts with one); in `econsim-server` `rz20_keys_validation` (1: out-of-range values refused with the key named).
+
+**The result (pre-registered).** Main round (the general form, seeds 61001-61256): the three target rows pass (T-W1 1.49 cents against [1, 5], T-I1 0.29 against [0.21, 0.57], T-C1 1.08 pp against [0.89, 2.48]) but six guards fail on both blocks (the Volcker GDP and unemployment episodes, X2, the tariff GDP peak, G4 u25_count, the equity-GDP link) and Tier A core PCE (1.69 against [1.7, 2.3]); verdict FAIL. Repair round 1 (the re-rating form, seeds 62001-62256, bit-identical outside a `SharePrices` request): the three targets pass (2.63 cents, 0.34, 1.45 pp), the only failing guard is the 1987 quick reversal (+0.85 pp unemployment against a threshold of 0.75); verdict FAIL. On the owner's case (all sectors -80%, half-life 24) the re-rating form gives real GDP -4.1% and -9.1% and unemployment +2.0 and +5.7 pp in years 1 and 2 (control -1.3% / -1.6%, +0.6 / +0.9 pp). All keys stay off by default; adoption was the owner's decision.
+
+**Repair round 2 (RZ20-R2): no timing change is supported, and nothing was run.** The re-rating's investment signal already has a mean lag of 9 months (`q_signal_decay` 0.9; `equity.rs`, `firms.rs:701-703`), and the credit premium closes 25% of its gap a month. Barro's monthly distributed lag (1990, Table 4) fits a total lag of about 6 months and rejects a one-year delay (chi-square 39.5 against 16.0); Blanchard, Rhee and Summers (1993, Table 5) give 27% of the response in the same year, the model's 27.5%; Lamont (2000) and the time-to-build facts (Koeva 2000) add no longer lag from a valuation change to spending; Gilchrist and Zakrajsek (2012) and the data give an immediate credit response. A lag long enough to pass the 1987 guard (an EWMA of about 18 months) is 2.3 sigma from the best fit, and the shape the data prefer would raise the guard's reading. The re-rating form is unchanged (rebased on `web-revamp` 8ecceae9: default fingerprint `6a56affe5fa25d7fcf1fa0ba7197234e`, legacy `9f90c88a2c8b653857029d235cd6b0a6`, and the form with no re-rating byte-identical to the site's profile, `9917d0f9f2b5267edb3f65e29e125fe8`); adoption is the owner's decision ().
+
+**Adopted (2026-10-23, released in v2026.10.23.3).** The re-rating form is now the default: `rerate_wealth_mpc_annual` 0.025, `rerate_q_sens` 0.16,
+`rerate_ebp_sens` 0.024 and `fund_wealth_ewma_span` 24. The general form (`fund_wealth_tail_weight`, `investment_q_sens_all`, `ebp_equity_sens`) stays off. A run with
+no `SharePrices` re-rating is unchanged: the default and legacy fingerprints are re-measured unchanged at RAYON 1 and 8. **The known cost, stated where it applies:** a
+1987-type fall that reverses within months reads +0.85 percentage points of unemployment, above the 0.75 line the guard set (+0.49 at the -19% fall households'
+equities actually took in 1987), while 1987 brought no recession; and a 2000-02-sized fall gives unemployment about +2.9 points against the 2.5 observed.
+
+**Not changed.** The Fed's rule, the clamp [0.75, 1.33] on the q factor and the cap of 0.15% a month on the run-down of capital (they bound what the investment lever can do: about 15% of gross investment through q); dividends do not respond to the price; there is
+no link from equity volatility to the demand risk premium (no source found for its size).

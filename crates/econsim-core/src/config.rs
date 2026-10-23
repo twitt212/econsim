@@ -1822,6 +1822,36 @@ pub struct Config {
     /// (legacy): nothing is computed and the run is bit-identical; also inert in any run without a tariff wedge. Range [0, 1]. Units: share.
     /// Source of the calibration: docs/CALIBRATION.md (RZ21).
     pub rule_lookthrough: f64,
+
+    // rz20
+    /// rz20: weight on Fund wealth above the consumption kink (`WEALTH_KINK` = $1 million, wage-indexed with `distquick_kink_wage_indexed`) in the
+    /// Fund-wealth term of the household budget (`consumption.rs`). 0.35 = the legacy `WEALTH_TAIL_WEIGHT` (bit-identical); 1 = no concavity for
+    /// Fund wealth. Range [0.05, 1]. Units: weight (decimal). Used only while `mpc_fund_wealth_annual` > 0.
+    pub fund_wealth_tail_weight: f64,
+    /// rz20: span, in months, of the EWMA of the Fund share price that the Fund-wealth term reads when `fund_wealth_ewma` is on (weight 2 / (span + 1) on the
+    /// newest close). 12 = the legacy 12-month span (mean lag 6.5 months). Range [2, 60]. Units: months. No effect while `fund_wealth_ewma` is false.
+    pub fund_wealth_ewma_span: f64,
+    /// rz20: the q-sensitivity of desired capital in the sectors that have none of their own (`investment_q_sens[j]` = 0; Tech keeps its 0.2 on its own
+    /// q). Those sectors' desired capital is multiplied by exp(sens x L), L the Fund's aggregate q: the equity-value-weighted mean over the sectors of
+    /// ln q_rel, q_rel being the sector's Tobin's q relative to its normal level (`banking::fund_q_log`); the factor stays in [0.75, 1.33], as the
+    /// sector factor does. 0 = off (legacy). Range [0, 1]. Units: elasticity of desired capital with respect to the aggregate q.
+    pub investment_q_sens_all: f64,
+    /// rz20: financial accelerator from equity values to the lender premium (excess bond premium). The target of every bank's premium
+    /// (`step_premium`) gains `ebp_equity_sens` times the fall of the Fund's aggregate q below its normal level,
+    /// max(0, -L), L the Fund's current aggregate q (`Fund::q_raw_log`: the equity-value-weighted mean of ln(q / q0) over the sectors, not smoothed) (decimal premium per unit of log fall; 0.024 is 2.4 percentage points per unit). The premium feeds business
+    /// loan rates and credit standards. 0 = off (legacy). Range [0, 0.05]. Units: decimal per unit of ln q.
+    pub ebp_equity_sens: f64,
+    /// rz20 (re-rating form of the three equity levers: they act on the part of the Fund's equity value that a `SharePrices` re-rating moves and on nothing else, so a
+    /// run with no re-rating is bit-identical with these keys on; each is 0 = off by default).
+    /// `rerate_wealth_mpc_annual`: an extra annual marginal propensity to consume out of the wealth that a re-rating takes from (or adds to) a household's Fund shares: the
+    /// budget loses m / 12 x (the household's Fund shares) x W, W the EWMA (span `fund_wealth_ewma_span`, whatever `fund_wealth_ewma` says) of the
+    /// wealth that the re-rating takes from one Fund share (dollars; negative for a rise). Not concave. Range [0, 0.2]. Units: per year, per dollar.
+    pub rerate_wealth_mpc_annual: f64,
+    /// rz20 (re-rating form): the elasticity of desired capital, in the sectors with no q-sensitivity of their own, to the EWMA (`q_signal_decay`) of the re-rating's log:
+    /// factor exp(sens x it), bounded to [0.75, 1.33]. Range [0, 1].
+    pub rerate_q_sens: f64,
+    /// rz20 (re-rating form): the lender premium's target gains `rerate_ebp_sens` x max(0, -L), L the (unsmoothed) log of the re-rating in force. Range [0, 0.05]. Units: decimal per unit of ln.
+    pub rerate_ebp_sens: f64,
 }
 
 impl Config {
@@ -2017,6 +2047,14 @@ pub const CREDIT_TAIL_MAX_HALF_LIFE_MONTHS: f64 = 60.0;
 /// rz19: upper bounds of the tariff efficiency wedge (log points per 1.0 of duty) and of its phase-in (months).
 pub const TARIFF_TFP_MAX_LOSS: f64 = 2.0;
 pub const TARIFF_TFP_MAX_PHASE_IN_MONTHS: f64 = 120.0;
+/// rz20: bounds of the equity-channel keys.
+pub const FUND_WEALTH_TAIL_WEIGHT_MIN: f64 = 0.05;
+pub const INVESTMENT_Q_SENS_ALL_MAX: f64 = 1.0;
+pub const EBP_EQUITY_SENS_MAX: f64 = 0.05;
+pub const FUND_WEALTH_EWMA_SPAN_RANGE: (f64, f64) = (2.0, 60.0);
+pub const RERATE_WEALTH_MPC_MAX: f64 = 0.2;
+pub const RERATE_Q_SENS_MAX: f64 = 1.0;
+pub const RERATE_EBP_SENS_MAX: f64 = 0.05;
 
 impl Config {
     /// rz1: range check of the rate-perception lag, the credit-spread tail and the desired-capital adjustment share.
@@ -2065,6 +2103,32 @@ impl Config {
         let lt = self.rule_lookthrough;
         if !lt.is_finite() || !(0.0..=1.0).contains(&lt) {
             return Err(format!("rule_lookthrough must be between 0 and 1 (got {lt})"));
+        }
+        // rz20: the equity channel.
+        let tw = self.fund_wealth_tail_weight;
+        if !tw.is_finite() || !(FUND_WEALTH_TAIL_WEIGHT_MIN..=1.0).contains(&tw) {
+            return Err(format!("fund_wealth_tail_weight must be between {FUND_WEALTH_TAIL_WEIGHT_MIN} and 1 (got {tw})"));
+        }
+        let sp = self.fund_wealth_ewma_span;
+        if !sp.is_finite() || !(FUND_WEALTH_EWMA_SPAN_RANGE.0..=FUND_WEALTH_EWMA_SPAN_RANGE.1).contains(&sp) {
+            return Err(format!("fund_wealth_ewma_span must be between {} and {} months (got {sp})", FUND_WEALTH_EWMA_SPAN_RANGE.0, FUND_WEALTH_EWMA_SPAN_RANGE.1));
+        }
+        let qs = self.investment_q_sens_all;
+        if !qs.is_finite() || !(0.0..=INVESTMENT_Q_SENS_ALL_MAX).contains(&qs) {
+            return Err(format!("investment_q_sens_all must be between 0 and {INVESTMENT_Q_SENS_ALL_MAX} (got {qs})"));
+        }
+        for (name, v, max) in [
+            ("rerate_wealth_mpc_annual", self.rerate_wealth_mpc_annual, RERATE_WEALTH_MPC_MAX),
+            ("rerate_q_sens", self.rerate_q_sens, RERATE_Q_SENS_MAX),
+            ("rerate_ebp_sens", self.rerate_ebp_sens, RERATE_EBP_SENS_MAX),
+        ] {
+            if !v.is_finite() || !(0.0..=max).contains(&v) {
+                return Err(format!("{name} must be between 0 and {max} (got {v})"));
+            }
+        }
+        let es = self.ebp_equity_sens;
+        if !es.is_finite() || !(0.0..=EBP_EQUITY_SENS_MAX).contains(&es) {
+            return Err(format!("ebp_equity_sens must be between 0 and {EBP_EQUITY_SENS_MAX} (got {es})"));
         }
         Ok(())
     }
@@ -2841,6 +2905,18 @@ impl Default for Config {
 
             // rz21
             rule_lookthrough: 0.0,
+
+            // rz20. The general form (tail weight, investment_q_sens_all, ebp_equity_sens) stays off: it failed its guards. The re-rating form is on
+            // (adopted 2026-10-23 in v2026.10.23.3; docs/CALIBRATION.md, "RZ20"): a SharePrices re-rating moves spending (2.5 cents a year per dollar,
+            // Chodorow-Reich, Nenov & Simsek 2021), investment through q (0.16, Barro 1990; Blanchard, Rhee & Summers 1993) and the credit premium (0.024,
+            // Gilchrist & Zakrajsek 2012), with the wealth term smoothed over 24 months. A run with no SharePrices re-rating is unchanged.
+            fund_wealth_tail_weight: 0.35,
+            fund_wealth_ewma_span: 24.0,
+            investment_q_sens_all: 0.0,
+            ebp_equity_sens: 0.0,
+            rerate_wealth_mpc_annual: 0.025,
+            rerate_q_sens: 0.16,
+            rerate_ebp_sens: 0.024,
         }
     }
 }
@@ -3126,5 +3202,63 @@ mod rz21_tests {
         for l in [-0.01, 1.01, f64::NAN, f64::INFINITY, -1.0] {
             assert!(with(l).validate_rz1().is_err(), "{l}");
         }
+    }
+}
+
+// rz20: the equity channel. Three new keys, all off by default: `fund_wealth_tail_weight` 0.35 (the legacy constant), `investment_q_sens_all` 0 and
+// `ebp_equity_sens` 0. The candidate also sets the existing `mpc_fund_wealth_annual` (0.02 -> 0.032) and `fund_wealth_ewma` (false -> true). The default
+// fingerprint is checked by the identity checks of the realism program's acceptance runs, not here.
+#[cfg(test)]
+mod rz20_config_tests {
+    use super::Config;
+
+    #[test]
+    fn rz20_keys_are_off_by_default_and_serialise() {
+        let c = Config::default();
+        assert_eq!((c.fund_wealth_tail_weight, c.investment_q_sens_all, c.ebp_equity_sens), (0.35, 0.0, 0.0));
+        assert!(c.validate_rz1().is_ok());
+        let v = serde_json::to_value(&c).unwrap();
+        assert_eq!(v["fund_wealth_tail_weight"], serde_json::json!(0.35));
+        assert_eq!(v["investment_q_sens_all"], serde_json::json!(0.0));
+        assert_eq!(v["ebp_equity_sens"], serde_json::json!(0.0));
+        assert_eq!(c.fund_wealth_ewma_span, 24.0);
+        // The re-rating form is on by default since its adoption (v2026.10.23.3); it is inert without a SharePrices re-rating.
+        assert_eq!((c.rerate_wealth_mpc_annual, c.rerate_q_sens, c.rerate_ebp_sens), (0.025, 0.16, 0.024));
+        let over: Config = serde_json::from_str(r#"{"fund_wealth_tail_weight": 1, "fund_wealth_ewma_span": 24, "investment_q_sens_all": 0.16, "ebp_equity_sens": 0.024}"#).unwrap();
+        assert_eq!((over.fund_wealth_tail_weight, over.fund_wealth_ewma_span, over.investment_q_sens_all, over.ebp_equity_sens), (1.0, 24.0, 0.16, 0.024));
+        let none: Config = serde_json::from_str("{}").unwrap();
+        assert_eq!((none.fund_wealth_tail_weight, none.investment_q_sens_all, none.ebp_equity_sens), (0.35, 0.0, 0.0));
+    }
+
+    #[test]
+    fn rz20_validation_ranges() {
+        let with = |t: f64, q: f64, e: f64| Config { fund_wealth_tail_weight: t, investment_q_sens_all: q, ebp_equity_sens: e, ..Config::default() };
+        for (m, q, e) in [(0.0, 0.0, 0.0), (0.025, 0.16, 0.024), (0.2, 1.0, 0.05)] {
+            assert!(Config { rerate_wealth_mpc_annual: m, rerate_q_sens: q, rerate_ebp_sens: e, ..Config::default() }.validate_rz1().is_ok(), "{m} {q} {e}");
+        }
+        for (m, q, e, name) in [(-0.01, 0.0, 0.0, "rerate_wealth_mpc_annual"), (0.21, 0.0, 0.0, "rerate_wealth_mpc_annual"), (0.0, -0.1, 0.0, "rerate_q_sens"), (0.0, 1.1, 0.0, "rerate_q_sens"),
+                               (0.0, 0.0, -0.001, "rerate_ebp_sens"), (0.0, 0.0, 0.06, "rerate_ebp_sens"), (f64::NAN, 0.0, 0.0, "rerate_wealth_mpc_annual")] {
+            let err = Config { rerate_wealth_mpc_annual: m, rerate_q_sens: q, rerate_ebp_sens: e, ..Config::default() }.validate_rz1().unwrap_err();
+            assert!(err.starts_with(name), "{m} {q} {e}: {err}");
+        }
+        for sp in [2.0, 12.0, 24.0, 60.0] {
+            assert!(Config { fund_wealth_ewma_span: sp, ..Config::default() }.validate_rz1().is_ok(), "span {sp}");
+        }
+        for sp in [1.99, 60.1, 0.0, -5.0, f64::NAN, f64::INFINITY] {
+            assert!(Config { fund_wealth_ewma_span: sp, ..Config::default() }.validate_rz1().unwrap_err().starts_with("fund_wealth_ewma_span"), "span {sp}");
+        }
+        for (t, q, e) in [(0.35, 0.0, 0.0), (1.0, 0.16, 0.024), (0.05, 1.0, 0.05), (0.5, 0.5, 0.0)] {
+            assert!(with(t, q, e).validate_rz1().is_ok(), "{t} {q} {e}");
+        }
+        for (t, q, e) in [
+            (0.049, 0.0, 0.0), (1.01, 0.0, 0.0), (f64::NAN, 0.0, 0.0), (0.0, 0.0, 0.0), (-0.1, 0.0, 0.0),
+            (0.35, -0.01, 0.0), (0.35, 1.01, 0.0), (0.35, f64::INFINITY, 0.0),
+            (0.35, 0.0, -0.001), (0.35, 0.0, 0.0501), (0.35, 0.0, f64::NAN),
+        ] {
+            assert!(with(t, q, e).validate_rz1().is_err(), "{t} {q} {e}");
+        }
+        assert!(with(0.01, 0.0, 0.0).validate_rz1().unwrap_err().starts_with("fund_wealth_tail_weight"));
+        assert!(with(0.35, 2.0, 0.0).validate_rz1().unwrap_err().starts_with("investment_q_sens_all"));
+        assert!(with(0.35, 0.0, 0.1).validate_rz1().unwrap_err().starts_with("ebp_equity_sens"));
     }
 }
