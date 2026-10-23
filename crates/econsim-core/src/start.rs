@@ -177,6 +177,12 @@ pub struct SteerState {
     pub mtg_decay: f64,
 }
 
+/// Whether the steered window of a Today's start is being stepped (the policy-rate target is set in every window month and cleared when
+/// the window ends). rz19 reads it to take the tariff reference after the window.
+pub fn window_active(w: &World) -> bool {
+    w.steer.policy.is_some()
+}
+
 fn decay_for(half_life: f64) -> f64 {
     if half_life <= 0.0 {
         1.0

@@ -1321,15 +1321,43 @@ pub fn clear(w: &mut World) {
         let core_w = role_sum_from(cfg.cpi_weight_shelter, &core_weights, |_| 1.0);
         let core = 100.0 * role_sum_from(shelter, &core_weights, x) / core_w;
         let pce = 100.0 * role_sum_from(cfg.pce_core_weight_shelter * rent_rel, &cfg.pce_core_weights, x);
+        // rz21: the log of the rule's index over the same index at a constant tariff wedge (the retail wedge held at 0), one entry a
+        // month. It is read by the policy rule (`monetary::rule_inflation`) and only when `rule_lookthrough` > 0; with the wedge
+        // at 0 it is exactly 0.0 (the two indices are the same floating-point numbers), and with the key off nothing is computed.
+        let lt_ln = if cfg.rule_lookthrough > 0.0 && wedge != 0.0 {
+            let g0 = tradables_price(m_cpi_goods, role_mean(&cpi_tw, rel), imp_rel_cpi_v, 0.0);
+            let x0 = |s: usize| if cpi_tradable[s] { g0 } else { rel(s) };
+            let (act, xt) = if cfg.rule_uses_core {
+                if cfg.rule_uses_pce {
+                    (pce, 100.0 * role_sum_from(cfg.pce_core_weight_shelter * rent_rel, &cfg.pce_core_weights, x0))
+                } else {
+                    (core, 100.0 * role_sum_from(shelter, &core_weights, x0) / core_w)
+                }
+            } else {
+                (headline, 100.0 * role_sum_from(shelter, &cfg.cpi_weights, x0))
+            };
+            let r = (act / xt).ln();
+            if r.is_finite() {
+                r
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
         let cpi = if headline.is_finite() { headline } else { w.prices.cpi };
         let core = if core.is_finite() { core } else { w.prices.core_cpi };
         w.prices.cpi = cpi;
         w.prices.core_cpi = core;
         push_capped(&mut w.prices.cpi_history, cpi);
         push_capped(&mut w.prices.core_history, core);
+        let lt_on = cfg.rule_lookthrough > 0.0;
         let pce = if pce.is_finite() { pce } else { w.prices.core_pce };
         w.prices.core_pce = pce;
         push_capped(&mut w.prices.core_pce_history, pce);
+        if lt_on {
+            push_capped(&mut w.prices.rule_wedge_ln, lt_ln);
+        }
     }
 
     w.orders.household = orders;
@@ -1944,6 +1972,49 @@ mod tests {
         assert!(r18 > 0.0 && r35 < r18, "retail decays after the tariff ends");
         let z_peak = retail_at.iter().map(|x| x.1).fold(f64::MIN, f64::max);
         assert!(z35 > 0.0 && z35 < z_peak, "lagged share state decays from its peak");
+    }
+
+    /// rz21: the rule's look-through series. With the key off nothing is stored; with it on and no tariff every entry is exactly 0.0 and the
+    /// run (policy rate, CPI, state) is bit-identical to the key off; with a tariff the series rises with the retail wedge and equals the
+    /// log of the CPI index over its constant-wedge twin; the rule then reads less inflation and sets a lower rate than with the key off.
+    #[test]
+    fn rz21_lookthrough_series_is_inert_without_a_tariff_and_follows_the_wedge() {
+        let mk = |lt: f64, seed: u64| tiny_world(Config { n_households: 400, rule_lookthrough: lt, ..Default::default() }, seed);
+        // no tariff: key on == key off, bit for bit, and the stored series is all zeros
+        let (mut a, mut b) = (mk(0.0, 31), mk(1.0, 31));
+        for _ in 0..16 {
+            crate::sim::step(&mut a);
+            crate::sim::step(&mut b);
+        }
+        assert!(a.prices.rule_wedge_ln.is_empty(), "the key off stores nothing");
+        assert_eq!(b.prices.rule_wedge_ln.len(), 16);
+        assert!(b.prices.rule_wedge_ln.iter().all(|x| *x == 0.0));
+        assert_eq!(a.cb.policy_rate.to_bits(), b.cb.policy_rate.to_bits());
+        assert_eq!(a.prices.cpi.to_bits(), b.prices.cpi.to_bits());
+        assert_eq!(a.prices.core_pce.to_bits(), b.prices.core_pce.to_bits());
+        // a tariff from month 3: the series is positive and rising while the wedge builds, and the rate with look-through is lower
+        let (mut off, mut on) = (mk(0.0, 32), mk(1.0, 32));
+        let (mut i_off, mut i_on) = (Vec::new(), Vec::new());
+        for t in 0..30 {
+            off.shocks.tariff = if t >= 3 { 0.25 } else { 0.0 };
+            on.shocks.tariff = off.shocks.tariff;
+            crate::sim::step(&mut off);
+            crate::sim::step(&mut on);
+            check_consistency(&on).unwrap();
+            i_off.push(off.monetary.i_star.unwrap());
+            i_on.push(on.monetary.i_star.unwrap());
+        }
+        let h = &on.prices.rule_wedge_ln;
+        assert_eq!(h.len(), 30);
+        assert!(h[..3].iter().all(|x| *x == 0.0) && h[29] > h[10] && h[10] > 0.0, "{:?}", &h[..12]);
+        // the core PCE index (the rule reads it in the default config) over its twin without the wedge is e^h: the wedge's share of the price level
+        assert!(on.cfg.rule_uses_core && on.cfg.rule_uses_pce);
+        let wedge = on.goods.tariff_month.retail;
+        assert!(wedge > 0.0 && (h[29].exp() - 1.0) < wedge, "the index rises by less than the wedge itself (the import share is below 1)");
+        // the worlds are identical until the rule first reads 13 months of the series (step index 13); there the rule's target is strictly lower with
+        // the look-through, because the wedge has been building for 10 months and the year's inflation contains it
+        assert!(i_off[..13].iter().zip(&i_on[..13]).all(|(a, b)| a.to_bits() == b.to_bits()), "identical before the rule reads the series");
+        assert!(i_on[13] < i_off[13], "the rule target is lower with the look-through: {} against {}", i_on[13], i_off[13]);
     }
 
     /// b7-tariff (spec 5.6): with domestic prices held fixed (`clear` does not reprice firms) and a forced retail wedge

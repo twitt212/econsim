@@ -274,8 +274,65 @@ fn factors_step(w: &mut World, tick: u32) {
     w.exog.fx_psi = psi;
 }
 
+/// rz19: the effective duty on imported inputs and equipment as the wedge reads it (a decimal, finite, never below 0).
+fn tariff_tfp_duty(w: &World) -> f64 {
+    let tau = crate::world::tau_for(w, crate::world::Channel::Firm);
+    if tau.is_finite() {
+        tau.max(0.0)
+    } else {
+        0.0
+    }
+}
+
+/// rz19: takes the reference duty the wedge is measured against, before this month's shocks are activated: the duty in force in the first
+/// month that is not part of a steered window (in a Today's start the window follows the data, so today's duty is the reference and
+/// carries no wedge; in a typical start nothing precedes the run and the reference is the duty of the first month, which is 0). A no-op
+/// with the key off.
+fn tariff_tfp_reference(w: &mut World) {
+    if !(w.cfg.tariff_tfp_loss > 0.0) {
+        return;
+    }
+    if crate::start::window_active(w) {
+        w.exog.tariff_tfp_ref_set = false;
+        return;
+    }
+    if !w.exog.tariff_tfp_ref_set {
+        w.exog.tariff_tfp_ref = tariff_tfp_duty(w);
+        w.exog.tariff_tfp_ref_set = true;
+    }
+}
+
+/// rz19: one month of the tariff efficiency wedge. The target is `-tariff_tfp_loss * tau` in logs, with `tau` the effective duty on
+/// imported inputs and equipment (`world::tau_for(w, Channel::Firm)`) above the reference duty of the run, as a decimal and never below
+/// 0. The state moves toward the target by at most `peak / tariff_tfp_phase_in_months` a month, `peak` being the largest |target| seen
+/// so far: a linear ramp that takes the same number of months for a tariff of any size, and phases out at the speed it phased in.
+/// Returns the factor to apply to every sector's productivity this month, or `None` when the key is off, the month belongs to a
+/// steered window, or the state did not move (so a run without a tariff multiplies nothing and stays bit-identical).
+fn tariff_tfp_step(w: &mut World) -> Option<f64> {
+    let kappa = w.cfg.tariff_tfp_loss;
+    if !(kappa > 0.0) || crate::start::window_active(w) || !w.exog.tariff_tfp_ref_set {
+        return None;
+    }
+    let tau = (tariff_tfp_duty(w) - w.exog.tariff_tfp_ref).max(0.0);
+    let target = -kappa * tau;
+    let state = w.exog.tariff_tfp_log;
+    let peak = w.exog.tariff_tfp_peak.max(target.abs());
+    w.exog.tariff_tfp_peak = peak;
+    let step = peak / w.cfg.tariff_tfp_phase_in_months.max(1.0);
+    // the new state is never above zero (a duty cut gives no gain), and the factor applied is exactly the change of the stored state
+    let next = (state + (target - state).clamp(-step, step)).min(0.0);
+    let ds = next - state;
+    if ds == 0.0 {
+        return None;
+    }
+    w.exog.tariff_tfp_log = next;
+    Some(ds.exp())
+}
+
 pub fn step(w: &mut World) {
     let tick = w.tick;
+    // rz19: the wedge's reference duty is read before this month's shocks apply (a no-op with the key off)
+    tariff_tfp_reference(w);
     w.shocks.activate_due(tick);
 
     // p0-exog: financial, term-premium and dollar factors (their own streams; before oil so ψ sees this month's ε).
@@ -363,6 +420,10 @@ pub fn step(w: &mut World) {
             Some(_) => {}
             None => mult.iter_mut().for_each(|x| *x *= m),
         }
+    }
+    // rz19: the tariff efficiency wedge (off with `tariff_tfp_loss` = 0: nothing is read, nothing is multiplied).
+    if let Some(m) = tariff_tfp_step(w) {
+        mult.iter_mut().for_each(|x| *x *= m);
     }
     for s in 0..N_SECTORS {
         w.exog.tfp[s] *= mult[s];
@@ -990,6 +1051,208 @@ mod tests {
         assert!((first / base - 1.0).abs() < 1e-9, "month 0 oil price {first} vs {base}");
         let one_month = (1.0 + pi).powf(1.0 / 12.0);
         assert!((first / last_burn_in / one_month - 1.0).abs() < 1e-9, "jump across reset {}", first / last_burn_in);
+    }
+
+
+    // ---- rz19: the tariff efficiency wedge ----
+
+    /// A small world whose month 0 (tick 0, no tariff) has run: the wedge's reference duty is taken there. Later months start at tick 1.
+    fn wedge_world(loss: f64, phase_in: f64, seed: u64) -> World {
+        let mut cfg = Config::default();
+        cfg.n_households = 60;
+        cfg.tariff_tfp_loss = loss;
+        cfg.tariff_tfp_phase_in_months = phase_in;
+        let mut w = crate::testkit::tiny_world(cfg, seed);
+        w.shocks.tariff = 0.0;
+        w.tick = 0;
+        step(&mut w);
+        w
+    }
+
+    /// `months` months of `step` from tick `from`, with the set-level duty `tau`.
+    fn run_exog(w: &mut World, from: u32, months: u32, tau: f64) {
+        w.shocks.tariff = tau;
+        for t in from..from + months {
+            w.tick = t;
+            step(w);
+        }
+    }
+
+    #[test]
+    fn tariff_wedge_off_multiplies_nothing_and_reads_no_state() {
+        // key off (the default 0): a tariff changes neither the indices nor the firms' productivity, bit for bit; the phase-in is inert
+        let mut a = wedge_world(0.0, 60.0, 5);
+        let mut b = wedge_world(0.0, 7.0, 5);
+        let mut c = wedge_world(0.0, 60.0, 5);
+        run_exog(&mut a, 1, 36, 0.25);
+        run_exog(&mut b, 1, 36, 0.25);
+        run_exog(&mut c, 1, 36, 0.0);
+        for s in 0..N_SECTORS {
+            assert_eq!(a.exog.tfp[s].to_bits(), b.exog.tfp[s].to_bits());
+            assert_eq!(a.exog.tfp[s].to_bits(), c.exog.tfp[s].to_bits(), "a tariff moves no index with the key off");
+        }
+        for (fa, fc) in a.firms.iter().zip(c.firms.iter()) {
+            assert_eq!(fa.labor_productivity.to_bits(), fc.labor_productivity.to_bits());
+        }
+        assert_eq!((a.exog.tariff_tfp_log, a.exog.tariff_tfp_peak, a.exog.tariff_tfp_ref, a.exog.tariff_tfp_ref_set), (0.0, 0.0, 0.0, false));
+    }
+
+    #[test]
+    fn tariff_wedge_is_inert_without_a_tariff() {
+        // key on, no tariff above the reference: the state stays 0 and every productivity is the legacy one, bit for bit
+        let mut on = wedge_world(0.3, 24.0, 8);
+        let mut off = wedge_world(0.0, 60.0, 8);
+        run_exog(&mut on, 1, 48, 0.0);
+        run_exog(&mut off, 1, 48, 0.0);
+        assert_eq!(on.exog.tariff_tfp_log, 0.0);
+        for s in 0..N_SECTORS {
+            assert_eq!(on.exog.tfp[s].to_bits(), off.exog.tfp[s].to_bits());
+        }
+        for (fa, fb) in on.firms.iter().zip(off.firms.iter()) {
+            assert_eq!(fa.labor_productivity.to_bits(), fb.labor_productivity.to_bits());
+        }
+    }
+
+    #[test]
+    fn tariff_wedge_is_measured_above_the_duty_the_run_starts_from() {
+        // a world that starts with a duty of 8 points in force (Today's start): that duty carries no wedge; only the rise above it does
+        let (kappa, n) = (0.067, 60u32);
+        let mut cfg = Config::default();
+        cfg.n_households = 60;
+        cfg.tariff_tfp_loss = kappa;
+        cfg.tariff_tfp_phase_in_months = f64::from(n);
+        let mut w = crate::testkit::tiny_world(cfg, 5);
+        w.shocks.tariff = 0.08;
+        w.tick = 0;
+        step(&mut w);
+        assert!((w.exog.tariff_tfp_ref - 0.08).abs() < 1e-15 && w.exog.tariff_tfp_ref_set);
+        run_exog(&mut w, 1, 24, 0.08);
+        assert_eq!(w.exog.tariff_tfp_log, 0.0, "today's duty carries no wedge");
+        run_exog(&mut w, 25, n, 0.08 + 0.25);
+        assert!((w.exog.tariff_tfp_log + kappa * 0.25).abs() < 1e-12, "{}", w.exog.tariff_tfp_log);
+        // a duty below the reference gives no gain
+        let mut low = crate::testkit::tiny_world(Config { n_households: 60, tariff_tfp_loss: kappa, ..Config::default() }, 5);
+        low.shocks.tariff = 0.08;
+        low.tick = 0;
+        step(&mut low);
+        run_exog(&mut low, 1, 24, 0.02);
+        assert_eq!(low.exog.tariff_tfp_log, 0.0);
+    }
+
+    #[test]
+    fn tariff_wedge_waits_for_the_steered_window_to_end() {
+        // while a steered window is stepped the wedge does nothing and the reference is retaken; the duty in force at the first month
+        // after the window is the reference
+        let (kappa, n) = (0.067, 12u32);
+        let mut cfg = Config::default();
+        cfg.n_households = 60;
+        cfg.tariff_tfp_loss = kappa;
+        cfg.tariff_tfp_phase_in_months = f64::from(n);
+        let mut w = crate::testkit::tiny_world(cfg, 6);
+        w.shocks.tariff = 0.0;
+        w.tick = 0;
+        step(&mut w);
+        assert!(w.exog.tariff_tfp_ref_set);
+        // the window: the duty follows the data from 0 to 8 points; the policy-rate target marks the window months
+        for t in 1..=24u32 {
+            w.steer.policy = Some(0.04);
+            run_exog(&mut w, t, 1, 0.08 * f64::from(t) / 24.0);
+            assert!(!w.exog.tariff_tfp_ref_set, "reference retaken in window month {t}");
+            assert_eq!(w.exog.tariff_tfp_log, 0.0, "no wedge in the window");
+        }
+        w.steer.policy = None;
+        run_exog(&mut w, 25, 3, 0.08);
+        assert!(w.exog.tariff_tfp_ref_set && (w.exog.tariff_tfp_ref - 0.08).abs() < 1e-15);
+        assert_eq!(w.exog.tariff_tfp_log, 0.0, "the duty at the end of the window is the reference");
+        run_exog(&mut w, 28, n, 0.08 + 0.10);
+        assert!((w.exog.tariff_tfp_log + kappa * 0.10).abs() < 1e-12);
+    }
+
+    #[test]
+    fn tariff_wedge_ramps_linearly_to_loss_times_duty_and_back() {
+        let (kappa, n) = (0.067, 60u32);
+        let mut on = wedge_world(kappa, f64::from(n), 5);
+        let mut off = wedge_world(0.0, 60.0, 5);
+        let target = -kappa * 0.25;
+        // the ramp, month by month, and the ratio to the world without the wedge
+        for m in 1..=n {
+            run_exog(&mut on, m, 1, 0.25);
+            run_exog(&mut off, m, 1, 0.25);
+            let want = target * f64::from(m) / f64::from(n);
+            assert!((on.exog.tariff_tfp_log - want).abs() < 1e-12, "month {m}: state {} want {want}", on.exog.tariff_tfp_log);
+            for s in 0..N_SECTORS {
+                assert!((on.exog.tfp[s] / off.exog.tfp[s] - want.exp()).abs() < 1e-12, "index of sector {s} at month {m}");
+            }
+            for (a, b) in on.firms.iter().zip(off.firms.iter()) {
+                assert!((a.labor_productivity / b.labor_productivity - want.exp()).abs() < 1e-12);
+            }
+        }
+        // it holds while the duty holds ...
+        run_exog(&mut on, n + 1, 24, 0.25);
+        assert!((on.exog.tariff_tfp_log - target).abs() < 1e-12);
+        // ... and ramps back to zero over the same number of months when the duty is removed
+        run_exog(&mut on, n + 25, n / 2, 0.0);
+        assert!((on.exog.tariff_tfp_log - target / 2.0).abs() < 1e-12, "half way back: {}", on.exog.tariff_tfp_log);
+        run_exog(&mut on, n + 25 + n / 2, n / 2, 0.0);
+        assert!(on.exog.tariff_tfp_log.abs() < 1e-12 && on.exog.tariff_tfp_log <= 0.0);
+        run_exog(&mut on, 2 * n + 25, 6, 0.0);
+        assert_eq!(on.exog.tariff_tfp_log, 0.0, "no drift once back");
+    }
+
+    #[test]
+    fn tariff_wedge_takes_the_same_time_for_any_size_and_scales_with_it() {
+        let (kappa, n) = (0.05, 40u32);
+        for &tau in &[0.02, 0.10, 0.60] {
+            let mut w = wedge_world(kappa, f64::from(n), 3);
+            run_exog(&mut w, 1, n, tau);
+            assert!((w.exog.tariff_tfp_log + kappa * tau).abs() < 1e-12, "tau {tau}: {}", w.exog.tariff_tfp_log);
+            run_exog(&mut w, n + 1, 5, tau);
+            assert!((w.exog.tariff_tfp_log + kappa * tau).abs() < 1e-12, "holds at tau {tau}");
+        }
+        // half way up, the duty goes: the state moves back toward 0
+        let mut w = wedge_world(kappa, f64::from(n), 3);
+        run_exog(&mut w, 1, 20, 0.10);
+        let mid = w.exog.tariff_tfp_log;
+        assert!((mid + kappa * 0.10 * 0.5).abs() < 1e-12);
+        run_exog(&mut w, 21, 1, 0.0);
+        assert!(w.exog.tariff_tfp_log > mid, "the duty is gone: the state moves back toward 0");
+    }
+
+    #[test]
+    fn tariff_wedge_never_gives_a_gain() {
+        // a negative or non-finite duty gives no wedge and no productivity gain
+        let mut w = wedge_world(0.2, 12.0, 4);
+        run_exog(&mut w, 1, 24, -0.10);
+        assert_eq!(w.exog.tariff_tfp_log, 0.0);
+        let mut nan = wedge_world(0.2, 12.0, 4);
+        run_exog(&mut nan, 1, 6, f64::NAN);
+        assert_eq!(nan.exog.tariff_tfp_log, 0.0);
+    }
+
+    #[test]
+    fn tariff_wedge_lowers_output_through_the_whole_economy() {
+        // end to end on a small world with an ImportTariff of 25 points: the key lowers real GDP, and the state reaches loss x duty
+        let run = |loss: f64| -> (f64, f64) {
+            let mut cfg = Config::default();
+            cfg.n_households = 600;
+            cfg.burn_in_months = 0;
+            cfg.tariff_tfp_loss = loss;
+            cfg.tariff_tfp_phase_in_months = 12.0;
+            let mut w = crate::init::build_world(cfg, 21);
+            sim::step(&mut w); // month 0 without a tariff: the reference
+            w.shocks.schedule(crate::shocks::ScheduledShock { at_month: 1, shock: crate::shocks::Shock::ImportTariff { pct: 25.0 } });
+            let mut gdp = 0.0;
+            for _ in 0..36 {
+                sim::step(&mut w);
+                gdp = w.last().map(|m| m.gdp_real_bn_ar).unwrap_or(0.0);
+            }
+            (gdp, w.exog.tariff_tfp_log)
+        };
+        let (g_off, s_off) = run(0.0);
+        let (g_on, s_on) = run(0.4);
+        assert_eq!(s_off, 0.0);
+        assert!((s_on + 0.4 * 0.25).abs() < 1e-9, "the wedge reached loss x duty: {s_on}");
+        assert!(g_off.is_finite() && g_on.is_finite() && g_on < g_off, "real GDP {g_on} with the wedge, {g_off} without");
     }
 
 }

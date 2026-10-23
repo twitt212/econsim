@@ -298,6 +298,32 @@ pub fn r_star_integrate(cfg: &crate::config::Config, prev: f64, gap: f64, policy
     next.is_finite().then(|| next.clamp(cfg.r_star_est_min, R_STAR_EST_MAX))
 }
 
+/// rz21: the inflation the rule reads once the first round of a tariff is looked through. `pi` is the index's 12-month inflation (a decimal);
+/// `d` the log change over the last 12 months of the index over its constant-wedge twin (`Prices::rule_wedge_ln`), so the index without the
+/// wedge's rise grows at `(1 + pi) e^(-d) - 1`. The rule reads `pi - lt (pi - pi_xt)`. Identity (the same bits) with `lt` = 0, with fewer than
+/// 13 months of series, or with `d` = 0 (no tariff wedge moved in the year); a non-finite `d` leaves `pi` where it was.
+pub fn lookthrough_inflation(lt: f64, pi: f64, d: f64) -> f64 {
+    if !(lt > 0.0) || d == 0.0 || !d.is_finite() {
+        return pi;
+    }
+    let pi_xt = (1.0 + pi) * (-d).exp() - 1.0;
+    let out = pi - lt.min(1.0) * (pi - pi_xt);
+    if out.is_finite() {
+        out
+    } else {
+        pi
+    }
+}
+
+/// rz21: `lookthrough_inflation` for the world's own series.
+fn rule_inflation(w: &World, pi: f64) -> f64 {
+    let h = &w.prices.rule_wedge_ln;
+    if !(w.cfg.rule_lookthrough > 0.0) || h.len() < 13 {
+        return pi;
+    }
+    lookthrough_inflation(w.cfg.rule_lookthrough, pi, h[h.len() - 1] - h[h.len() - 13])
+}
+
 pub fn set_policy(w: &mut World) {
     let target = w.cfg.inflation_target;
     let pi_e = mean_expected_inflation(w);
@@ -324,6 +350,8 @@ pub fn set_policy(w: &mut World) {
         } else {
             w.inflation_yoy()
         };
+        // rz21: the inflation the rule reads, with the first round of a tariff looked through (identity with `rule_lookthrough` = 0).
+        let pi_rule = rule_inflation(w, pi);
         let u = w.unemployment_rate();
         // Real-time natural-rate estimate adapts slowly to observed unemployment (≈3-year half-life), as policymakers'
         // NAIRU estimates do; wage setters use the same estimate (firms::plan).
@@ -348,7 +376,7 @@ pub fn set_policy(w: &mut World) {
         let _ = pi_e;
         // The estimate adapts only while the rule is in charge (not under a rate override or a rule change).
         let rule_active = w.shocks.taylor.is_none() && w.shocks.policy_rate_override(w.tick).is_none();
-        let gap = pi - target;
+        let gap = pi_rule - target;
         if w.cfg.r_star_adapt > 0.0 && rule_active {
             let prev = w.monetary.r_star_est.unwrap_or(w.cfg.r_star);
             if let Some(next) = r_star_integrate(&w.cfg, prev, gap, w.cb.policy_rate) {
@@ -366,7 +394,7 @@ pub fn set_policy(w: &mut World) {
         } else {
             0.0
         };
-        let i_star = r_star + pi + phi_pi * (pi - target) + phi_u * 2.0 * (w.monetary.u_star - u) + speed_limit;
+        let i_star = r_star + pi_rule + phi_pi * (pi_rule - target) + phi_u * 2.0 * (w.monetary.u_star - u) + speed_limit;
         // us-now: the intercept wedge of the steered window (identity when steering is off)
         let (rho, prev_s) = (w.cfg.rate_smoothing, w.monetary.shadow_rate.unwrap_or(w.cfg.initial_policy_rate));
         let innov_s = w.shocks.policy_innovation(w.tick, rho);
@@ -1873,3 +1901,34 @@ const PATH_DECAY_POWERS: [f64; 25] = [
 ];
 #[inline(never)]
 fn path_decay_powi(k: i32) -> f64 { PATH_DECAY.powi(k) }
+
+// rz21: the rule's look-through of a tariff's first round.
+#[cfg(test)]
+mod rz21_tests {
+    use super::lookthrough_inflation;
+
+    #[test]
+    fn lookthrough_is_the_identity_when_off_or_when_no_wedge_moved() {
+        for pi in [-0.01, 0.0, 0.02, 0.0537, 0.31] {
+            for lt in [0.0, -0.5, f64::NAN] {
+                assert_eq!(lookthrough_inflation(lt, pi, 0.0123).to_bits(), pi.to_bits(), "key off");
+            }
+            for d in [0.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                assert_eq!(lookthrough_inflation(0.7, pi, d).to_bits(), pi.to_bits(), "no wedge, or a non-finite one");
+            }
+        }
+    }
+
+    #[test]
+    fn lookthrough_removes_the_wedges_share_of_twelve_month_inflation() {
+        // the index grew 3.0% in the year, of which the wedge made ln(1.01): the rest grew (1.03 / 1.01) - 1
+        let (pi, d) = (0.03, 1.01f64.ln());
+        let pi_xt = (1.0 + pi) / 1.01 - 1.0;
+        assert!((lookthrough_inflation(1.0, pi, d) - pi_xt).abs() < 1e-15);
+        // half a look-through is halfway; the weight is capped at 1
+        assert!((lookthrough_inflation(0.5, pi, d) - 0.5 * (pi + pi_xt)).abs() < 1e-15);
+        assert_eq!(lookthrough_inflation(3.0, pi, d).to_bits(), lookthrough_inflation(1.0, pi, d).to_bits());
+        // a falling wedge (a duty cut) is looked through the other way: the rule reads more than the index shows
+        assert!(lookthrough_inflation(1.0, pi, -d) > pi);
+    }
+}

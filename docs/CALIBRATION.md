@@ -7767,3 +7767,26 @@ estimates, 0.21) is the candidate of RZ23; it uses existing keys. **Pre-register
 
 **Taxes and spending cuts (no change).** The diagnosis finds no lever with a literature basis (tax transmission is disposable income only; the month-24 consumption of a permanent cut is the Fed's offset through the rate-sensitive consumption that the rate rows were calibrated on).
 The re-examined bands: the tax multiplier reads -0.87 against -3.0 to -1.1 from the identified income-tax estimates; consumption at month 24 after a permanent spending cut reads -0.04 against -0.95 to -0.19 (Guajardo, Leigh & Pescatori's spending-based estimate). Both are named limits.
+
+## RZ21 (2026-10-23): the tariff; `rule_lookthrough` (new) and RZ19's lasting loss (ported); all off by default
+
+With every key off the default fingerprint
+`6a56affe5fa25d7fcf1fa0ba7197234e` and the legacy profile's `9f90c88a2c8b653857029d235cd6b0a6` are unchanged at RAYON 1 and 8 (and under the alternative codegen).
+
+| Key | Default | Meaning | Source |
+|---|---|---|---|
+| `rule_lookthrough` | 0 | Share of the retail tariff wedge's 12-month contribution that the policy rule leaves out of the inflation it reads (`monetary::lookthrough_inflation`). 1 = the rule reads the index's inflation at a constant tariff wedge. Range [0, 1]. Inert without a tariff wedge. | Auray, Devereux and Eyquem (NBER WP 33739, 2025, section 3.4); Bergin and Corsetti (JIE 2023); Bianchi and Coulibaly (NBER WP 33560); Guerrieri, Lorenzoni and Werning (NBER WP 33772); Aoki (JME 2001); Bodenstein, Erceg and Guerrieri (JME 2008); Kilian and Lewis (EJ 2011); Powell, FOMC press conference 29 Oct 2025. The value 1 is the end of the range the literature supports; none gives an interior estimate. |
+| `tariff_tfp_loss` | 0 | RZ19: every firm's productivity is lower by `exp(-loss x tau)`, `tau` the effective duty on imported inputs above the duty the run starts from. Range [0, 2]. | Median of seven printed per-point long-run output effects over the model's output elasticity 1.5 (0.067); RZ19-C's confirmed 0.035. |
+| `tariff_tfp_phase_in_months` | 60 | Months in which the wedge builds (and falls back), a linear ramp. Range [1, 120]. | Furceri et al. (2018) labour productivity path. |
+
+`tariff_retail_speed` (0.075) is unchanged: at 0.25, the least-squares speed to Minton, Ray and Somale (2026), the pass-through shape enters the research and the
+month-12 price level and year-1 inflation leave theirs.
+
+**Status (released in v2026.10.23.2).** Candidate C (`rule_lookthrough` 1.0, `tariff_tfp_loss` 0.045, `tariff_tfp_phase_in_months` 60) passed its pre-registered
+acceptance on fresh seeds (81001-81256): output five years on, per point of duty, is inside the research span (-0.212 to -0.027) for the four tariff scenarios, and no guard row
+was flagged across the project's scorecard of research benchmarks; candidates at 0.067 (a consumption guard) and 0.035 (two lasting-loss rows) failed. A second run on the
+Today's-US-economy start (seeds 84001-84032) found no row worse beyond noise outside the already-failing pass-through shape. **The keys stay off by default in this repository;
+the EconSim website sends candidate C with every request** (with its other realism settings). Named costs of C: the price level five years on is about twice Yale's equilibrium
+(+0.18 per point of duty), core PCE inflation is about 0.2 points a year above its no-tariff path in year 5, and the retail pass-through shape is slightly slower. On the
+Today's-US-economy start the no-change path itself moves a little from year 2 (output 0.2-0.4% lower, the policy rate 0.1-0.2 points higher), because the duty already in
+force is still passing into retail prices and the rule now looks through it.

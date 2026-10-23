@@ -1797,6 +1797,31 @@ pub struct Config {
     /// smoother: firms see that part of their cost of credit as it is, and only the rest (the yield curve, i.e. the policy path) is smoothed.
     /// 0 = the whole base rate is smoothed (legacy). Range [0, 1]. No effect without `rate_perception_months` > 0 or without a `CreditSpread` shock.
     pub rate_perception_credit_bypass: f64,
+
+    // rz19
+    /// rz19: the efficiency wedge of a tariff. While a tariff is in force the productivity of every firm (the sector TFP indices
+    /// `exog.tfp` and each firm's labour productivity) is lower by `exp(-tariff_tfp_loss * tau)`, where `tau` is the effective duty
+    /// on imported inputs and equipment (`world::tau_for(w, Channel::Firm)`: the `ImportTariff` level, or with the world block's trade
+    /// link the import-weighted duty over the tradable sectors, in both cases the change since the start of the run, so today's duty
+    /// in a Today's-US-economy start carries no wedge), as a decimal (0.25 for 25 points). The wedge phases in linearly over
+    /// `tariff_tfp_phase_in_months` and phases out the same way when the duty falls; it never raises productivity above the start
+    /// (a duty cut gives no gain). Units: log points of productivity per 1.0 (= 100 points) of duty. 0 = off (legacy): the code path
+    /// is not entered and the run is bit-identical. Range [0, 2]. Source of the calibration: docs/CALIBRATION.md (RZ21).
+    pub tariff_tfp_loss: f64,
+    /// rz19: months in which the efficiency wedge builds up from zero to its full size `tariff_tfp_loss * tau` (and falls back to zero),
+    /// a linear ramp; the ramp's speed follows the size of the target, so any size takes the same time. No effect while
+    /// `tariff_tfp_loss` is 0. Range [1, 120]. Units: months.
+    pub tariff_tfp_phase_in_months: f64,
+
+    // rz21
+    /// rz21: the policy rule looks through the first round of a tariff. The inflation the rule reads (12-month core PCE, core CPI or
+    /// headline, as `rule_uses_core` and `rule_uses_pce` choose) is replaced by `pi - rule_lookthrough * (pi - pi_xt)`, where `pi_xt` is
+    /// the same index's 12-month inflation with the retail tariff wedge held where it was (the wedge's own contribution over the last
+    /// 12 months removed: inflation "at a constant tariff", as the ECB's HICP at constant taxes removes a VAT change). It takes the
+    /// duty's direct retail price effect only; the domestic price rises and wage rises that follow stay in the rule's inflation. 0 = off
+    /// (legacy): nothing is computed and the run is bit-identical; also inert in any run without a tariff wedge. Range [0, 1]. Units: share.
+    /// Source of the calibration: docs/CALIBRATION.md (RZ21).
+    pub rule_lookthrough: f64,
 }
 
 impl Config {
@@ -1989,12 +2014,15 @@ impl Config {
 /// rz1: upper bounds of the lag and tail keys (months).
 pub const RATE_PERCEPTION_MAX_MONTHS: f64 = 36.0;
 pub const CREDIT_TAIL_MAX_HALF_LIFE_MONTHS: f64 = 60.0;
+/// rz19: upper bounds of the tariff efficiency wedge (log points per 1.0 of duty) and of its phase-in (months).
+pub const TARIFF_TFP_MAX_LOSS: f64 = 2.0;
+pub const TARIFF_TFP_MAX_PHASE_IN_MONTHS: f64 = 120.0;
 
 impl Config {
     /// rz1: range check of the rate-perception lag, the credit-spread tail and the desired-capital adjustment share.
     /// `rate_perception_months` must be finite and in [0, 36]; `rate_perception_firm_months` finite and in [-1, 36];
-    /// `credit_tail_half_life_months` finite and in [0, 60]; `kstar_adapt` finite and in [0, 1]. The off values
-    /// (0, -1, 0, 0) always pass. The server calls this
+    /// `credit_tail_half_life_months` finite and in [0, 60]; `kstar_adapt` finite and in [0, 1]; (rz19) `tariff_tfp_loss` finite and
+    /// in [0, 2], `tariff_tfp_phase_in_months` finite and in [1, 120]. The off values (0, -1, 0, 0, 0 and the default 60) always pass. The server calls this
     /// before it runs a request; `from_env` calls it for the CLI.
     pub fn validate_rz1(&self) -> Result<(), String> {
         let lag = self.rate_perception_months;
@@ -2023,6 +2051,20 @@ impl Config {
         let cb = self.rate_perception_credit_bypass;
         if !cb.is_finite() || !(0.0..=1.0).contains(&cb) {
             return Err(format!("rate_perception_credit_bypass must be between 0 and 1 (got {cb})"));
+        }
+        // rz19: the tariff efficiency wedge.
+        let tl = self.tariff_tfp_loss;
+        if !tl.is_finite() || !(0.0..=TARIFF_TFP_MAX_LOSS).contains(&tl) {
+            return Err(format!("tariff_tfp_loss must be between 0 and {TARIFF_TFP_MAX_LOSS} (got {tl})"));
+        }
+        let tm = self.tariff_tfp_phase_in_months;
+        if !tm.is_finite() || !(1.0..=TARIFF_TFP_MAX_PHASE_IN_MONTHS).contains(&tm) {
+            return Err(format!("tariff_tfp_phase_in_months must be between 1 and {TARIFF_TFP_MAX_PHASE_IN_MONTHS} (got {tm})"));
+        }
+        // rz21: the rule's look-through of a tariff's first round.
+        let lt = self.rule_lookthrough;
+        if !lt.is_finite() || !(0.0..=1.0).contains(&lt) {
+            return Err(format!("rule_lookthrough must be between 0 and 1 (got {lt})"));
         }
         Ok(())
     }
@@ -2792,6 +2834,13 @@ impl Default for Config {
             rate_perception_stages: 1,
             rate_perception_firm_stages: -1,
             rate_perception_credit_bypass: 0.0,
+
+            // rz19
+            tariff_tfp_loss: 0.0,
+            tariff_tfp_phase_in_months: 60.0,
+
+            // rz21
+            rule_lookthrough: 0.0,
         }
     }
 }
@@ -3016,5 +3065,66 @@ mod rz13_tests {
         diff.sort();
         assert_eq!(diff, vec!["credit_tail_half_life_months", "phi_u", "speed_limit_weight"], "c3 differs from c2 in these three keys only");
         assert!(c3.validate_rz1().is_ok() && c3.validate_rz2().is_ok());
+    }
+}
+
+// rz19: the tariff efficiency wedge. Two new keys, both off by default: `tariff_tfp_loss` 0 (the wedge is never entered) and
+// `tariff_tfp_phase_in_months` 60 (inert while the loss is 0). The default fingerprint is checked by the identity cases of the
+// acceptance identity checks of the realism program, not here.
+#[cfg(test)]
+mod rz19_tests {
+    use super::Config;
+
+    #[test]
+    fn rz19_keys_are_off_by_default_and_serialise() {
+        let c = Config::default();
+        assert_eq!(c.tariff_tfp_loss, 0.0);
+        assert_eq!(c.tariff_tfp_phase_in_months, 60.0);
+        assert!(c.validate_rz1().is_ok());
+        let v = serde_json::to_value(&c).unwrap();
+        assert_eq!(v["tariff_tfp_loss"], serde_json::json!(0.0));
+        assert_eq!(v["tariff_tfp_phase_in_months"], serde_json::json!(60.0));
+        // a request that names neither key gets the defaults; one that names them gets its values
+        let over: Config = serde_json::from_str(r#"{"tariff_tfp_loss": 0.067, "tariff_tfp_phase_in_months": 36}"#).unwrap();
+        assert_eq!((over.tariff_tfp_loss, over.tariff_tfp_phase_in_months), (0.067, 36.0));
+        let none: Config = serde_json::from_str("{}").unwrap();
+        assert_eq!((none.tariff_tfp_loss, none.tariff_tfp_phase_in_months), (0.0, 60.0));
+    }
+
+    #[test]
+    fn rz19_validation_ranges() {
+        let with = |l: f64, m: f64| Config { tariff_tfp_loss: l, tariff_tfp_phase_in_months: m, ..Config::default() };
+        for (l, m) in [(0.0, 60.0), (0.067, 60.0), (2.0, 1.0), (0.5, 120.0), (0.0, 1.0)] {
+            assert!(with(l, m).validate_rz1().is_ok(), "{l} {m}");
+        }
+        for (l, m) in [(-0.01, 60.0), (2.01, 60.0), (f64::NAN, 60.0), (f64::INFINITY, 60.0), (0.1, 0.99), (0.1, 120.1), (0.1, 0.0), (0.1, f64::NAN), (0.1, -5.0)] {
+            assert!(with(l, m).validate_rz1().is_err(), "{l} {m}");
+        }
+    }
+}
+
+// rz21: the rule's look-through of a tariff's first round. One new key, off by default: `rule_lookthrough` 0 (nothing is computed). The default
+// fingerprint is checked by the identity checks of the realism program's acceptance runs, not here.
+#[cfg(test)]
+mod rz21_tests {
+    use super::Config;
+
+    #[test]
+    fn rz21_key_is_off_by_default_serialises_and_is_range_checked() {
+        let c = Config::default();
+        assert_eq!(c.rule_lookthrough, 0.0);
+        assert!(c.validate_rz1().is_ok());
+        assert_eq!(serde_json::to_value(&c).unwrap()["rule_lookthrough"], serde_json::json!(0.0));
+        let over: Config = serde_json::from_str(r#"{"rule_lookthrough": 0.75}"#).unwrap();
+        assert_eq!(over.rule_lookthrough, 0.75);
+        let none: Config = serde_json::from_str("{}").unwrap();
+        assert_eq!(none.rule_lookthrough, 0.0);
+        let with = |l: f64| Config { rule_lookthrough: l, ..Config::default() };
+        for l in [0.0, 0.5, 1.0] {
+            assert!(with(l).validate_rz1().is_ok(), "{l}");
+        }
+        for l in [-0.01, 1.01, f64::NAN, f64::INFINITY, -1.0] {
+            assert!(with(l).validate_rz1().is_err(), "{l}");
+        }
     }
 }

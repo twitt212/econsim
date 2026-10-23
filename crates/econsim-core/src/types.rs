@@ -703,6 +703,21 @@ pub struct Exogenous {
     /// Number of oil jumps this month.
     #[serde(default)]
     pub oil_jump_n: u32,
+    /// rz19: the log of the tariff efficiency wedge in force (<= 0; 0 until `tariff_tfp_loss` is on and a tariff is in force). The
+    /// productivity indices and the firms' labour productivity carry `exp(this)` relative to a world without the wedge.
+    #[serde(default)]
+    pub tariff_tfp_log: f64,
+    /// rz19: the largest wedge target (absolute, in logs) seen so far; it sets the ramp's speed, so a wedge phases out as fast as it
+    /// phased in.
+    #[serde(default)]
+    pub tariff_tfp_peak: f64,
+    /// rz19: the effective duty on imported inputs the run starts from (decimal): the duty in force in the first month after the
+    /// steered window, or at the first month without one. The wedge is measured on the duty above it. Valid only while
+    /// `tariff_tfp_ref_set`.
+    #[serde(default)]
+    pub tariff_tfp_ref: f64,
+    #[serde(default)]
+    pub tariff_tfp_ref_set: bool,
 }
 
 // p0-exog: accessors for the new factors (read-only views for the modules that use them).
@@ -752,6 +767,10 @@ pub struct Prices {
     pub core_pce: f64,
     #[serde(default)]
     pub core_pce_history: Vec<f64>,
+    /// rz21: the log of the policy rule's price index over the same index at a constant tariff wedge, one entry a month (empty unless
+    /// `rule_lookthrough` > 0). The 12-month change of this series is the part of the rule's inflation that the retail tariff wedge made.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rule_wedge_ln: Vec<f64>,
     pub hpi_history: Vec<f64>,
     pub wage_index: f64,
 }

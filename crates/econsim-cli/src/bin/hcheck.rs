@@ -1,6 +1,6 @@
 //! Invariant probe (fix-housing): `hcheck [seeds=16] [households=20000] [months=240]`. For each scenario (baseline,
 //! 10y term premium +100bp half-life 24m, policy pinned at 7% for 24m, policy +100bp for 12m) and each seed, runs the
-//! world month by month and calls `ledger::check_consistency` and `housing::check_invariants` after every month.
+//! world month by month and (rz21: a fifth scenario, a permanent 25% tariff) calls `ledger::check_consistency` and `housing::check_invariants` after every month.
 //! Prints failure counts per scenario and the first failure seen. Exits non-zero if any check fails.
 
 use econsim_core::housing::check_invariants;
@@ -51,6 +51,8 @@ fn main() {
         ("TP+100 hl24", at(Shock::TermPremium { tenor_idx: 3, bps: 100.0, half_life_months: 24.0 })),
         ("pinned 7% 24m", at(Shock::PolicyRate { rate: 0.07, months: 24 })),
         ("policy +100bp 12m", at(Shock::PolicyShift { bps: 100.0, months: 12 })),
+        // rz21: a permanent 25% tariff, which enters the retail wedge, the import shares, the efficiency wedge and the rule's look-through when those keys are on
+        ("tariff +25%", at(Shock::ImportTariff { pct: 25.0 })),
     ];
     let mut total_fail = 0usize;
     for (name, shocks) in &scenarios {

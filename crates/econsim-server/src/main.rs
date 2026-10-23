@@ -1599,6 +1599,36 @@ mod tests {
         }
     }
 
+    /// rz19: the tariff efficiency wedge's two keys are range-checked on the compare path; the off values and in-range values are accepted.
+    #[test]
+    fn rz19_keys_validation() {
+        let body = |k: &str, v: &str| format!(r#"{{"config":{{"n_households":1000,"{k}":{v}}}}}"#);
+        for (k, v) in [("tariff_tfp_loss", "-0.1"), ("tariff_tfp_loss", "2.5"), ("tariff_tfp_phase_in_months", "0.5"), ("tariff_tfp_phase_in_months", "121")] {
+            match parse_compare(body(k, v).as_bytes(), 0) {
+                Err(e) => assert!(e.message().starts_with(k), "{k}={v}: {}", e.message()),
+                Ok(_) => panic!("{k}={v} accepted"),
+            }
+        }
+        for (k, v) in [("tariff_tfp_loss", "0"), ("tariff_tfp_loss", "0.067"), ("tariff_tfp_loss", "2"), ("tariff_tfp_phase_in_months", "1"), ("tariff_tfp_phase_in_months", "60"), ("tariff_tfp_phase_in_months", "120")] {
+            assert!(parse_compare(body(k, v).as_bytes(), 0).is_ok(), "{k}={v} rejected");
+        }
+    }
+
+    /// rz21: the rule's look-through weight is range-checked on the compare path; the off value and in-range values are accepted.
+    #[test]
+    fn rz21_key_validation() {
+        let body = |k: &str, v: &str| format!(r#"{{"config":{{"n_households":1000,"{k}":{v}}}}}"#);
+        for v in ["-0.1", "1.5"] {
+            match parse_compare(body("rule_lookthrough", v).as_bytes(), 0) {
+                Err(e) => assert!(e.message().starts_with("rule_lookthrough"), "{v}: {}", e.message()),
+                Ok(_) => panic!("rule_lookthrough={v} accepted"),
+            }
+        }
+        for v in ["0", "0.5", "1"] {
+            assert!(parse_compare(body("rule_lookthrough", v).as_bytes(), 0).is_ok(), "rule_lookthrough={v} rejected");
+        }
+    }
+
     /// rz12: the perception stage counts are range-checked on the compare path; the off values and in-range values are accepted.
     #[test]
     fn rz12_keys_validation() {
