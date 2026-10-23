@@ -112,7 +112,10 @@ fn equity_risk_premium(w: &World) -> f64 {
 /// `sector_growth_extrapolation`. Dividends are the sector's regular payouts from firms, with bank dividends in
 /// OtherServices. Updates the per-sector state in `w.fund` (smoothed dividends, growth signal, q) and returns the
 /// total, Σ_s E_s. `seed_equity` = Some(E₀) on the first valuation: the sector dividends are backed out of E₀ so that
-/// month 1 keeps the seeded total (weights from this month's sector profits, or equal weights).
+/// month 1 keeps the seeded total (weights from this month's sector profits, or equal weights). R51-E: an active
+/// `Shock::SharePrices` multiplies each sector's value E_s by its wedge `ShockState::share_price_wedge` after E_s is formed
+/// (docs/DESIGN.md §12), so the value that reaches `sector_equity`, the Tobin's q and the Fund's NAV is the re-rated one while
+/// the dividends, the growth signal and the capitalisation rate stay the model's own.
 fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equity: f64) -> f64 {
     let cfg = &w.cfg;
     let lg = cfg.long_growth;
@@ -144,6 +147,8 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
     let news_weight = cfg.sector_productivity_news;
     let news_decay = cfg.sector_news_decay;
     let seeding = seed_equity >= 0.0;
+    // R51-E: the `SharePrices` shock's wedge on each sector's valuation (None, and never read below, unless one is active).
+    let wedge = w.shocks.share_price_wedge();
     let fund = &w.fund;
 
     // Dividends by sector: firms' regular payouts, plus the bank residual to OtherServices.
@@ -251,6 +256,13 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
         } else {
             12.0 * sd / bounded_cap(raw, cap_floor, cap_soft)
         };
+        // R51-E: a user share-price re-rating multiplies the model value after it is formed. Dividends (`sd`), the growth signal and
+        // the capitalisation rate above are untouched, so the shock is a level wedge on the price, not a change in earnings or rates
+        // (and it works the same in the 1/cap and the log-linear form, and where LOG_CAP_GUARD binds).
+        let e = match &wedge {
+            Some(wd) => e * wd[s],
+            None => e,
+        };
         sd_new[s] = if sd.is_finite() { sd } else { 0.0 };
         eq_new[s] = if e.is_finite() { e } else { 0.0 };
     }
@@ -273,7 +285,9 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
             // The normal q is a slow average of non-boom valuations (12-month half-life), frozen while a boom runs. It
             // is the reference that init::build_world rebases to, so one month's (or the unconverged early burn-in's)
             // valuation does not set it.
-            if !boom {
+            // R51-E: also frozen while a share-price re-rating is in force in the sector (the normal q is the model's own level).
+            let rerated = wedge.as_ref().map_or(false, |wd| wd[s] != 1.0);
+            if !boom && !rerated {
                 let nq = w.monetary.normal_q[s];
                 w.monetary.normal_q[s] = if nq > 0.0 { nq + NORMAL_Q_RATE * (q - nq) } else { q };
             }
@@ -359,4 +373,323 @@ pub fn revalue_fund_equity(w: &mut World, div_received: f64, special: f64) -> f6
     }
     w.fund.equity_value = equity;
     equity
+}
+
+#[cfg(test)]
+mod share_price_tests {
+    //! R51-E: the `SharePrices` shock, at the valuation step (tiny worlds) and through the whole month (paired worlds).
+    use super::*;
+    use crate::config::Config;
+    use crate::metrics::Metrics;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim::{self, Comparison, Scenario};
+    use std::sync::OnceLock;
+
+    // ---- the valuation step: one month from a common world, with the re-rating put into the shock state ----
+
+    const N: usize = 1500;
+    const SEEDS: [u64; 3] = [1, 2, 3];
+
+    fn cfg() -> Config {
+        Config { n_households: N, ..Config::default() }
+    }
+
+    static WORLDS: OnceLock<Vec<World>> = OnceLock::new();
+
+    /// The common world of each seed, built once for all the tests below (they clone it). Called from the test thread before any
+    /// parallel run: building a world uses rayon, so building it from inside a rayon worker (the seeds of `compare_with` run on
+    /// workers) while other workers wait for it would deadlock.
+    fn worlds() -> &'static Vec<World> {
+        WORLDS.get_or_init(|| SEEDS.iter().map(|&s| sim::common_world(&cfg(), s).0).collect())
+    }
+
+    fn common(seed: u64) -> sim::CommonWorld {
+        let worlds = WORLDS.get().expect("worlds() ran first");
+        (worlds[SEEDS.iter().position(|&s| s == seed).expect("a test seed")].clone(), None)
+    }
+
+    fn world(seed: u64) -> World {
+        worlds();
+        common(seed).0
+    }
+
+    /// A re-rating already in force, as `activate_due` leaves it (sector, log size now, monthly decay factor).
+    fn rerate(w: &mut World, sector: Option<usize>, log: f64, decay: f64) {
+        w.shocks.share_price_log.push((sector, log, decay));
+    }
+
+    #[test]
+    fn a_rerating_multiplies_one_sectors_value_and_leaves_dividends_growth_and_rates_alone() {
+        let t = Sector::Tech.idx();
+        for seed in SEEDS {
+            let mut base = world(seed);
+            let mut hit = base.clone();
+            rerate(&mut hit, Some(t), 0.2f64.ln(), 1.0);
+            sim::step(&mut base);
+            sim::step(&mut hit);
+            assert!(base.fund.sector_equity[t] > 0.0, "seed {seed}: Tech has a value");
+            // Everything before the valuation is the same in both worlds, so the gap is the wedge, to rounding.
+            let ratio = hit.fund.sector_equity[t] / base.fund.sector_equity[t];
+            assert!((ratio - 0.2).abs() < 1e-12, "seed {seed}: tech value ratio {ratio}");
+            for s in (0..N_SECTORS).filter(|&s| s != t) {
+                assert_eq!(hit.fund.sector_equity[s].to_bits(), base.fund.sector_equity[s].to_bits(), "seed {seed}: sector {s} must not move");
+            }
+            // Not touched: the smoothed dividends, the growth signals, the news, the premium and the discount rate.
+            assert_eq!(hit.fund.sector_smoothed_dividends, base.fund.sector_smoothed_dividends);
+            assert_eq!(hit.fund.sector_growth, base.fund.sector_growth);
+            assert_eq!(hit.fund.sector_news, base.fund.sector_news);
+            assert_eq!(hit.monetary.erp_current.to_bits(), base.monetary.erp_current.to_bits());
+            assert_eq!(hit.monetary.equity_long_rate, base.monetary.equity_long_rate);
+            // The total, the Fund's NAV and the share price follow the re-rated value.
+            let total: f64 = hit.fund.sector_equity.iter().sum();
+            assert!((hit.fund.equity_value - total).abs() <= 1e-9 * total);
+            assert!(hit.fund.equity_value < base.fund.equity_value && hit.fund.nav < base.fund.nav);
+            assert!(hit.fund.share_price < base.fund.share_price, "price {} vs {}", hit.fund.share_price, base.fund.share_price);
+            // The month's return carries the loss on the re-rated sector.
+            let (r, rb) = (*hit.monetary.equity_returns.last().unwrap(), *base.monetary.equity_returns.last().unwrap());
+            assert!(r < rb - 0.02, "return {r} vs {rb}");
+            crate::ledger::check_consistency(&hit).unwrap();
+        }
+    }
+
+    #[test]
+    fn a_rerating_of_all_sectors_scales_every_sector_and_tobins_q_follows() {
+        let mut base = world(1);
+        let mut hit = base.clone();
+        rerate(&mut hit, None, 0.7f64.ln(), 1.0);
+        sim::step(&mut base);
+        sim::step(&mut hit);
+        for s in 0..N_SECTORS {
+            let (a, b) = (hit.fund.sector_equity[s], base.fund.sector_equity[s]);
+            assert!(b > 0.0 && (a / b - 0.7).abs() < 1e-12, "sector {s}: {a} vs {b}");
+        }
+        // q is the equity over the replacement value, smoothed (q_signal_decay): it falls, by less than the equity does on impact.
+        let mut checked = 0;
+        for s in 0..N_SECTORS {
+            if base.fund.sector_q0[s] > 0.0 {
+                let (a, b) = (hit.fund.sector_q_rel[s], base.fund.sector_q_rel[s]);
+                assert!(a < b && a > 0.7 * b, "sector {s} q {a} vs {b}");
+                checked += 1;
+            }
+        }
+        assert!(checked >= 5, "q is set in {checked} sectors");
+    }
+
+    #[test]
+    fn a_world_without_a_rerating_is_bit_identical_and_a_zero_one_changes_nothing() {
+        let mut a = world(2);
+        let mut zero = a.clone();
+        // Scheduled and fired, but 0% and permanent: the wedge is exp(0) = 1 exactly in every month, so the worlds stay the same.
+        zero.shocks.schedule(ScheduledShock { at_month: zero.tick, shock: Shock::SharePrices { sector: None, pct: 0.0, half_life_months: 0.0 } });
+        for _ in 0..3 {
+            sim::step(&mut a);
+            sim::step(&mut zero);
+        }
+        assert!(a.shocks.share_price_wedge().is_none());
+        assert!(zero.shocks.share_price_wedge().is_some(), "the zero shock was active");
+        assert_eq!(serde_json::to_string(&a.history).unwrap(), serde_json::to_string(&zero.history).unwrap());
+        for s in 0..N_SECTORS {
+            assert_eq!(zero.fund.sector_equity[s].to_bits(), a.fund.sector_equity[s].to_bits(), "sector {s}");
+        }
+        assert_eq!(zero.fund.share_price.to_bits(), a.fund.share_price.to_bits());
+        assert_eq!(zero.fund.sector_q_rel, a.fund.sector_q_rel);
+    }
+
+    #[test]
+    fn the_normal_q_is_frozen_while_a_rerating_is_in_force_in_the_sector() {
+        let t = Sector::Tech.idx();
+        let mut tested = 0;
+        for seed in SEEDS {
+            let mut base = world(seed);
+            let before = base.monetary.normal_q;
+            let mut hit = base.clone();
+            rerate(&mut hit, Some(t), 0.2f64.ln(), 1.0);
+            let mut boom = false;
+            for _ in 0..6 {
+                sim::step(&mut base);
+                sim::step(&mut hit);
+                boom |= base.exog.tech_boom || hit.exog.tech_boom;
+            }
+            if boom {
+                continue; // a boom freezes the normal q in every sector, so there is nothing to tell apart
+            }
+            tested += 1;
+            // The re-rated sector's normal q is where it was; the others, not re-rated, are still moving with the valuations.
+            assert_eq!(hit.monetary.normal_q[t].to_bits(), before[t].to_bits(), "seed {seed}: frozen in the re-rated sector");
+            assert!((0..N_SECTORS).filter(|&s| s != t).any(|s| hit.monetary.normal_q[s] != before[s]), "seed {seed}: the other sectors move");
+            assert!(base.monetary.normal_q[t] != before[t], "seed {seed}: without the re-rating it moves");
+        }
+        assert!(tested > 0, "every test seed was in a boom: pick other seeds");
+    }
+
+    // ---- paired worlds: baseline and shocked arms from one common world ----
+
+    fn paired(shocks: Vec<ScheduledShock>, seeds: &[u64], months: u32) -> Comparison {
+        worlds();
+        let sc = Scenario { config: cfg(), shocks, months, seeds: seeds.to_vec() };
+        assert!(sc.config.sfc_enforce, "the stock-flow checks are on, so a bad month would stop the run");
+        sim::compare_with(&sc, &|seed| common(seed), &mut |_| {})
+    }
+
+    fn at(month: u32, shock: Shock) -> Vec<ScheduledShock> {
+        vec![ScheduledShock { at_month: month, shock }]
+    }
+
+    fn tech(pct: f64, hl: f64) -> Shock {
+        Shock::SharePrices { sector: Some(Sector::Tech.idx()), pct, half_life_months: hl }
+    }
+
+    fn all(pct: f64, hl: f64) -> Shock {
+        Shock::SharePrices { sector: None, pct, half_life_months: hl }
+    }
+
+    fn tech_equity(m: &Metrics) -> f64 {
+        m.equity_value_by_sector[Sector::Tech.idx()]
+    }
+
+    #[test]
+    fn tech_minus_80_permanent_takes_80_percent_off_tech_on_impact_against_the_paired_baseline() {
+        for seed in SEEDS {
+            let c = paired(at(0, tech(-80.0, 0.0)), &[seed], 6);
+            // Impact month. Nothing before the valuation step of that month differs between the arms (households decide
+            // on last month's price), so the gap is the wedge alone: 1 + pct/100 = 0.2, and exp(ln 0.2) differs from 0.2 by
+            // a rounding error. 1e-9 is a bound on rounding, not on economics.
+            let ratio = tech_equity(&c.shocked[0]) / tech_equity(&c.baseline[0]);
+            assert!((ratio - 0.2).abs() < 1e-9, "seed {seed}: tech value ratio on impact {ratio}");
+            // Every other sector is the same on impact, bit for bit.
+            for s in (0..N_SECTORS).filter(|&s| s != Sector::Tech.idx()) {
+                assert_eq!(c.shocked[0].equity_value_by_sector[s].to_bits(), c.baseline[0].equity_value_by_sector[s].to_bits(), "sector {s}");
+            }
+            // The Fund and its price fall by Tech's share of the Fund, so by less than 80%.
+            let drop = 1.0 - c.shocked[0].fund_share_price / c.baseline[0].fund_share_price;
+            assert!(drop > 0.02 && drop < 0.8, "seed {seed}: the Fund's price fell {drop}");
+        }
+    }
+
+    #[test]
+    fn the_gap_follows_the_half_life_and_the_permanent_gap_holds() {
+        // A 3-month half-life: half of the jump is left after three months, a quarter after six. After the impact month the
+        // economy answers (dividends, the premium), so the world's gap is the wedge plus a feedback term that grows with
+        // the horizon. Measured, in log points: at most 0.02 through month 6 on the seeds below (0.04 on seeds 1-4 at 5,000
+        // households), and larger later (0.05 by month 8 at 1,500 households, up to 0.25 at 5,000 households by month 14),
+        // which is why the horizon is six months and the bound 0.06 (the half-life separates the cases by 0.8). The decay
+        // rate itself is exact in `shocks::tests::share_price_gap_decays_with_its_half_life`.
+        let l = 0.2f64.ln();
+        for seed in SEEDS {
+            let decaying = paired(at(0, tech(-80.0, 3.0)), &[seed], 8);
+            let permanent = paired(at(0, tech(-80.0, 0.0)), &[seed], 8);
+            let gap = |c: &Comparison, k: usize| (tech_equity(&c.shocked[k]) / tech_equity(&c.baseline[k])).ln();
+            assert!((gap(&decaying, 0) - l).abs() < 1e-9, "impact");
+            assert!((gap(&permanent, 0) - l).abs() < 1e-9, "impact");
+            for k in 0..=6usize {
+                let want = l * 0.5f64.powf(k as f64 / 3.0);
+                assert!((gap(&decaying, k) - want).abs() < 0.06, "seed {seed} k {k}: gap {} want {want}", gap(&decaying, k));
+                assert!((gap(&permanent, k) - l).abs() < 0.06, "seed {seed} k {k}: permanent gap {} want {l}", gap(&permanent, k));
+            }
+            // At one half-life the decaying gap is about half the permanent one: far from both the full jump and zero.
+            let (d3, p3) = (gap(&decaying, 3), gap(&permanent, 3));
+            assert!(d3 / p3 > 0.35 && d3 / p3 < 0.65, "seed {seed}: {d3} / {p3}");
+            for k in 1..=6usize {
+                assert!(gap(&decaying, k) > gap(&decaying, k - 1) - 0.03, "seed {seed} k {k}: the gap closes");
+            }
+        }
+    }
+
+    #[test]
+    fn a_shock_leaves_every_month_before_it_unchanged() {
+        let c = paired(at(5, all(-50.0, 0.0)), &[1], 9);
+        for k in 0..5 {
+            let (a, b) = (serde_json::to_string(&c.baseline[k]).unwrap(), serde_json::to_string(&c.shocked[k]).unwrap());
+            assert_eq!(a, b, "month {k} is before the shock");
+        }
+        assert!(tech_equity(&c.shocked[5]) < 0.6 * tech_equity(&c.baseline[5]));
+    }
+
+    #[test]
+    fn an_unused_share_price_input_moves_no_draw() {
+        // 0% (a wedge of exp(0) = 1) and a shock that is scheduled after the run both leave every record of the shocked arm
+        // equal to the baseline's, byte for byte (the arms share every random draw).
+        for shocks in [at(0, all(0.0, 12.0)), at(0, tech(0.0, 0.0)), at(500, all(-80.0, 0.0))] {
+            let c = paired(shocks.clone(), &[1, 2], 6);
+            assert_eq!(serde_json::to_string(&c.baseline).unwrap(), serde_json::to_string(&c.shocked).unwrap(), "{shocks:?}");
+        }
+        // And a run with no shocks at all is the baseline of one with a share-price shock: the baseline arm is the same either way.
+        let with = paired(at(0, all(-30.0, 0.0)), &[1], 6);
+        let without = paired(Vec::new(), &[1], 6);
+        assert_eq!(serde_json::to_string(&with.baseline).unwrap(), serde_json::to_string(&without.baseline).unwrap());
+    }
+
+    #[test]
+    fn share_price_runs_are_deterministic_and_do_not_depend_on_the_thread_count() {
+        worlds();
+        let sc = at(2, all(-40.0, 12.0));
+        let a = serde_json::to_string(&paired(sc.clone(), &[1, 2], 8)).unwrap();
+        let b = serde_json::to_string(&paired(sc.clone(), &[1, 2], 8)).unwrap();
+        assert_eq!(a, b, "the same request twice");
+        for threads in [1usize, 4] {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+            let c = pool.install(|| serde_json::to_string(&paired(sc.clone(), &[1, 2], 8)).unwrap());
+            assert_eq!(a, c, "{threads} threads");
+        }
+    }
+
+    /// The first-year sum of a monthly series over seeds' mean, shocked minus baseline.
+    fn year_gap(c: &Comparison, f: impl Fn(&Metrics) -> f64) -> f64 {
+        c.shocked.iter().zip(&c.baseline).take(12).map(|(s, b)| f(s) - f(b)).sum()
+    }
+
+    #[test]
+    fn a_fall_lowers_wealth_spending_and_tech_investment_and_raises_the_premium() {
+        let c = paired(at(0, all(-30.0, 0.0)), &SEEDS, 14);
+        // Consumption: nothing on impact (households decided on last month's price), then lower over the year.
+        assert_eq!(c.shocked[0].consumption_real_bn_ar.to_bits(), c.baseline[0].consumption_real_bn_ar.to_bits());
+        let cons = year_gap(&c, |m| m.consumption_real_bn_ar);
+        assert!(cons < 0.0, "first-year real consumption gap {cons} (annual-rate $bn summed over months)");
+        // The Fund's price is down on impact and through the year; the 12-month return is deeply negative.
+        assert!(c.shocked[0].fund_share_price < 0.9 * c.baseline[0].fund_share_price);
+        assert!((1..12).all(|k| c.shocked[k].fund_share_price < c.baseline[k].fund_share_price));
+        assert!(c.shocked[3].equity_return_12m < c.baseline[3].equity_return_12m - 20.0);
+        // The risk premium rises through the extrapolative term (returns below the anchor), after the impact month.
+        assert_eq!(c.shocked[0].equity_risk_premium.to_bits(), c.baseline[0].equity_risk_premium.to_bits());
+        assert!((2..9).all(|k| c.shocked[k].equity_risk_premium > c.baseline[k].equity_risk_premium), "premium");
+        // Tobin's q of Tech falls, and with it Tech's investment (the sector with a q sensitivity, `investment_q_sens`).
+        assert!(c.shocked[6].obs.sector_q[Sector::Tech.idx()] < c.baseline[6].obs.sector_q[Sector::Tech.idx()]);
+        let tinv = year_gap(&c, |m| m.tech_investment_bn_ar);
+        assert!(tinv < 0.0, "first-year Tech investment gap {tinv}");
+        assert!(c.shocked[11].tech_investment_bn_ar < c.baseline[11].tech_investment_bn_ar);
+        // Total real investment is lower over the year (Tech's cut and the weaker demand).
+        let inv = year_gap(&c, |m| m.investment_real_bn_ar);
+        assert!(inv < 0.0, "first-year real investment gap {inv}");
+    }
+
+    #[test]
+    fn a_rise_moves_the_same_channels_the_other_way() {
+        let c = paired(at(0, all(100.0, 0.0)), &SEEDS, 14);
+        assert!(c.shocked[0].fund_share_price > 1.3 * c.baseline[0].fund_share_price);
+        let cons = year_gap(&c, |m| m.consumption_real_bn_ar);
+        assert!(cons > 0.0, "first-year real consumption gap {cons}");
+        let tinv = year_gap(&c, |m| m.tech_investment_bn_ar);
+        assert!(tinv > 0.0, "first-year Tech investment gap {tinv}");
+        assert!((2..9).all(|k| c.shocked[k].equity_risk_premium < c.baseline[k].equity_risk_premium), "premium");
+    }
+
+    #[test]
+    fn the_stock_flow_checks_hold_and_no_month_is_stopped_at_tech_minus_80_or_all_minus_50() {
+        // `paired` asserts sfc_enforce is on: a month that broke an identity would panic and stop the run. Both cases also run
+        // through a manual world, with the full ledger check after every month, and every record carries sfc_error 0.
+        for (label, shock) in [("tech -80%", tech(-80.0, 0.0)), ("all -50%", all(-50.0, 0.0)), ("tech -80%, hl 24", tech(-80.0, 24.0))] {
+            let c = paired(at(0, shock.clone()), &SEEDS, 24);
+            assert_eq!(c.shocked.len(), 24, "{label}: the run was cut short");
+            assert!(c.shocked.iter().chain(&c.baseline).all(|m| m.sfc_error == 0.0), "{label}: sfc_error");
+            assert!(c.shocked.iter().all(|m| m.fund_share_price.is_finite() && m.fund_share_price > 0.0), "{label}: Fund price");
+            worlds();
+            let (mut w, _) = common(1);
+            w.shocks.schedule(ScheduledShock { at_month: w.tick, shock });
+            for k in 0..24 {
+                sim::step(&mut w);
+                crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("{label}, month {k}: {e}"));
+            }
+            assert!(w.fund.share_price.is_finite() && w.fund.share_price > 0.0);
+        }
+    }
 }

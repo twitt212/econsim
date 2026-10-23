@@ -49,6 +49,13 @@ pub enum Shock {
     /// Force a technology boom (exog::step: Tech and adopter productivity growth up, sector equity re-rated) for
     /// `months` months, whether or not the Markov regime is enabled.
     TechBoom { months: u32 },
+    /// R51-E: re-rate share prices. The equity valuation of one sector (`Sector::ALL` order 0-8) or of all sectors (None) jumps by
+    /// ln(1 + pct/100) on impact (-80 gives a fall of 80%), and the jump decays with the given half-life (0 = permanent), as `Dollar` and
+    /// `OilPrice` do. It acts in `equity::value_sectors` as a multiplicative wedge on each sector's model value, after the valuation:
+    /// dividends, the growth signal, the discount rate and the premium are not touched, so the earnings, rate and risk-premium channels
+    /// keep working underneath, and the re-rating reaches the Fund's NAV and share price (households' wealth and spending), Tobin's q
+    /// (investment) and the 12-month return that feeds the risk premium.
+    SharePrices { sector: Option<usize>, pct: f64, half_life_months: f64 },
     /// b8-world: the bloc's policy rate held `bps` above its rule for `months` months, through the pin table of the bloc's
     /// solution (spec 1.6). `bloc` is one of EA, CN, JP, UK, CA, MX, IN, KR, BR, AU, OPEC+, RoW. Ignored when the block is off.
     BlocPolicy { bloc: String, bps: f64, months: u32 },
@@ -160,6 +167,22 @@ impl Shock {
                 fin(*pct) && *pct > -90.0 && *pct <= 300.0 && fin(*half_life_months) && *half_life_months >= 0.0,
                 "Dollar: pct in (-90, 300] and half_life_months >= 0",
             ),
+            Shock::SharePrices { sector, pct, half_life_months } => {
+                // One message per field, with the value received, so a refused request says what to change.
+                if let Some(s) = sector.filter(|&s| s >= N_SECTORS) {
+                    return Err(format!(
+                        "SharePrices: sector must be null (all sectors) or 0 to 8 (0 Energy, 1 Food, 2 DurableGoods, 3 NondurableGoods, 4 Tech, \
+                         5 LeisureHospitality, 6 HealthEducation, 7 OtherServices, 8 Construction), got {s}"
+                    ));
+                }
+                if !(fin(*pct) && *pct > -95.0 && *pct <= 300.0) {
+                    return Err(format!("SharePrices: pct (the change in share prices, in percent) must be above -95 and at most 300, got {pct}"));
+                }
+                if !(fin(*half_life_months) && *half_life_months >= 0.0) {
+                    return Err(format!("SharePrices: half_life_months must be 0 (permanent) or more, got {half_life_months}"));
+                }
+                Ok(())
+            }
             Shock::MbsQE { monthly_face_pct_gdp, months } => ok(
                 fin(*monthly_face_pct_gdp) && monthly_face_pct_gdp.abs() <= 10.0 && *months >= 1,
                 "MbsQE: |monthly_face_pct_gdp| <= 10, months >= 1",
@@ -259,10 +282,18 @@ pub struct ShockState {
     /// Forced tech boom active while tick < this value (0 = none).
     #[serde(default)]
     pub tech_boom_until: u32,
+    /// R51-E: active share-price re-ratings, one entry per `SharePrices` shock: (sector or None for all, log jump now, monthly decay
+    /// factor; 1 = permanent). `activate_due` decays each entry once a month and drops the ones that have run out; empty unless a
+    /// `SharePrices` shock has fired, so a run without one never reads it.
+    #[serde(default)]
+    pub share_price_log: Vec<(Option<usize>, f64, f64)>,
     /// b8-world: bloc shocks that fired, with their firing month (the block takes each one once, in `world::step`).
     #[serde(default)]
     pub world_shocks: Vec<(Shock, u32)>,
 }
+
+/// A decaying share-price re-rating is dropped once its log size is below this (about 1e-9 of a percent).
+const SHARE_LOG_EPS: f64 = 1e-11;
 
 fn decay_for(half_life: f64) -> f64 {
     if half_life <= 0.0 {
@@ -284,6 +315,13 @@ impl ShockState {
         self.dollar_log_shock *= if self.dollar_decay == 0.0 { 1.0 } else { self.dollar_decay };
         for i in 0..N_TENORS {
             self.term_premium[i] *= if self.tp_decay[i] == 0.0 { 1.0 } else { self.tp_decay[i] };
+        }
+        // R51-E: each share-price re-rating decays by its own factor (an exhausted one is dropped).
+        if !self.share_price_log.is_empty() {
+            for c in self.share_price_log.iter_mut() {
+                c.1 *= c.2;
+            }
+            self.share_price_log.retain(|c| c.2 >= 1.0 || c.1.abs() > SHARE_LOG_EPS);
         }
         let due: Vec<ScheduledShock> = self
             .schedule
@@ -355,6 +393,10 @@ impl ShockState {
                 }
                 Shock::TechBoom { months } => {
                     self.tech_boom_until = self.tech_boom_until.max(tick + months);
+                }
+                Shock::SharePrices { sector, pct, half_life_months } => {
+                    let jump = (1.0 + pct / 100.0).max(0.01).ln();
+                    self.share_price_log.push((*sector, jump, decay_for(*half_life_months)));
                 }
                 Shock::BlocPolicy { .. } | Shock::BlocDemand { .. } | Shock::GlobalDemand { .. } | Shock::Tariff { .. }
                 | Shock::OilSupply { .. } | Shock::OpecCut { .. } | Shock::RiskOff { .. } | Shock::UsCredibility { .. } | Shock::OfficialTreasury { .. } => {
@@ -467,6 +509,23 @@ impl ShockState {
             })
             .unwrap_or(0.0)
     }
+    /// R51-E: the multiplicative wedge on each sector's equity valuation from the active `SharePrices` shocks, exp of the sum of their
+    /// current log sizes (Sector::ALL order). `None` when no re-rating is active, which is every run without one: the valuation then
+    /// takes its unchanged path.
+    pub fn share_price_wedge(&self) -> Option<[f64; N_SECTORS]> {
+        if self.share_price_log.is_empty() {
+            return None;
+        }
+        let mut log = [0.0; N_SECTORS];
+        for &(sector, l, _) in &self.share_price_log {
+            match sector {
+                Some(s) if s < N_SECTORS => log[s] += l,
+                Some(_) => {}
+                None => log.iter_mut().for_each(|x| *x += l),
+            }
+        }
+        Some(log.map(f64::exp))
+    }
     /// Log shift of the dollar target from active `Dollar` shocks.
     pub fn dollar_log(&self) -> f64 {
         self.dollar_log_shock
@@ -572,5 +631,155 @@ mod tests {
         assert!(eased.credit_spread_add_tail(9, 9.0) > eased.credit_spread_add_tail(3, 9.0), "decaying towards zero");
         let none = ShockState::default();
         assert_eq!(none.credit_spread_add_tail(5, 9.0), 0.0);
+    }
+
+    // ---- R51-E: SharePrices ----
+
+    fn share_prices(sector: Option<usize>, pct: f64, half_life_months: f64) -> Shock {
+        Shock::SharePrices { sector, pct, half_life_months }
+    }
+
+    #[test]
+    fn share_prices_validation_at_and_past_each_bound() {
+        let bad = |s: Shock| s.validate().expect_err("out of range was accepted");
+        // pct in (-95, 300]: the lower bound is open, the upper closed.
+        assert!(share_prices(None, -94.999, 0.0).validate().is_ok());
+        assert!(share_prices(None, 300.0, 0.0).validate().is_ok());
+        assert!(share_prices(None, 0.0, 0.0).validate().is_ok());
+        for pct in [-95.0, -95.001, -100.0, 300.001, 1000.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let e = bad(share_prices(None, pct, 0.0));
+            assert!(e.starts_with("SharePrices: pct") && e.contains("above -95 and at most 300") && e.ends_with(&format!("got {pct}")), "{pct}: {e}");
+        }
+        // half_life_months >= 0 (0 = permanent), finite.
+        assert!(share_prices(None, -30.0, 0.0).validate().is_ok());
+        assert!(share_prices(None, -30.0, 1e-9).validate().is_ok());
+        assert!(share_prices(None, -30.0, 600.0).validate().is_ok());
+        for hl in [-1e-9, -1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let e = bad(share_prices(None, -30.0, hl));
+            assert!(e.starts_with("SharePrices: half_life_months must be 0 (permanent) or more"), "{hl}: {e}");
+        }
+        // sector null or 0-8.
+        assert!(share_prices(None, -30.0, 0.0).validate().is_ok());
+        for s in 0..N_SECTORS {
+            assert!(share_prices(Some(s), -30.0, 0.0).validate().is_ok(), "sector {s}");
+        }
+        for s in [N_SECTORS, N_SECTORS + 1, 99, usize::MAX] {
+            let e = bad(share_prices(Some(s), -30.0, 0.0));
+            assert!(e.starts_with("SharePrices: sector must be null (all sectors) or 0 to 8") && e.contains("4 Tech") && e.ends_with(&format!("got {s}")), "{s}: {e}");
+        }
+        // parse_schedule applies the same bounds to a shock file.
+        let ok = r#"[{"at_month":2,"shock":{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}}]"#;
+        assert_eq!(parse_schedule(ok).unwrap()[0].shock, share_prices(Some(4), -80.0, 24.0));
+        let past = ok.replace("-80", "-95");
+        assert!(parse_schedule(&past).unwrap_err().contains("entry 0: SharePrices"), "{past}");
+    }
+
+    #[test]
+    fn share_prices_json_uses_the_plain_name_and_a_missing_sector_means_all() {
+        let all: Shock = serde_json::from_str(r#"{"type":"SharePrices","pct":-30,"half_life_months":0}"#).unwrap();
+        assert_eq!(all, share_prices(None, -30.0, 0.0));
+        let one: Shock = serde_json::from_str(r#"{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}"#).unwrap();
+        assert_eq!(one, share_prices(Some(4), -80.0, 24.0));
+        let text = serde_json::to_string(&one).unwrap();
+        assert!(text.contains(r#""type":"SharePrices""#) && text.contains(r#""sector":4"#), "{text}");
+        assert!(serde_json::from_str::<Shock>(r#"{"type":"SharePrices","sector":"tech","pct":-80,"half_life_months":0}"#).is_err());
+    }
+
+    fn fire(st: &mut ShockState, at: u32, s: Shock) {
+        st.schedule(ScheduledShock { at_month: at, shock: s });
+    }
+
+    #[test]
+    fn share_price_wedge_is_none_until_a_shock_fires_and_never_before_its_month() {
+        let mut st = ShockState::default();
+        fire(&mut st, 3, share_prices(Some(4), -80.0, 0.0));
+        for t in 0..3u32 {
+            st.activate_due(t);
+            assert_eq!(st.share_price_wedge(), None, "t {t}");
+        }
+        st.activate_due(3);
+        assert!(st.share_price_wedge().is_some());
+        assert!(ShockState::default().share_price_wedge().is_none());
+    }
+
+    #[test]
+    fn share_price_jump_is_ln_of_one_plus_pct_on_impact_and_permanent_without_a_half_life() {
+        let mut st = ShockState::default();
+        fire(&mut st, 2, share_prices(Some(4), -80.0, 0.0));
+        for t in 0..60u32 {
+            st.activate_due(t);
+            if t < 2 {
+                continue;
+            }
+            let w = st.share_price_wedge().unwrap();
+            // exp(ln(0.2)) is 0.2 to rounding, every month, with no decay.
+            assert!((w[4] - 0.2).abs() < 1e-15, "t {t}: {}", w[4]);
+            for s in (0..N_SECTORS).filter(|&s| s != 4) {
+                assert_eq!(w[s], 1.0, "t {t} sector {s}: a one-sector shock leaves the others alone");
+            }
+        }
+        // +300% is the upper bound: a factor of 4.
+        let mut up = ShockState::default();
+        fire(&mut up, 0, share_prices(None, 300.0, 0.0));
+        up.activate_due(0);
+        assert!(up.share_price_wedge().unwrap().iter().all(|&x| (x - 4.0).abs() < 1e-14));
+    }
+
+    #[test]
+    fn share_price_gap_decays_with_its_half_life() {
+        for hl in [1.0, 3.0, 12.0, 24.0] {
+            let mut st = ShockState::default();
+            fire(&mut st, 5, share_prices(None, -80.0, hl));
+            let l = 0.2f64.ln();
+            for t in 5..120u32 {
+                st.activate_due(t);
+                let k = (t - 5) as f64;
+                // The log size is ln(0.2) x 0.5^(k / hl): half of it one half-life after impact.
+                let want = l * 0.5f64.powf(k / hl);
+                match st.share_price_wedge() {
+                    Some(w) => assert!((w[4].ln() - want).abs() < 1e-12, "hl {hl} k {k}: {} vs {want}", w[4].ln()),
+                    None => assert!(want.abs() < 1e-10, "hl {hl} k {k}: dropped while still {want}"),
+                }
+            }
+            let mut half = ShockState::default();
+            fire(&mut half, 0, share_prices(None, -80.0, hl));
+            for t in 0..=(hl as u32) {
+                half.activate_due(t);
+            }
+            let at_hl = half.share_price_wedge().unwrap()[0].ln();
+            assert!((at_hl - l / 2.0).abs() < 1e-12, "hl {hl}: log at k = hl is {at_hl}, half of {l}");
+        }
+    }
+
+    #[test]
+    fn share_price_shocks_stack_each_on_its_own_decay_and_run_out() {
+        let mut st = ShockState::default();
+        fire(&mut st, 0, share_prices(Some(4), -50.0, 0.0));
+        fire(&mut st, 0, share_prices(None, 100.0, 6.0));
+        fire(&mut st, 12, share_prices(Some(4), -50.0, 12.0));
+        for t in 0..=12u32 {
+            st.activate_due(t);
+        }
+        let w = st.share_price_wedge().unwrap();
+        let tech = 0.5f64.ln() + 2.0f64.ln() * 0.5f64.powf(12.0 / 6.0) + 0.5f64.ln();
+        let other = 2.0f64.ln() * 0.5f64.powf(12.0 / 6.0);
+        assert!((w[4].ln() - tech).abs() < 1e-12, "{} vs {tech}", w[4].ln());
+        assert!((w[1].ln() - other).abs() < 1e-12);
+        // A decaying shock is dropped once it is negligible; a permanent one stays.
+        for t in 13..2000u32 {
+            st.activate_due(t);
+        }
+        assert_eq!(st.share_price_log.len(), 1, "only the permanent one is left: {:?}", st.share_price_log);
+        assert!((st.share_price_wedge().unwrap()[4] - 0.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn a_tiny_half_life_acts_on_impact_only() {
+        let mut st = ShockState::default();
+        fire(&mut st, 0, share_prices(None, -50.0, 1e-9));
+        st.activate_due(0);
+        assert!((st.share_price_wedge().unwrap()[0] - 0.5).abs() < 1e-15);
+        st.activate_due(1);
+        assert_eq!(st.share_price_wedge(), None, "gone after one month, no NaN");
     }
 }

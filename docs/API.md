@@ -36,7 +36,8 @@ type Shock =
   | { type: "CreditSpread"; bps: number; months: number }
   | { type: "Productivity"; sector: number | null; pct: number }   // 0 Energy 1 Food 2 Goods 3 Services 4 Construction
   | { type: "ImportTariff"; pct: number }
-  | { type: "Dollar"; pct: number; half_life_months: number };  // shifts the dollar target by ln(1 + pct/100); 0 = permanent
+  | { type: "Dollar"; pct: number; half_life_months: number }   // shifts the dollar target by ln(1 + pct/100); 0 = permanent
+  | { type: "SharePrices"; sector: number | null; pct: number; half_life_months: number };  // re-rates share prices, see "SharePrices" below
 ```
 
 Errors: HTTP 4xx/5xx with `{ "error": string }`. CORS is open (`*`). Long computations run on a blocking thread pool.
@@ -52,6 +53,46 @@ A config whose bounds are out of order where the run uses them (`u_star_min` abo
 panic in the run.
 Creating a world with 20k households and burn-in takes a few seconds; `/api/compare` with 4 seeds × 60 months may take
 10–30 s.
+
+## SharePrices: a share-price input
+
+`{ "type": "SharePrices", "sector": 4, "pct": -80, "half_life_months": 24 }` re-rates share prices. It is for questions such as "the tech
+bubble bursts, down 80%" or "the market falls 30%". It is a `Shock`, so it goes in `shocks` of `POST /api/compare` and in the body of
+`POST /api/sims/:id/shocks` like the others (`at_month` as usual).
+
+| Field | Type | Meaning | Allowed range |
+|---|---|---|---|
+| `sector` | number or `null` (may be left out) | One sector, in the order 0 Energy, 1 Food, 2 DurableGoods, 3 NondurableGoods, 4 Tech, 5 LeisureHospitality, 6 HealthEducation, 7 OtherServices, 8 Construction. `null`: every sector | `null`, or 0 to 8 |
+| `pct` | number | Change in the sector's equity valuation on impact, in percent: `-80` is a fall of 80%. The log value jumps by ln(1 + pct/100) | above -95, up to and including 300 |
+| `half_life_months` | number | The jump decays with this half-life, as `Dollar` and `OilPrice` do: after one half-life half of it (in logs) is left. `0` is permanent | 0 or more |
+
+- **What it does.** The shock multiplies each sector's equity valuation (`equity_value_by_sector`) by exp(jump), after the model has valued the
+  sector from its dividends, rates and the equity risk premium. Dividends, the earnings growth signal, the discount rate and the premium are
+  not touched, so the shock changes the price relative to earnings and nothing else directly. The model's own channels carry it on: the Fund's
+  value and share price (`fund_share_price`, households' wealth, and through it consumption, house purchases and the capital-gains tax), Tobin's q and
+  Tech's investment, the 12-month return (`equity_return_12m`) and so the equity risk premium (`equity_risk_premium`), and the Fund's cash
+  and bond holdings, which the Fund keeps at a share of its value. Households decide on last month's price, so consumption does not move
+  in the month of impact.
+- **Several at once.** Each shock keeps its own half-life; their log sizes add (a permanent -50% on Tech with a permanent +100% on all sectors leaves Tech where it was).
+- **Unused.** A request without the shock, or with one that fires after the run ends, runs exactly as before: no draw and no record changes.
+- **Errors.** Out of range answers 400 with one message for the first field that is wrong, naming it and the value received:
+  `SharePrices: pct (the change in share prices, in percent) must be above -95 and at most 300, got -100`,
+  `SharePrices: half_life_months must be 0 (permanent) or more, got -3`, or
+  `SharePrices: sector must be null (all sectors) or 0 to 8 (0 Energy, ... 8 Construction), got 9` (the message lists the nine sectors). A sector
+  written as a name is a 400 `invalid JSON body: invalid type: string "tech", expected usize` from the parser. On a live economy a refused shock
+  is not scheduled.
+- **Example.**
+
+```sh
+curl -s -X POST 'http://localhost:8787/api/compare?fields=equity_value_by_sector,fund_share_price,equity_risk_premium,consumption_real_bn_ar' \
+  -H 'content-type: application/json' \
+  -d '{"config":{"n_households":5000},"shocks":[{"at_month":0,"shock":{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}}],"months":36,"seeds":[1]}'
+```
+
+**Release.** In this repository the input is on the branch `feat/share-prices`. It would ship as the release after `v2026.10.21`
+(by the date scheme `v2026.10.22`, if it is tagged that day; the tag, and the version in `CITATION.cff` and the README's citation line,
+are the owner's to set). It changes no default: the default and the legacy-profile fingerprints in the README are unchanged
+(`6a56affe5fa25d7fcf1fa0ba7197234e` and `9f90c88a2c8b653857029d235cd6b0a6` on macOS, at `RAYON_NUM_THREADS=1` and `8`).
 
 ## POST /api/compare: caching, concurrency and pre-warm
 

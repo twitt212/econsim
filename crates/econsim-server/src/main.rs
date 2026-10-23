@@ -1401,6 +1401,88 @@ mod tests {
         assert!(parse_compare(legacy.as_bytes(), 0).is_ok(), "the legacy ImportTariff must still pass");
     }
 
+    /// R51-E: a `SharePrices` shock passes on `/api/compare` at its bounds, and past them is refused with 400 and a message that names the
+    /// shock, the field and the value received (a sector given as a name, not a number, is the usual invalid-body 400).
+    #[test]
+    fn share_prices_shock_is_validated_on_compare() {
+        let body = |shock: &str| {
+            format!(r#"{{"config":{{"n_households":1000}},"shocks":[{{"at_month":0,"shock":{shock}}}],"months":3,"seeds":[1]}}"#)
+        };
+        for ok in [
+            r#"{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}"#,
+            r#"{"type":"SharePrices","sector":null,"pct":-94.9,"half_life_months":0}"#,
+            r#"{"type":"SharePrices","pct":300,"half_life_months":0}"#,
+            r#"{"type":"SharePrices","sector":8,"pct":-30,"half_life_months":600}"#,
+        ] {
+            assert!(parse_compare(body(ok).as_bytes(), 0).is_ok(), "refused {ok}");
+        }
+        for (bad, says) in [
+            (r#"{"type":"SharePrices","sector":4,"pct":-95,"half_life_months":0}"#, "SharePrices: pct (the change in share prices, in percent) must be above -95 and at most 300, got -95"),
+            (r#"{"type":"SharePrices","sector":4,"pct":300.1,"half_life_months":0}"#, "must be above -95 and at most 300, got 300.1"),
+            (r#"{"type":"SharePrices","sector":9,"pct":-30,"half_life_months":0}"#, "SharePrices: sector must be null (all sectors) or 0 to 8"),
+            (r#"{"type":"SharePrices","sector":null,"pct":-30,"half_life_months":-0.5}"#, "SharePrices: half_life_months must be 0 (permanent) or more, got -0.5"),
+        ] {
+            match parse_compare(body(bad).as_bytes(), 0) {
+                Err(ApiError::BadRequest(m)) => assert!(m.contains(says), "{m}"),
+                _ => panic!("accepted {bad}"),
+            }
+        }
+        match parse_compare(body(r#"{"type":"SharePrices","sector":"tech","pct":-80,"half_life_months":0}"#).as_bytes(), 0) {
+            Err(ApiError::BadRequest(m)) => assert!(m.starts_with("invalid JSON body:"), "{m}"),
+            _ => panic!("a sector given as a name was accepted"),
+        }
+    }
+
+    /// R51-E: `/api/compare` runs a `SharePrices` shock: on impact Tech's value is 20% of the baseline's at -80%, the other sectors are
+    /// unchanged, and the answer is cached and identical on a second request.
+    #[tokio::test]
+    async fn compare_runs_a_share_price_shock() {
+        let st = state(64 << 20);
+        let req = r#"{"config":{"n_households":1000},"shocks":[{"at_month":0,"shock":{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":0}}],"months":3,"seeds":[1]}"#;
+        let (first, a) = call(&st, req).await;
+        let (second, b) = call(&st, req).await;
+        assert_eq!((first.as_str(), second.as_str()), ("miss", "hit"));
+        assert_eq!(a, b);
+        let v: Value = serde_json::from_slice(&a).unwrap();
+        let (b0, s0) = (&v["baseline"][0]["equity_value_by_sector"], &v["shocked"][0]["equity_value_by_sector"]);
+        let ratio = s0[4].as_f64().unwrap() / b0[4].as_f64().unwrap();
+        assert!((ratio - 0.2).abs() < 1e-9, "tech value ratio {ratio}");
+        assert_eq!(s0[0], b0[0], "another sector moved");
+    }
+
+    /// R51-E: a live economy takes a `SharePrices` shock on `/api/sims/:id/shocks`, validates it, and re-rates Tech in the month it fires.
+    #[tokio::test]
+    async fn live_economy_takes_a_share_price_shock() {
+        let st = state(0);
+        let id = live_sim(&st);
+        let twin = fork_sim(State(st.clone()), Path(id.clone())).await.unwrap().0.id;
+        let bad = add_shock(
+            State(st.clone()),
+            Path(id.clone()),
+            Bytes::from_static(br#"{"shock":{"type":"SharePrices","sector":4,"pct":-100,"half_life_months":0}}"#),
+        )
+        .await;
+        match bad {
+            Err(ApiError::BadRequest(m)) => assert!(m.contains("SharePrices: pct") && m.contains("above -95 and at most 300, got -100"), "{m}"),
+            _ => panic!("pct -100 was accepted"),
+        }
+        let info = add_shock(
+            State(st.clone()),
+            Path(id.clone()),
+            Bytes::from_static(br#"{"shock":{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":12}}"#),
+        )
+        .await
+        .unwrap();
+        assert_eq!(info.0.pending_shocks.len(), 1, "the refused one was not scheduled");
+        let mut tech = Vec::new();
+        for who in [&id, &twin] {
+            let resp = step_sim(State(st.clone()), Path(who.clone()), Query(HashMap::new()), Bytes::from_static(br#"{"months":1}"#)).await.unwrap();
+            let v: Value = serde_json::from_slice(&to_bytes(resp.into_body(), usize::MAX).await.unwrap()).unwrap();
+            tech.push(v["metrics"][0]["equity_value_by_sector"][4].as_f64().unwrap());
+        }
+        assert!((tech[0] / tech[1] - 0.2).abs() < 1e-9, "tech value ratio {}", tech[0] / tech[1]);
+    }
+
     /// Stage 4-2 (list A', S4-R22, review D2): an out-of-range finance value is refused with 400, on the create route (`validate_config`)
     /// and on `/api/compare`, and the message names the key. The defaults pass. NaN and infinity fail as well.
     #[test]

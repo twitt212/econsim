@@ -7663,3 +7663,82 @@ website's request overlay (`README.md`, "Reproduce a result") does not set these
 base prices are never re-based; banks have no tax-loss carry-forward; the import deflator uses domestic prices; with
 both repossession keys off (the release), a repossession loan paid off at maturity leaves a stale `reo_loan` id, and a later
 sale writes off whatever loan has reused that id.
+
+## R51-E (2026-10-22): `SharePrices`, a share-price input
+
+**What changed.** A new shock, `{"type":"SharePrices","sector":4,"pct":-80,"half_life_months":24}` (`shocks.rs`), re-rates the equity valuation of one
+sector (`Sector::ALL` order 0-8) or of all sectors (`sector` null) by ln(1 + pct/100) on impact; the jump decays with the half-life (0 =
+permanent). It acts in `equity::value_sectors` as a multiplicative wedge on each sector's value, after the value is formed, so dividends, the growth
+signal, the discount rate and the premium are the model's own and the earnings, rate and risk-premium channels keep running underneath. The
+re-rated value reaches the Fund's NAV and share price (households' wealth), Tobin's q (investment) and the month's equity return (the
+risk-premium extrapolation). Bounds: pct in (-95, 300], half_life_months >= 0, sector null or 0-8. No `Config` key and no `Metrics` field is
+added. `docs/DESIGN.md` §12 and `docs/API.md` describe it. Nothing is tuned.
+
+**Defaults unchanged.** The fingerprints of the README, `run 5000 60 3 --json | tail -n 1 | md5` on macOS, measured on the tree before the change and
+on the tree after it, at `RAYON_NUM_THREADS=1` and `8`:
+
+| Profile | Before, 1 thread | Before, 8 threads | After, 1 thread | After, 8 threads |
+|---|---|---|---|---|
+| default | `6a56affe5fa25d7fcf1fa0ba7197234e` | `6a56affe5fa25d7fcf1fa0ba7197234e` | `6a56affe5fa25d7fcf1fa0ba7197234e` | `6a56affe5fa25d7fcf1fa0ba7197234e` |
+| `legacy_acctfix_off.json` | `9f90c88a2c8b653857029d235cd6b0a6` | `9f90c88a2c8b653857029d235cd6b0a6` | `9f90c88a2c8b653857029d235cd6b0a6` | `9f90c88a2c8b653857029d235cd6b0a6` |
+
+An unused input moves no draw: with the shock at 0%, or scheduled after the run, the shocked arm equals the baseline byte for byte (test below).
+
+**Tests** (`cargo test --release --workspace`: econsim-core 667 passed and 2 ignored, econsim-server 89, econsim-cli 4 + 6 + 2; the debug-profile
+run passes too, with 666 in econsim-core because one test is release-only). New: 19 in core, 3 in the server, 2 in the CLI.
+- `shocks::tests` (7): validation at and past each bound (pct -95 and -94.999, 300 and 300.001, NaN and infinity, half-life -1e-9 and 0, sector 8 and 9),
+  the JSON name, the wedge is `None` until a shock fires, the jump is ln(1 + pct/100) and permanent without a half-life, the log decays by exactly
+  0.5^(k / half-life) (half of it at k = half-life), shocks stack each on its own decay and run out, a tiny half-life acts on impact only.
+- `equity::share_price_tests` (12): one month from a common world with Tech at -80% gives a Tech value of 0.2 times the paired baseline's to 1e-12
+  and leaves every other sector, the dividends, the growth signals, the news, the premium and the discount rate bit for bit the same; all sectors
+  at -30% give 0.7 in every sector and a lower q; with the shock at 0% the history is byte-identical; the normal q is frozen in the re-rated sector;
+  paired runs on seeds 1-3 at 1,500 households: on impact the Tech value is 0.2 of the baseline's to 1e-9 (a bound on rounding: nothing before the
+  valuation step of the impact month differs between the arms), months before the shock are identical, the gap follows a 3-month half-life within
+  0.06 log points through month 6 (the feedback of the economy on the gap: 0.02 at most on these seeds, 0.04 on seeds 1-4 at 5,000 households,
+  and larger later, 0.05 by month 8 at 1,500 households and up to 0.25 at 5,000 households by month 14, as Tech's lower investment leaves more for
+  dividends), determinism (the same
+  request twice, and 1 and 4 threads), a fall of 30% lowers the Fund's price, consumption (not on impact: households decide on last month's
+  price), Tech investment and total investment over the first year and raises the premium after the impact month, a rise of 100% does the
+  opposite, and the stock-flow checks hold with no stopped month at Tech -80% (permanent and with a 24-month half-life) and at all sectors -50%
+  over 24 months (`sfc_enforce` on, `sfc_error` 0 in every record, `ledger::check_consistency` after every month of a manual run).
+- Server (3): accepts the shock at its bounds on `/api/compare` and refuses past them with a 400 that names the field and the value received; `/api/compare` runs it and caches it;
+  a live economy takes it on `/api/sims/:id/shocks`, refuses a bad one without scheduling it, and re-rates Tech in the month it fires.
+- CLI (2, `config_range.rs`): a shock file for `world-dump` with an out-of-range `SharePrices` exits with status 2, one line naming the entry, nothing
+  on stdout; the bounds run.
+
+**Is it plausible? (report only, nothing tuned).** `cargo run --release -p econsim-cli --bin spirf -- 5000 36 32 24` (households, months, seeds, warm-up; report only): `Config::default` with the server's 24-month warm-up,
+5,000 households, seeds 1-32, shock at month 0, mean over seeds of shocked minus baseline. "Wealth" is the change in the Fund's equity value on
+impact, in US-scale $bn; the consumption figures are real consumption.
+
+| Shock | Equity wealth lost on impact | Fund share price, impact | First-year consumption | Cents of consumption per $ of wealth lost: first-year sum | and annual rate, months 7-12 | First-year investment | Tech investment, month 12 | Premium, months 3-12 | GDP, month 12 | Unemployment, month 12 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tech -80%, permanent | 16,749 (26.6% of equity) | -20.8% | -0.63% (-116 $bn) | 0.70 | 0.79 | -1.46% | -21.8% | +0.08 to +0.09 pp | -0.72% | +0.55 pp |
+| Tech -80%, half-life 24 | 16,749 | -20.8% | -0.61% (-112 $bn) | 0.67 | 0.76 | -1.42% | -20.0% | +0.08 pp | -0.74% | +0.57 pp |
+| All -30%, permanent | 18,904 | -23.4% | -0.76% (-139 $bn) | 0.73 | 0.85 | -0.87% | -9.1% | +0.09 to +0.10 pp | -0.55% | +0.44 pp |
+| All -30%, half-life 24 | 18,904 | -23.4% | -0.64% (-117 $bn) | 0.62 | 0.66 | -0.81% | -8.1% | +0.08 to +0.09 pp | -0.39% | +0.39 pp |
+| All -50%, permanent | 31,506 | -39.1% | -1.17% (-215 $bn) | 0.68 | 0.74 | -1.67% | -14.7% | +0.10 to +0.11 pp | -1.01% | +0.60 pp |
+
+- **Research.** Chodorow-Reich, Nenov and Simsek (2021, NBER Working Paper 25959, "Stock Market Wealth and the Real Economy") find that a dollar of
+  stock-market wealth raises consumption by 2.8 cents a year (working-paper digest) and, in the revised paper, 3.2 cents a year. Di Maggio, Kermani and
+  Majlesi (2020, Journal of Finance) find about 3% for the top 30% of the wealth distribution and 23% for the bottom half, on unrealised capital gains.
+  The model's figure, 0.6 to 0.85 cents per dollar of equity wealth lost, is about a quarter of the first two.
+- **Why the model is lower** (read from the code, not tested by changing anything): households spend `mpc_fund_wealth_annual` = 2% a year of Fund wealth
+  (Poterba 2000; Di Maggio et al. 2020, README), but `concave_wealth` counts Fund wealth above $1 million (scaled by the wage index) at 35% (`WEALTH_TAIL_WEIGHT`),
+  and stock wealth is concentrated, so the marginal propensity for the dollars lost is nearer 0.7 cents; and households decide on last month's
+  price, so the response builds up over the year (nothing on impact; the first-year sum is below the annual rate of months 7-12). The size does not
+  depend on the shock much: -30% and -50% give 0.7 cents. With 4 seeds in place of 32 the same five runs gave 0.55 to 0.77, so the second decimal is noise.
+- **Investment.** Total real investment falls 0.8% to 1.7% over the first year. Only Tech responds to its q (`investment_q_sens` is 0.2 for Tech and 0
+  elsewhere, with the q factor clamped to [0.75, 1.33]): at Tech -80% its investment is down 22% at month 12 and 25% (the clamp) from month 24; the rest
+  of the fall in investment comes through weaker demand. For all sectors at -30% only Tech's q has a direct effect. No research
+  figure was checked for the investment response; it is reported as measured.
+- **Risk premium.** After a fall the 12-month return is -26% to -57%, the momentum term is at its cap, and the premium is 0.08 to 0.11 pp higher for
+  about a year (valuations fall a little more, then recover as the return rolls out of the window).
+- **A cash effect of the Fund.** The Fund keeps deposits between 2% and 8% of its NAV, so a lower NAV changes the month in which it sells bonds to
+  the banks: bank deposits are 0.8% to 1.3% lower on impact (4.9% on four seeds, where in two of them the baseline Fund was selling bonds to restore its
+  cash in month 0) and 0.2% to 1.4% lower through the first year. It is the model's own balance-sheet rule, ledger-consistent, and not part of the shock.
+- **Not in the model** (gaps): firms issue no equity, so a price fall does not touch their financing directly; dividends do not respond to the
+  price, so a permanent -80% leaves the dividend yield five times higher for as long as it lasts; the effect on consumption is the Fund-wealth
+  term only (no collateral channel for firms, no confidence channel).
+- **Release.** This is the branch `feat/share-prices`. It would ship as the release after `v2026.10.21` (by the date scheme `v2026.10.22`,
+  if tagged that day; the tag and the version in `CITATION.cff` and the README's citation line are the owner's to set). Defaults and fingerprints
+  are unchanged, so the README's fingerprint paragraph needs no edit.
