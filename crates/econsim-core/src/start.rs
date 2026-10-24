@@ -327,7 +327,7 @@ pub fn build_us_now(cfg: &Config, seed: u64) -> (World, SeedStart) {
     let mut best: Option<(f64, World, SeedStart)> = None;
     for hop in 0..=tun.max_hops {
         let s = if hop == 0 { seed } else { splitmix(seed ^ u64::from(hop).wrapping_mul(0xD6E8_FEB8_6659_FD93)) };
-        let base = sim::new_world(cfg, s);
+        let base = crate::init::build_world(cfg.clone(), s); // rz27: not `sim::new_world`, which anchors the oil-elastic Energy valuation; `sim::common_world` anchors after the window
         for k in 0..tun.max_attempts {
             let mut w = base.clone();
             if k > 0 {

@@ -297,7 +297,11 @@ fn is_zero_u32(x: &u32) -> bool {
 
 /// Build a world and run burn-in so it starts near its steady state.
 pub fn new_world(cfg: &Config, seed: u64) -> World {
-    init::build_world(cfg.clone(), seed)
+    let mut w = init::build_world(cfg.clone(), seed);
+    // rz27: a world run straight from its burn-in starts its reported window here, so the oil-elastic Energy valuation (`energy_equity_oil_on`) is anchored here
+    // (a no-op with the key off). `common_world` builds with `init::build_world` and anchors after its warm-up instead.
+    crate::equity::anchor_energy_oil(&mut w);
+    w
 }
 
 /// b9-warmup: advance a freshly built world `months` more in the reported regime (every burn-in switch is already off).
@@ -330,12 +334,16 @@ pub fn common_world(cfg: &Config, seed: u64) -> CommonWorld {
     let mut start_cfg = cfg.clone();
     start_cfg.fisim_constant_margin = false;
     let cfg = &start_cfg;
+    // rz27: the oil-elastic Energy valuation (`energy_equity_oil_on`) is anchored at the end of the common world, the state of reported month 0, so the burn-in, the warm-up
+    // and the us-now window are the legacy run and the two arms and the control all start from the same state (a no-op with the key off).
     if cfg.start_state == crate::start::StartState::UsNow {
-        let (w, s) = crate::start::build_us_now(cfg, seed);
+        let (mut w, s) = crate::start::build_us_now(cfg, seed);
+        crate::equity::anchor_energy_oil(&mut w);
         (w, Some(s))
     } else {
-        let mut w0 = new_world(cfg, seed);
+        let mut w0 = init::build_world(cfg.clone(), seed);
         warm_up(&mut w0, cfg.warmup_months); // nothing when 0
+        crate::equity::anchor_energy_oil(&mut w0);
         (w0, None)
     }
 }

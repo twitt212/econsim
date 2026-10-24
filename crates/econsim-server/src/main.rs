@@ -1689,6 +1689,22 @@ mod tests {
         }
     }
 
+    /// rz27: the Energy equity's oil elasticity is range-checked on the compare path; the off value and in-range values are accepted.
+    #[test]
+    fn rz27_key_validation() {
+        let body = |k: &str, v: &str| format!(r#"{{"config":{{"n_households":1000,"{k}":{v}}}}}"#);
+        for v in ["-0.1", "1.5"] {
+            match parse_compare(body("energy_equity_oil_elasticity", v).as_bytes(), 0) {
+                Err(e) => assert!(e.message().starts_with("energy_equity_oil_elasticity"), "{v}: {}", e.message()),
+                Ok(_) => panic!("energy_equity_oil_elasticity={v} accepted"),
+            }
+        }
+        for v in ["0", "0.24", "1"] {
+            assert!(parse_compare(body("energy_equity_oil_elasticity", v).as_bytes(), 0).is_ok(), "energy_equity_oil_elasticity={v} rejected");
+        }
+        assert!(parse_compare(body("energy_equity_oil_on", "true").as_bytes(), 0).is_ok());
+    }
+
     /// rz12: the perception stage counts are range-checked on the compare path; the off values and in-range values are accepted.
     #[test]
     fn rz12_keys_validation() {

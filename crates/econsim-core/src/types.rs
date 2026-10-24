@@ -616,6 +616,17 @@ pub struct Fund {
     pub rerate_w: f64,
     #[serde(default)]
     pub rerate_q: f64,
+    /// rz27 (`energy_equity_oil_on`): the anchor of the oil-elastic Energy valuation, set once at the end of the burn-in (`equity::anchor_energy_oil`) and 0 before (and in any
+    /// run with the key off, which then never reads them): Energy's equity value at the anchor, the other eight sectors' smoothed dividends summed, the raw capitalisation rate
+    /// without extrapolated growth, and the real oil ratio.
+    #[serde(default)]
+    pub energy_e_anchor: f64,
+    #[serde(default)]
+    pub energy_others_anchor: f64,
+    #[serde(default)]
+    pub energy_r_anchor: f64,
+    #[serde(default)]
+    pub energy_oil_anchor: f64,
 }
 
 fn unit_q() -> [f64; N_SECTORS] {

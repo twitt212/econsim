@@ -25,6 +25,9 @@ const MIN_CAP_RATE: f64 = 0.02;
 const LOG_CAP_GUARD: f64 = 0.005;
 /// p1-equity: monthly decay of the 12-month EWMA of the Fund share price (span 12: alpha = 2/13 per month).
 const SHARE_PRICE_EWMA_DECAY: f64 = 11.0 / 13.0;
+/// rz27: bounds on the oil factor of the Energy valuation (a numerical guard: with the elasticity at most 1 it binds only if the real oil price leaves 0.2 to 5 times its seeded level).
+const ENERGY_OIL_FACTOR_MIN: f64 = 0.2;
+const ENERGY_OIL_FACTOR_MAX: f64 = 5.0;
 
 /// rz20: the weight on the previous value of the EWMAs of the Fund's share price and of a re-rating: (span - 1) / (span + 1), with the legacy 11 / 13 returned as the
 /// constant itself at span 12.
@@ -165,6 +168,21 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, erp_typed: Option<(f64, [bo
     let news_weight = cfg.sector_productivity_news;
     let news_decay = cfg.sector_news_decay;
     let seeding = seed_equity >= 0.0;
+    // rz27: the oil-elastic Energy valuation. `energy_ovr` is true only after the anchor is set (at the end of the burn-in, `anchor_energy_oil`). With the key off it is false and the
+    // arithmetic below is the legacy one.
+    let energy_idx = Sector::Energy.idx();
+    let energy_ovr = cfg.energy_equity_oil_on
+        && !seeding
+        && w.fund.energy_e_anchor > EPS
+        && w.fund.energy_others_anchor > EPS
+        && w.fund.energy_oil_anchor > EPS;
+    let energy_oil_factor = if energy_ovr {
+        let z = common::real_oil_ratio(w) / w.fund.energy_oil_anchor;
+        let f = z.powf(cfg.energy_equity_oil_elasticity);
+        if f.is_finite() { f.clamp(ENERGY_OIL_FACTOR_MIN, ENERGY_OIL_FACTOR_MAX) } else { 1.0 }
+    } else {
+        1.0
+    };
     // R51-E: the `SharePrices` shock's wedge on each sector's valuation (None, and never read below, unless one is active).
     let wedge = w.shocks.share_price_wedge();
     let span_w = cfg.fund_wealth_ewma_span;
@@ -282,6 +300,23 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, erp_typed: Option<(f64, [bo
         } else {
             12.0 * sd / bounded_cap(raw, cap_floor, cap_soft)
         };
+        // rz27: Energy valued relative to its anchor: its value at the anchor, moved by the other sectors' smoothed dividends (summed, last month's: the 0.9 smoothing makes the lag of
+        // no consequence), by the change in its capitalisation rate with no extrapolated growth (the anchor's own is inside the anchored value), and by the real oil ratio over its
+        // anchor value raised to the elasticity. Continuous at the anchor: at the anchor's own month the value equals the legacy one.
+        let e = if energy_ovr && s == energy_idx {
+            let others: f64 = (0..N_SECTORS).filter(|&k| k != energy_idx).map(|k| fund.sector_smoothed_dividends[k]).sum();
+            let r_t = y_eq + premium - lg;
+            let rel_rate = if cap_log {
+                let c = if fund.sector_cap_ref[s] > EPS { fund.sector_cap_ref[s] } else { r_t.max(LOG_CAP_GUARD) };
+                ((fund.energy_r_anchor.max(LOG_CAP_GUARD) - r_t.max(LOG_CAP_GUARD)) / c).exp()
+            } else {
+                bounded_cap(fund.energy_r_anchor, cap_floor, cap_soft) / bounded_cap(r_t, cap_floor, cap_soft)
+            };
+            let v = fund.energy_e_anchor * (others / fund.energy_others_anchor) * rel_rate * energy_oil_factor;
+            if v.is_finite() && v > 0.0 { v } else { e }
+        } else {
+            e
+        };
         // R51-E: a user share-price re-rating multiplies the model value after it is formed. Dividends (`sd`), the growth signal and
         // the capitalisation rate above are untouched, so the shock is a level wedge on the price, not a change in earnings or rates
         // (and it works the same in the 1/cap and the log-linear form, and where LOG_CAP_GUARD binds).
@@ -362,6 +397,31 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, erp_typed: Option<(f64, [bo
     }
     w.fund.smoothed_dividends = sd_new.iter().sum();
     total
+}
+
+/// rz27 (`energy_equity_oil_on`): set the anchor of the oil-elastic Energy valuation from the state the last valuation left: Energy's equity value, the other sectors' smoothed
+/// dividends summed, Energy's raw capitalisation rate with no extrapolated growth (the long rate and premium of that valuation less long-run growth), and the real oil ratio.
+/// Called once, at the end of the burn-in (`init::build_world`); a no-op with the key off or before a first valuation. From the next valuation Energy is valued relative to this
+/// state (`value_sectors`), so the run is the legacy run until then and continuous across the anchor.
+pub fn anchor_energy_oil(w: &mut World) {
+    if !w.cfg.energy_equity_oil_on {
+        return;
+    }
+    let e = Sector::Energy.idx();
+    let y_eq = match w.monetary.equity_long_rate {
+        Some(y) if y.is_finite() => y,
+        _ => return,
+    };
+    let eq_a = w.fund.sector_equity[e];
+    let others: f64 = (0..N_SECTORS).filter(|&k| k != e).map(|k| w.fund.sector_smoothed_dividends[k]).sum();
+    let r_a = y_eq + w.monetary.erp_current + w.cfg.erp_sector[e] - w.cfg.long_growth;
+    let oil = common::real_oil_ratio(w);
+    if eq_a.is_finite() && eq_a > EPS && others.is_finite() && others > EPS && r_a.is_finite() && oil.is_finite() && oil > EPS {
+        w.fund.energy_e_anchor = eq_a;
+        w.fund.energy_others_anchor = others;
+        w.fund.energy_r_anchor = r_a;
+        w.fund.energy_oil_anchor = oil;
+    }
 }
 
 /// Equity revaluation at the valuation step of `markets` (§11.4): sets the month's equity risk premium and long rate,
@@ -1203,5 +1263,120 @@ mod rz24r1_tests {
         assert_eq!(gap[0], 0.0, "{gap:?}");
         assert!(b.shocks.share_price_log.is_empty());
         assert!((gap[5] - 0.56 * 0.02).abs() < 1e-12, "{gap:?}");
+    }
+}
+
+#[cfg(test)]
+mod rz27_tests {
+    //! RZ27: the Energy sector's equity follows the oil price at a bounded elasticity (`energy_equity_oil_on`, `energy_equity_oil_elasticity`), off by default.
+    //! The default fingerprints are checked by the identity cases of the acceptance scripts, not here.
+    use super::*;
+    use crate::config::Config;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim;
+
+    fn world(on: bool, anchor: bool) -> World {
+        let cfg = Config { n_households: 1500, burn_in_months: 24, energy_equity_oil_on: on, ..Config::default() };
+        let mut w = crate::init::build_world(cfg, 3);
+        if anchor {
+            anchor_energy_oil(&mut w);
+        }
+        w
+    }
+
+    fn with_oil(w: &World, pct: f64, half_life: f64) -> World {
+        let mut b = w.clone();
+        let t = b.tick;
+        b.shocks.schedule(ScheduledShock { at_month: t, shock: Shock::OilPrice { pct, half_life_months: half_life } });
+        b
+    }
+
+    fn energy_ratio(a: &World, b: &World) -> f64 {
+        b.fund.sector_equity[Sector::Energy.idx()] / a.fund.sector_equity[Sector::Energy.idx()]
+    }
+
+    #[test]
+    fn off_and_an_unanchored_key_change_nothing_and_the_keys_are_off_by_default() {
+        let c = Config::default();
+        assert!(!c.energy_equity_oil_on);
+        assert_eq!(c.energy_equity_oil_elasticity, 0.24);
+        let (mut off, mut unanchored) = (world(false, false), world(true, false));
+        assert_eq!(unanchored.fund.energy_e_anchor, 0.0, "the key alone sets no anchor");
+        for _ in 0..8 {
+            sim::step(&mut off);
+            sim::step(&mut unanchored);
+            assert_eq!(off.fund.sector_equity, unanchored.fund.sector_equity);
+            assert_eq!(off.fund.equity_value, unanchored.fund.equity_value);
+        }
+        // Anchoring with the key off is a no-op.
+        let mut w = world(false, false);
+        anchor_energy_oil(&mut w);
+        assert_eq!((w.fund.energy_e_anchor, w.fund.energy_oil_anchor), (0.0, 0.0));
+    }
+
+    #[test]
+    fn the_anchor_is_set_from_the_last_valuation_and_the_value_is_continuous_across_it() {
+        let (off, mut on) = (world(false, false), world(true, true));
+        let e = Sector::Energy.idx();
+        assert_eq!(on.fund.energy_e_anchor, on.fund.sector_equity[e]);
+        assert!(on.fund.energy_others_anchor > 0.0 && on.fund.energy_oil_anchor > 0.0 && on.fund.energy_r_anchor.is_finite());
+        let mut off = off;
+        sim::step(&mut off);
+        sim::step(&mut on);
+        // The first month after the anchor: Energy is near the legacy value. The legacy value moves by up to a quarter in a month on its extrapolated growth term alone
+        // (clamped at +-1.5% a year, a factor of exp(0.015 / 0.045) = 1.4 either way), which the anchored value holds at its anchor level.
+        let r = energy_ratio(&off, &on);
+        assert!((0.7..1.4).contains(&r), "Energy value, key on over off, one month after the anchor: {r}");
+        // The other eight sectors are valued as before.
+        for s in (0..N_SECTORS).filter(|&s| s != e) {
+            let q = on.fund.sector_equity[s] / off.fund.sector_equity[s];
+            assert!((0.97..1.03).contains(&q), "sector {s}: {q}");
+        }
+    }
+
+    #[test]
+    fn energy_follows_the_oil_price_at_the_elasticity_and_not_its_own_dividends() {
+        let (off, on) = (world(false, false), world(true, true));
+        let (mut a_off, mut b_off) = (off.clone(), with_oil(&off, 50.0, 0.0));
+        let (mut a_on, mut b_on) = (on.clone(), with_oil(&on, 50.0, 0.0));
+        for _ in 0..12 {
+            sim::step(&mut a_off);
+            sim::step(&mut b_off);
+            sim::step(&mut a_on);
+            sim::step(&mut b_on);
+        }
+        let (r_off, r_on) = (energy_ratio(&a_off, &b_off), energy_ratio(&a_on, &b_on));
+        // Off: the oil windfall in Energy's dividends and their extrapolated growth roughly double the value (the model's own result over the 32 scorecard seeds is +97%).
+        assert!(r_off > 1.3, "legacy: Energy value after a permanent +50% oil price, shocked over baseline: {r_off}");
+        // On: 1.5^0.24 = 1.10, less the small fall of the other sectors' dividends in the slump.
+        assert!((1.0..1.2).contains(&r_on), "key on: {r_on}");
+    }
+
+    #[test]
+    fn a_fall_of_oil_lowers_energy_by_the_elasticity_and_the_stock_flow_checks_hold() {
+        let on = world(true, true);
+        let mut a = on.clone();
+        let mut b = with_oil(&on, -50.0, 0.0);
+        for k in 0..12 {
+            sim::step(&mut a);
+            sim::step(&mut b);
+            crate::ledger::check_consistency(&b).unwrap_or_else(|e| panic!("month {k}: {e}"));
+        }
+        let r = energy_ratio(&a, &b);
+        assert!((0.75..1.0).contains(&r), "0.5^0.24 = 0.85: {r}");
+        assert!(b.fund.share_price.is_finite() && b.fund.share_price > 0.0);
+    }
+
+    #[test]
+    fn a_share_price_re_rating_still_multiplies_energys_value() {
+        let on = world(true, true);
+        let mut a = on.clone();
+        let mut b = on.clone();
+        let t = b.tick;
+        b.shocks.schedule(ScheduledShock { at_month: t, shock: Shock::SharePrices { sector: None, pct: -50.0, half_life_months: 0.0 } });
+        sim::step(&mut a);
+        sim::step(&mut b);
+        let r = energy_ratio(&a, &b);
+        assert!((0.45..0.55).contains(&r), "a -50% re-rating of every sector: {r}");
     }
 }

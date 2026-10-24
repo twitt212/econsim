@@ -7855,3 +7855,30 @@ Package record: the project's pre-registration (SPEC, PREREG, FROZEN, RESULTS). 
 
 **Released in v2026.10.24.** The key stays off by default in this repository; **the EconSim website sends `credit_shock_erp` 0.61** (with the coverage rule above) with its other realism
 settings. In the website's credit-crunch card the stock market is about 24% lower in year 1 than with no change (it rose a little before), and year-1 output falls 1.6% (inside the research range of 1.35 to 2.16%).
+
+
+## RZ27 (2026-10-24): the Energy sector's equity at a bounded oil elasticity; `energy_equity_oil_on` and `energy_equity_oil_elasticity`, off by default
+
+Package record: the project's pre-registration (BRIEF, DIAGNOSIS, SPEC, PREREG, FROZEN, RESULTS). Base: `web-revamp` b83f9618. With both keys at their defaults the default fingerprint `6a56affe5fa25d7fcf1fa0ba7197234e` and the legacy profile's
+`9f90c88a2c8b653857029d235cd6b0a6` are unchanged at RAYON 1 and 8.
+
+**Why.** After a permanent +50% oil price the Energy sector's equity gained +97% by month 12 (+126% in the project's earlier scenario sweep) and the other eight sectors fell, so the whole market rose (+0.9%) where Kanzig's S&P 500 falls; six of the oil
+stock-sign rows FAILed and three read NEAR. Energy's price rises 15.6% while its paid costs rise 5.3% of revenue (imported crude and the upstream tax and royalty on the domestic crude; `firms.rs:540-545`, `1305-1316`), so its profit about
+doubles; the valuation passes the smoothed dividend (+47% at month 12) through and the extrapolated growth term adds a factor of 1.31 (`equity.rs` `value_sectors`, `sector_growth_extrapolation` 0.3, clamped at +-1.5% a year). At 9% of the Fund
+it carries the market's sign (+5.5 points of the +0.9).
+
+| Key | Default | Meaning | Source |
+|---|---|---|---|
+| `energy_equity_oil_on` | false | The Energy sector's equity is valued relative to its state at reported month 0 (`equity::anchor_energy_oil`, set at the end of the common world): its value then, moved by the other eight sectors' smoothed dividends, by the discount rate with no extrapolated growth, and by the real oil price over its month-0 value to the power `energy_equity_oil_elasticity`. Valuation only: its dividends are paid and counted as before; no stock-flow identity changes. false = the legacy valuation, bit-identical. | the project's pre-registration (SPEC 3) |
+| `energy_equity_oil_elasticity` | 0.24 | Range [0, 1]. The equal-weight mean of Kanzig's (2021, AER 111(4), PDF p.55, Figure A.8) impact responses of the oil and gas stock index (+3.2% and +3.5% for an oil price +10%: 0.335) and of the electricity index (+1.5%: 0.15). Kilian and Park (2009), as reported by Kang, Ratti and Vespignani (2016): the petroleum and natural gas industry does not respond significantly to oil supply shocks. | the project's pre-registration (SPEC 3.3) and source record |
+
+**Not changed, and why.** No key for the non-energy price pass-through: the model's non-energy energy cost shares are at or above the BLS productivity program's (Zupnick, Monthly Labor Review 2026: 1.0 to 2.3 percent in the services sectors, 2.0 in
+manufacturing, 4.4 in agriculture) in seven of eight sectors, its prices reach what its Leontief table implies by month 24, and scaling the shares by 2 buys `EN04.cpi_passthrough` 0.032 to 0.040 at the price of year-1 output, unemployment and
+inflation rows that PASS (the project's pre-registration, DIAGNOSIS 2). What is missing is services and shelter. The size of the market's fall (Kanzig: about -3% per 10% of oil) stays below the research (the model: about -4.5% for +50%).
+
+**Status (2026-10-24, after the pre-registered run).** The Energy equity lever (`energy_equity_oil_on` true, `energy_equity_oil_elasticity` 0.24) **PASSED** its pre-registered acceptance on fresh seeds 92001-92128: all nine oil stock-sign rows PASS (a permanent +50% oil price:
+the market -4.9% at month 12 against +0.7%), no guard flagged in the oil family or on the whole scorecard run with the website's realism settings (162 / 49 / 136 -> 170 / 46 / 131, the nine targets +9 and the other rows -1), Tier A unchanged. Both keys stay off by default in the model.
+Named costs: the Fund now falls after an oil rise, so year-2 consumption, output and unemployment move by a few tenths in the research's direction; Energy no longer follows its own dividends; the tariff and dollar rows drift slightly (a watch item). Named limits: the price-side rows (`EN04.cpi_passthrough` 0.029,
+no lever) and the size of the market's fall (about a third of Kanzig's scaling).
+
+**Released in v2026.10.24.1.** Both keys stay off by default in this repository; **the EconSim website sends `energy_equity_oil_on: true`** (at the default elasticity 0.24) with its other realism settings, so on the website the stock market falls after an oil price spike and rises after a fall.

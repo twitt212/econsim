@@ -1864,6 +1864,18 @@ pub struct Config {
     /// the loading: the reader's typed share-price path already sets that market, so the model's own estimate of what credit does to equities is not added
     /// to it. Sectors the re-rating does not cover keep the loading. Docs: docs/CALIBRATION.md (RZ24-R1).
     pub credit_shock_erp: f64,
+    // rz27
+    /// rz27: the Energy sector's equity value follows the oil price at a bounded elasticity instead of its own dividends. With this on, the sector is valued
+    /// (`equity::value_sectors`) on its seeded share of the other eight sectors' smoothed dividends, with no extrapolated growth, times
+    /// (the real oil price over its value at seeding) raised to `energy_equity_oil_elasticity`. Its own dividends (the oil windfall in the sector's
+    /// profit, which the smoothed dividends and the growth extrapolation pass on at about twice the oil move) no longer set its price; they are still
+    /// paid out and recorded. Valuation only: no payment and no stock-flow identity is touched. false = off (legacy: bit-identical); also inert before
+    /// the first valuation seeds the share and the oil anchor. Source of the calibration: docs/CALIBRATION.md (RZ27).
+    pub energy_equity_oil_on: bool,
+    /// rz27: the elasticity of the Energy sector's equity value to the real oil price while `energy_equity_oil_on` is set. Range [0, 1]. Units: elasticity.
+    /// 0.24 is the equal-weight mean of Kanzig's (2021, PDF p.55, Figure A.8) impact responses of the oil and gas stock index (+3.3% for an oil price
+    /// +10%: 0.33) and of the electricity stock index (+1.5%: 0.15).
+    pub energy_equity_oil_elasticity: f64,
 }
 
 impl Config {
@@ -2148,6 +2160,12 @@ impl Config {
         let ce = self.credit_shock_erp;
         if !ce.is_finite() || !(0.0..=CREDIT_SHOCK_ERP_MAX).contains(&ce) {
             return Err(format!("credit_shock_erp must be between 0 and {CREDIT_SHOCK_ERP_MAX} (got {ce})"));
+        }
+
+        // rz27: the Energy equity's oil elasticity.
+        let ee = self.energy_equity_oil_elasticity;
+        if !ee.is_finite() || !(0.0..=1.0).contains(&ee) {
+            return Err(format!("energy_equity_oil_elasticity must be between 0 and 1 (got {ee})"));
         }
         Ok(())
     }
@@ -2939,6 +2957,9 @@ impl Default for Config {
 
             // rz24
             credit_shock_erp: 0.0,
+            // rz27: off (legacy). The elasticity is the registered calibration (Kanzig 2021, Figure A.8); it does nothing while the switch is off.
+            energy_equity_oil_on: false,
+            energy_equity_oil_elasticity: 0.24,
         }
     }
 }
@@ -3313,6 +3334,36 @@ mod rz24_tests {
         for e in [-0.01, 5.01, f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -5.0] {
             let err = with(e).validate_rz1().unwrap_err();
             assert!(err.starts_with("credit_shock_erp"), "{e}: {err}");
+        }
+    }
+}
+
+// rz27: the Energy equity's oil elasticity. Two new keys, off by default: `energy_equity_oil_on` false (nothing is computed or anchored). The default fingerprint is checked by
+// the identity cases of the acceptance scripts, not here.
+#[cfg(test)]
+mod rz27_config_tests {
+    use super::Config;
+
+    #[test]
+    fn rz27_keys_are_off_by_default_serialise_and_are_range_checked() {
+        let c = Config::default();
+        assert!(!c.energy_equity_oil_on);
+        assert_eq!(c.energy_equity_oil_elasticity, 0.24);
+        assert!(c.validate_rz1().is_ok());
+        let v = serde_json::to_value(&c).unwrap();
+        assert_eq!(v["energy_equity_oil_on"], serde_json::json!(false));
+        assert_eq!(v["energy_equity_oil_elasticity"], serde_json::json!(0.24));
+        let over: Config = serde_json::from_str(r#"{"energy_equity_oil_on": true, "energy_equity_oil_elasticity": 0.3}"#).unwrap();
+        assert!(over.energy_equity_oil_on);
+        assert_eq!(over.energy_equity_oil_elasticity, 0.3);
+        let none: Config = serde_json::from_str("{}").unwrap();
+        assert!(!none.energy_equity_oil_on);
+        let with = |e: f64| Config { energy_equity_oil_elasticity: e, ..Config::default() };
+        for e in [0.0, 0.15, 0.24, 1.0] {
+            assert!(with(e).validate_rz1().is_ok(), "{e}");
+        }
+        for e in [-0.01, 1.01, f64::NAN, f64::INFINITY] {
+            assert!(with(e).validate_rz1().unwrap_err().starts_with("energy_equity_oil_elasticity"), "{e}");
         }
     }
 }
