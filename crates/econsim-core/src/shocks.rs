@@ -545,6 +545,21 @@ impl ShockState {
         }
         Some(log.map(f64::exp))
     }
+    /// rz24-r1: the sectors that an active `SharePrices` re-rating covers, in Sector::ALL order: true for a sector with at least one active
+    /// re-rating entry aimed at all sectors or at that sector, whatever its size or sign. All false when none is active (every run without
+    /// one). A typed re-rating sets the share price of the sectors it covers, so the model's own estimate of what a credit shock does to
+    /// equities (`credit_shock_erp`) is not added to them (`equity::revalue_fund_equity`).
+    pub fn share_price_covered(&self) -> [bool; N_SECTORS] {
+        let mut cov = [false; N_SECTORS];
+        for &(sector, _, _) in &self.share_price_log {
+            match sector {
+                Some(s) if s < N_SECTORS => cov[s] = true,
+                Some(_) => {}
+                None => cov = [true; N_SECTORS],
+            }
+        }
+        cov
+    }
     /// Log shift of the dollar target from active `Dollar` shocks.
     pub fn dollar_log(&self) -> f64 {
         self.dollar_log_shock
@@ -749,6 +764,40 @@ mod tests {
         st.activate_due(3);
         assert!(st.share_price_wedge().is_some());
         assert!(ShockState::default().share_price_wedge().is_none());
+    }
+
+    #[test]
+    fn share_price_covered_marks_the_sectors_an_active_re_rating_reaches_whatever_its_size() {
+        let mut st = ShockState::default();
+        assert_eq!(st.share_price_covered(), [false; N_SECTORS]);
+        fire(&mut st, 1, share_prices(Some(4), -80.0, 0.0));
+        st.activate_due(0);
+        assert_eq!(st.share_price_covered(), [false; N_SECTORS], "not before its month");
+        st.activate_due(1);
+        let mut only_tech = [false; N_SECTORS];
+        only_tech[4] = true;
+        assert_eq!(st.share_price_covered(), only_tech);
+        // a re-rating of 0% still covers: the reader typed where the price is
+        fire(&mut st, 2, share_prices(Some(1), 0.0, 0.0));
+        st.activate_due(2);
+        only_tech[1] = true;
+        assert_eq!(st.share_price_covered(), only_tech);
+        fire(&mut st, 3, share_prices(None, -10.0, 0.0));
+        st.activate_due(3);
+        assert_eq!(st.share_price_covered(), [true; N_SECTORS]);
+    }
+
+    #[test]
+    fn share_price_covered_ends_when_a_decaying_re_rating_has_run_out() {
+        let mut st = ShockState::default();
+        fire(&mut st, 0, share_prices(None, -10.0, 0.05));
+        st.activate_due(0);
+        assert_eq!(st.share_price_covered(), [true; N_SECTORS]);
+        for t in 1..6u32 {
+            st.activate_due(t);
+        }
+        assert_eq!(st.share_price_covered(), [false; N_SECTORS]);
+        assert!(st.share_price_wedge().is_none());
     }
 
     #[test]

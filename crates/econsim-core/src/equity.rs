@@ -83,7 +83,9 @@ pub fn trailing_equity_return(w: &World) -> Option<f64> {
 /// risk-premium shock and S_t its slow EWMA (`Fund::erp_slow`). The countercyclical term (Campbell & Shiller 1988;
 /// Cochrane 2011) raises the premium in slumps. The extrapolative term (Greenwood & Shleifer 2014; Barberis et al. 2015)
 /// lowers it after strong past returns. The extrapolative term is zero until 12 monthly returns exist.
-fn equity_risk_premium(w: &World) -> f64 {
+/// rz24: while a `CreditSpread` shock (with its tail) is in force and `credit_shock_erp` is on, the premium also gains `credit_shock_erp` x the spread.
+/// `with_credit_loading` false leaves that term out: the premium of a sector that a typed `SharePrices` re-rating covers (rz24-r1, `revalue_fund_equity`).
+fn equity_risk_premium(w: &World, with_credit_loading: bool) -> f64 {
     let cfg = &w.cfg;
     let gap = w.unemployment_rate() - w.natural_unemployment();
     let momentum = trailing_equity_return(w).map_or(0.0, |r| {
@@ -97,10 +99,14 @@ fn equity_risk_premium(w: &World) -> f64 {
     // Re-fit Step 10a: the financial term is the build-up of f_t − f̄ when erp_fin_build_months > 0, else f_t (legacy).
     // The demand term loads on the AR state rp_ar, so the financial-factor jumps reach the ERP only through the build-up.
     let fin_term = if cfg.erp_fin_build_months > 0.0 { w.fund.fin_erp_build } else { w.exog.fin_factor() };
-    let erp = cfg.erp + cfg.erp_unemp_sens * gap - cfg.erp_extrap * momentum
+    let mut erp = cfg.erp + cfg.erp_unemp_sens * gap - cfg.erp_extrap * momentum
         + cfg.erp_fin_loading * fin_term
         + cfg.erp_rp_loading * rp_scale * w.exog.rp_ar
         + cfg.erp_slow_loading * w.fund.erp_slow;
+    // rz24: the premium loads on a credit-spread shock (zero, and nothing computed, with the key off or no shock in force).
+    if with_credit_loading && cfg.credit_shock_erp != 0.0 {
+        erp += cfg.credit_shock_erp * w.shocks.credit_spread_add_tail(w.tick, cfg.credit_tail_half_life_months);
+    }
     if erp.is_finite() {
         erp.clamp(cfg.erp_min, cfg.erp_max)
     } else {
@@ -125,8 +131,10 @@ fn equity_risk_premium(w: &World) -> f64 {
 /// month 1 keeps the seeded total (weights from this month's sector profits, or equal weights). R51-E: an active
 /// `Shock::SharePrices` multiplies each sector's value E_s by its wedge `ShockState::share_price_wedge` after E_s is formed
 /// (docs/DESIGN.md §12), so the value that reaches `sector_equity`, the Tobin's q and the Fund's NAV is the re-rated one while
-/// the dividends, the growth signal and the capitalisation rate stay the model's own.
-fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equity: f64) -> f64 {
+/// the dividends, the growth signal and the capitalisation rate stay the model's own. rz24-r1: `erp_typed` = Some((premium without the credit loading, the
+/// sectors that a re-rating covers)) when `credit_shock_erp` is on, a credit shock is in force and a re-rating covers some sector: those sectors are valued
+/// at the premium without the loading (the typed path sets their price; the loading is the model's estimate of the same thing), the others at `erp`.
+fn value_sectors(w: &mut World, y_eq: f64, erp: f64, erp_typed: Option<(f64, [bool; N_SECTORS])>, div_received: f64, seed_equity: f64) -> f64 {
     let cfg = &w.cfg;
     let lg = cfg.long_growth;
     let decay = cfg.sector_growth_decay;
@@ -208,10 +216,15 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
         }
     };
     for s in 0..N_SECTORS {
+        // rz24-r1: the premium this sector is valued at (the model's, without the credit loading where a typed re-rating covers the sector).
+        let erp_s = match erp_typed {
+            Some((e, cov)) if cov[s] => e,
+            _ => erp,
+        };
         let sd_old = fund.sector_smoothed_dividends[s];
         let x_old = if fund.sector_growth[s] == 0.0 { lg } else { fund.sector_growth[s] };
         let sd = if seeding {
-            let raw0 = y_eq + erp + erp_sector[s] - if s == Sector::Tech.idx() { tech_disc(fund.sector_news[s]) } else { 0.0 } - lg;
+            let raw0 = y_eq + erp_s + erp_sector[s] - if s == Sector::Tech.idx() { tech_disc(fund.sector_news[s]) } else { 0.0 } - lg;
             let cap0 = if cap_log {
                 cap_ref_new[s] = raw0.max(LOG_CAP_GUARD);
                 cap_ref_new[s]
@@ -255,7 +268,7 @@ fn value_sectors(w: &mut World, y_eq: f64, erp: f64, div_received: f64, seed_equ
         // The extrapolative term is capped too: a small sector's noisy payouts must not swing its premium by ±4pp.
         let ext = (ext_w * (x - x_agg)).clamp(EXT_MIN, EXT_MAX);
         let g_e = (lg + ext + news_weight * news).clamp(g_min, g_max);
-        let premium = erp + erp_sector[s] - if s == Sector::Tech.idx() { tech_disc(news) } else { 0.0 };
+        let premium = erp_s + erp_sector[s] - if s == Sector::Tech.idx() { tech_disc(news) } else { 0.0 };
         let raw = y_eq + premium - g_e;
         let e = if cap_log {
             // Log-linear form: E = 12·sd ÷ c × exp((c − r) ÷ c), so d ln E ÷ d r = −1/c, the same slope as the 1/cap
@@ -384,8 +397,21 @@ pub fn revalue_fund_equity(w: &mut World, div_received: f64, special: f64) -> f6
     }
     // Time-varying equity risk premium (§11.4) from the unemployment gap and past equity returns (before this month's
     // return enters the history, so the valuation uses only information available at the start of the month).
-    let erp = equity_risk_premium(w);
-    w.monetary.erp_current = erp;
+    let erp = equity_risk_premium(w, true);
+    // rz24-r1: a sector that a typed `SharePrices` re-rating covers is not given the credit loading: the reader's share-price path already sets that
+    // market, and the loading is the model's estimate of the same thing (docs/CALIBRATION.md, RZ24-R1). With the key off, or no credit shock in
+    // force, nothing is computed here and the run is bit-identical.
+    let covered = if w.cfg.credit_shock_erp != 0.0 && w.shocks.credit_spread_add_tail(w.tick, w.cfg.credit_tail_half_life_months) != 0.0 {
+        w.shocks.share_price_covered()
+    } else {
+        [false; N_SECTORS]
+    };
+    let erp_typed = if covered.iter().any(|&c| c) { Some((equity_risk_premium(w, false), covered)) } else { None };
+    // the premium reported is the one that prices the sectors the loading reaches; with every sector covered it is the model's own
+    w.monetary.erp_current = match erp_typed {
+        Some((e, cov)) if cov.iter().all(|&c| c) => e,
+        _ => erp,
+    };
     // Equity investors discount at a smoothed long rate: they look partly through transitory moves in Treasury yields
     // (stocks fell ≈8% per 100bp of 10-year yield in 2022, and QE announcements moved them by a few percent).
     let y10 = w.curve.yields[3];
@@ -400,7 +426,7 @@ pub fn revalue_fund_equity(w: &mut World, div_received: f64, special: f64) -> f6
     let seed = !w.monetary.equity_init && w.fund.equity_value.is_finite() && w.fund.equity_value > 0.0;
     w.monetary.equity_init = true;
     let equity_prev = w.fund.equity_value;
-    let equity = value_sectors(w, y_eq, erp, div_received, if seed { equity_prev } else { -1.0 });
+    let equity = value_sectors(w, y_eq, erp, erp_typed, div_received, if seed { equity_prev } else { -1.0 });
     w.fund.dividends_received = 0.0;
     w.fund.sector_dividends_received = [0.0; N_SECTORS];
     // Monthly total return on the Fund's equity: (E_t + equity dividends paid this month) / E_{t−1} − 1.
@@ -962,5 +988,220 @@ mod rz20_tests {
             let c = pool.install(|| serde_json::to_string(&pc(crash(-40.0, 12.0), &[1, 2], 8)).unwrap());
             assert_eq!(a, c, "{threads} threads");
         }
+    }
+}
+
+/// rz24: the equity premium's loading on a `CreditSpread` shock (`credit_shock_erp`).
+#[cfg(test)]
+mod rz24_tests {
+    use crate::config::Config;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim;
+    use crate::types::*;
+
+    const N: usize = 1500;
+
+    fn world(loading: f64, seed: u64) -> World {
+        let cfg = Config { n_households: N, credit_shock_erp: loading, ..Config::default() };
+        sim::common_world(&cfg, seed).0
+    }
+
+    fn with_shock(mut w: World, bps: f64, months: u32) -> World {
+        let t = w.tick;
+        w.shocks.schedule(ScheduledShock { at_month: t, shock: Shock::CreditSpread { bps, months } });
+        w
+    }
+
+    #[test]
+    fn the_premium_rises_by_the_loading_times_the_spread_and_valuations_fall() {
+        for seed in [1u64, 2, 3] {
+            let mut a = with_shock(world(0.0, seed), 200.0, 12);
+            let mut b = with_shock(world(0.4, seed), 200.0, 12);
+            sim::step(&mut a);
+            sim::step(&mut b);
+            let (ea, eb) = (a.monetary.erp_current, b.monetary.erp_current);
+            assert!((eb - ea - 0.4 * 0.02).abs() < 1e-12, "seed {seed}: premium {ea} -> {eb}");
+            // the Gordon valuation: ln E falls by the premium times the duration (about 22), so by roughly 0.18 here
+            let fall = -(b.fund.equity_value / a.fund.equity_value).ln();
+            assert!(fall > 0.08 && fall < 0.25, "seed {seed}: valuation fall {fall}");
+            crate::ledger::check_consistency(&b).unwrap();
+        }
+    }
+
+    #[test]
+    fn with_no_credit_spread_shock_the_key_changes_nothing_bit_for_bit() {
+        for seed in [1u64, 2] {
+            let (mut a, mut b) = (world(0.0, seed), world(0.4, seed));
+            for _ in 0..4 {
+                sim::step(&mut a);
+                sim::step(&mut b);
+            }
+            assert_eq!(serde_json::to_string(&a.history).unwrap(), serde_json::to_string(&b.history).unwrap(), "seed {seed}");
+        }
+    }
+
+    #[test]
+    fn the_loading_follows_the_shock_and_its_tail_and_is_negative_for_an_easing() {
+        // a rectangle (tail 0): in force for 3 months, then gone
+        let (mut a, mut b) = (with_shock(world(0.0, 1), 100.0, 3), with_shock(world(0.4, 1), 100.0, 3));
+        let mut gap = Vec::new();
+        for _ in 0..5 {
+            sim::step(&mut a);
+            sim::step(&mut b);
+            gap.push(b.monetary.erp_current - a.monetary.erp_current);
+        }
+        assert!((gap[0] - 0.004).abs() < 1e-9 && (gap[2] - 0.004).abs() < 1e-9, "in force: {gap:?}");
+        assert!(gap[3].abs() < 1e-9 && gap[4].abs() < 1e-9, "after the window: {gap:?}");
+        // an easing (negative spread) lowers the premium by the same loading
+        let (mut a, mut b) = (with_shock(world(0.0, 2), -100.0, 12), with_shock(world(0.4, 2), -100.0, 12));
+        sim::step(&mut a);
+        sim::step(&mut b);
+        assert!((b.monetary.erp_current - a.monetary.erp_current + 0.004).abs() < 1e-9);
+        assert!(b.fund.equity_value > a.fund.equity_value);
+    }
+
+    #[test]
+    fn the_stock_flow_checks_hold_with_the_key_on_through_a_credit_crunch() {
+        let cfg = Config { n_households: N, credit_shock_erp: 0.56, credit_tail_half_life_months: 4.0, ..Config::default() };
+        let mut w = with_shock(sim::common_world(&cfg, 1).0, 200.0, 12);
+        for k in 0..30 {
+            sim::step(&mut w);
+            crate::ledger::check_consistency(&w).unwrap_or_else(|e| panic!("month {k}: {e}"));
+        }
+        assert!(w.fund.share_price.is_finite() && w.fund.share_price > 0.0);
+    }
+}
+
+/// rz24-r1: a typed `SharePrices` re-rating takes the credit loading (`credit_shock_erp`) off the sectors it covers.
+#[cfg(test)]
+mod rz24r1_tests {
+    use crate::config::Config;
+    use crate::shocks::{ScheduledShock, Shock};
+    use crate::sim;
+    use crate::types::*;
+
+    const N: usize = 1500;
+
+    fn world(loading: f64, seed: u64) -> World {
+        let cfg = Config { n_households: N, credit_shock_erp: loading, ..Config::default() };
+        sim::common_world(&cfg, seed).0
+    }
+
+    fn fire(mut w: World, shocks: &[(u32, Shock)]) -> World {
+        let t = w.tick;
+        for (dt, s) in shocks {
+            w.shocks.schedule(ScheduledShock { at_month: t + dt, shock: s.clone() });
+        }
+        w
+    }
+
+    fn rerate(sector: Option<usize>, pct: f64, half_life_months: f64) -> Shock {
+        Shock::SharePrices { sector, pct, half_life_months }
+    }
+
+    fn credit(bps: f64, months: u32) -> Shock {
+        Shock::CreditSpread { bps, months }
+    }
+
+    fn history(w: &World) -> String {
+        serde_json::to_string(&w.history).unwrap()
+    }
+
+    #[test]
+    fn a_re_rating_of_every_sector_takes_the_loading_off_all_of_them_bit_for_bit() {
+        // the 2008 card: -53% and +400 bp for 18 months. The reader typed the market; the loading adds nothing, so the key changes nothing at all.
+        for seed in [1u64, 2] {
+            let shocks = [(0, rerate(None, -53.0, 0.0)), (0, credit(400.0, 18))];
+            let (mut a, mut b) = (fire(world(0.0, seed), &shocks), fire(world(0.56, seed), &shocks));
+            for k in 0..10 {
+                sim::step(&mut a);
+                sim::step(&mut b);
+                assert_eq!(a.monetary.erp_current.to_bits(), b.monetary.erp_current.to_bits(), "seed {seed} month {k}: reported premium");
+                assert_eq!(a.fund.equity_value.to_bits(), b.fund.equity_value.to_bits(), "seed {seed} month {k}: equity value");
+            }
+            assert_eq!(history(&a), history(&b), "seed {seed}");
+            crate::ledger::check_consistency(&b).unwrap();
+        }
+    }
+
+    #[test]
+    fn the_same_credit_shock_without_a_re_rating_still_moves_the_market() {
+        let (mut a, mut b) = (fire(world(0.0, 1), &[(0, credit(400.0, 18))]), fire(world(0.56, 1), &[(0, credit(400.0, 18))]));
+        sim::step(&mut a);
+        sim::step(&mut b);
+        let fall = -(b.fund.equity_value / a.fund.equity_value).ln();
+        assert!(fall > 0.2 && fall < 0.6, "valuation fall {fall}");
+        assert!((b.monetary.erp_current - a.monetary.erp_current - 0.56 * 0.04).abs() < 1e-12);
+    }
+
+    #[test]
+    fn a_re_rating_of_one_sector_leaves_the_loading_on_the_others() {
+        let tech = Sector::Tech.idx();
+        let shocks = [(0, rerate(Some(tech), -75.0, 0.0)), (0, credit(200.0, 12))];
+        let (mut a, mut b) = (fire(world(0.0, 1), &shocks), fire(world(0.56, 1), &shocks));
+        sim::step(&mut a);
+        sim::step(&mut b);
+        assert_eq!(a.fund.sector_equity[tech].to_bits(), b.fund.sector_equity[tech].to_bits(), "Tech is covered: no loading");
+        for s in (0..N_SECTORS).filter(|&s| s != tech) {
+            let fall = -(b.fund.sector_equity[s] / a.fund.sector_equity[s]).ln();
+            assert!(fall > 0.08 && fall < 0.25, "sector {s}: valuation fall {fall}");
+        }
+        // not every sector is covered: the premium reported is the one that prices the others
+        assert!((b.monetary.erp_current - a.monetary.erp_current - 0.56 * 0.02).abs() < 1e-12);
+        crate::ledger::check_consistency(&b).unwrap();
+    }
+
+    #[test]
+    fn the_size_of_the_re_rating_does_not_matter_the_reader_typed_the_market() {
+        for pct in [-1.0, 5.0, -80.0] {
+            let shocks = [(0, rerate(None, pct, 0.0)), (0, credit(200.0, 12))];
+            let (mut a, mut b) = (fire(world(0.0, 1), &shocks), fire(world(0.56, 1), &shocks));
+            for _ in 0..4 {
+                sim::step(&mut a);
+                sim::step(&mut b);
+            }
+            assert_eq!(history(&a), history(&b), "pct {pct}");
+        }
+    }
+
+    #[test]
+    fn a_re_rating_with_no_credit_shock_is_untouched_by_the_key() {
+        let shocks = [(0, rerate(None, -40.0, 12.0))];
+        let (mut a, mut b) = (fire(world(0.0, 1), &shocks), fire(world(0.56, 1), &shocks));
+        for _ in 0..8 {
+            sim::step(&mut a);
+            sim::step(&mut b);
+        }
+        assert_eq!(history(&a), history(&b));
+    }
+
+    #[test]
+    fn a_re_rating_that_arrives_after_the_credit_shock_takes_over_from_that_month() {
+        let shocks = [(0, credit(200.0, 12)), (2, rerate(None, -30.0, 0.0))];
+        let (mut a, mut b) = (fire(world(0.0, 1), &shocks), fire(world(0.56, 1), &shocks));
+        let mut gap = Vec::new();
+        for _ in 0..6 {
+            sim::step(&mut a);
+            sim::step(&mut b);
+            gap.push(b.monetary.erp_current - a.monetary.erp_current);
+        }
+        assert!((gap[0] - 0.56 * 0.02).abs() < 1e-12 && (gap[1] - 0.56 * 0.02).abs() < 1e-12, "before the re-rating: {gap:?}");
+        assert!(gap[2..].iter().all(|g| *g == 0.0), "from the re-rating's month the loading is off: {gap:?}");
+    }
+
+    #[test]
+    fn the_loading_comes_back_when_a_decaying_re_rating_has_run_out_a_named_edge() {
+        // a half-life of 0.05 months: the re-rating is gone within two months, while the 12-month credit shock is still in force
+        let shocks = [(0, rerate(None, -10.0, 0.05)), (0, credit(200.0, 12))];
+        let (mut a, mut b) = (fire(world(0.0, 1), &shocks), fire(world(0.56, 1), &shocks));
+        let mut gap = Vec::new();
+        for _ in 0..6 {
+            sim::step(&mut a);
+            sim::step(&mut b);
+            gap.push(b.monetary.erp_current - a.monetary.erp_current);
+        }
+        assert_eq!(gap[0], 0.0, "{gap:?}");
+        assert!(b.shocks.share_price_log.is_empty());
+        assert!((gap[5] - 0.56 * 0.02).abs() < 1e-12, "{gap:?}");
     }
 }

@@ -1674,6 +1674,21 @@ mod tests {
         }
     }
 
+    /// rz24: the credit-spread equity loading is range-checked on the compare path; the off value and in-range values are accepted.
+    #[test]
+    fn rz24_key_validation() {
+        let body = |v: &str| format!(r#"{{"config":{{"n_households":1000,"credit_shock_erp":{v}}}}}"#);
+        for v in ["-0.1", "5.5"] {
+            match parse_compare(body(v).as_bytes(), 0) {
+                Err(e) => assert!(e.message().starts_with("credit_shock_erp"), "{v}: {}", e.message()),
+                Ok(_) => panic!("credit_shock_erp={v} accepted"),
+            }
+        }
+        for v in ["0", "0.56", "5"] {
+            assert!(parse_compare(body(v).as_bytes(), 0).is_ok(), "credit_shock_erp={v} rejected");
+        }
+    }
+
     /// rz12: the perception stage counts are range-checked on the compare path; the off values and in-range values are accepted.
     #[test]
     fn rz12_keys_validation() {

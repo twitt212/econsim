@@ -413,8 +413,10 @@ growth signal, the discount rate and the premium, so the shock is a level wedge 
 log-linear forms and where `LOG_CAP_GUARD` binds (a cut to the capitalisation rate would not move Tech where the guard binds). The dividends,
 the growth signals, the news state, the premium and the discount rate are exactly the ones the model would have had. The wedged value is the
 one that reaches `sector_equity`, Tobin's q, the Fund's NAV and share price, and the month's equity return. The normal q (the reference for
-the rebase at the end of the burn-in) is not updated while a re-rating is in force in the sector, as it is not during a boom. Nothing else reads
-the shock.
+the rebase at the end of the burn-in) is not updated while a re-rating is in force in the sector, as it is not during a boom. (RZ24-R1) With
+`credit_shock_erp` on, a sector that an active re-rating covers (`ShockState::share_price_covered`: an entry aimed at all sectors or at that sector,
+whatever its size) is valued at the premium without the credit loading, because the typed path already sets that market; the sectors it does not cover keep
+the loading. Nothing else reads the shock.
 
 What carries it on, all existing channels. (1) Household wealth: the Fund's share price falls by Tech's (or the sectors') share of the Fund's NAV, and
 households' Fund wealth is read by the consumption rule (`mpc_fund_wealth_annual`, 2% a year, concave in wealth), the housing down-payment

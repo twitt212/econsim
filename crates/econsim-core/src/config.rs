@@ -1852,6 +1852,18 @@ pub struct Config {
     pub rerate_q_sens: f64,
     /// rz20 (re-rating form): the lender premium's target gains `rerate_ebp_sens` x max(0, -L), L the (unsmoothed) log of the re-rating in force. Range [0, 0.05]. Units: decimal per unit of ln.
     pub rerate_ebp_sens: f64,
+
+    // rz24
+    /// rz24: the equity risk premium loads on a `CreditSpread` shock. While the shock (with its decaying tail, `credit_tail_half_life_months`)
+    /// is in force the premium is higher by `credit_shock_erp` x the spread added to bank loan rates (decimal: 0.02 for +200 bp), in every
+    /// sector (`equity::equity_risk_premium`), so valuations fall by the premium times the sectors' duration. The loading is on the shock only:
+    /// the lender premium and the baseline cycle are untouched, so a run with no `CreditSpread` shock is bit-identical with the key on. The
+    /// premium stays inside [`erp_min`, `erp_max`]. A negative shock (credit easing) lowers the premium by the same loading. Units: points of
+    /// equity premium per point of spread. 0 = off (legacy): nothing is computed. Range [0, 5]. Source of the calibration: docs/CALIBRATION.md (RZ24).
+    /// rz24-r1: a sector that an active `SharePrices` re-rating covers (a shock aimed at all sectors or at that sector, whatever its size) is valued without
+    /// the loading: the reader's typed share-price path already sets that market, so the model's own estimate of what credit does to equities is not added
+    /// to it. Sectors the re-rating does not cover keep the loading. Docs: docs/CALIBRATION.md (RZ24-R1).
+    pub credit_shock_erp: f64,
 }
 
 impl Config {
@@ -2055,6 +2067,8 @@ pub const FUND_WEALTH_EWMA_SPAN_RANGE: (f64, f64) = (2.0, 60.0);
 pub const RERATE_WEALTH_MPC_MAX: f64 = 0.2;
 pub const RERATE_Q_SENS_MAX: f64 = 1.0;
 pub const RERATE_EBP_SENS_MAX: f64 = 0.05;
+/// rz24: upper bound of the equity risk premium's loading on a credit-spread shock (points of premium per point of spread).
+pub const CREDIT_SHOCK_ERP_MAX: f64 = 5.0;
 
 impl Config {
     /// rz1: range check of the rate-perception lag, the credit-spread tail and the desired-capital adjustment share.
@@ -2129,6 +2143,11 @@ impl Config {
         let es = self.ebp_equity_sens;
         if !es.is_finite() || !(0.0..=EBP_EQUITY_SENS_MAX).contains(&es) {
             return Err(format!("ebp_equity_sens must be between 0 and {EBP_EQUITY_SENS_MAX} (got {es})"));
+        }
+        // rz24: the equity premium's loading on a credit-spread shock.
+        let ce = self.credit_shock_erp;
+        if !ce.is_finite() || !(0.0..=CREDIT_SHOCK_ERP_MAX).contains(&ce) {
+            return Err(format!("credit_shock_erp must be between 0 and {CREDIT_SHOCK_ERP_MAX} (got {ce})"));
         }
         Ok(())
     }
@@ -2917,6 +2936,9 @@ impl Default for Config {
             rerate_wealth_mpc_annual: 0.025,
             rerate_q_sens: 0.16,
             rerate_ebp_sens: 0.024,
+
+            // rz24
+            credit_shock_erp: 0.0,
         }
     }
 }
@@ -3260,5 +3282,37 @@ mod rz20_config_tests {
         assert!(with(0.01, 0.0, 0.0).validate_rz1().unwrap_err().starts_with("fund_wealth_tail_weight"));
         assert!(with(0.35, 2.0, 0.0).validate_rz1().unwrap_err().starts_with("investment_q_sens_all"));
         assert!(with(0.35, 0.0, 0.1).validate_rz1().unwrap_err().starts_with("ebp_equity_sens"));
+    }
+}
+
+// rz24: the credit-tightening key. `credit_shock_erp` (0, off) acts only while a `CreditSpread` shock is in force. The default fingerprint is checked by
+// the identity cases of the acceptance, not here.
+#[cfg(test)]
+mod rz24_tests {
+    use super::Config;
+
+    #[test]
+    fn rz24_key_is_off_by_default_and_serialises() {
+        let c = Config::default();
+        assert_eq!(c.credit_shock_erp, 0.0);
+        assert!(c.validate_rz1().is_ok());
+        let v = serde_json::to_value(&c).unwrap();
+        assert_eq!(v["credit_shock_erp"], serde_json::json!(0.0));
+        let over: Config = serde_json::from_str(r#"{"credit_shock_erp": 0.56}"#).unwrap();
+        assert_eq!(over.credit_shock_erp, 0.56);
+        let none: Config = serde_json::from_str("{}").unwrap();
+        assert_eq!(none.credit_shock_erp, 0.0);
+    }
+
+    #[test]
+    fn rz24_validation_ranges() {
+        let with = |e: f64| Config { credit_shock_erp: e, ..Config::default() };
+        for e in [0.0, 0.56, 5.0, 2.5, 1e-9] {
+            assert!(with(e).validate_rz1().is_ok(), "{e}");
+        }
+        for e in [-0.01, 5.01, f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -5.0] {
+            let err = with(e).validate_rz1().unwrap_err();
+            assert!(err.starts_with("credit_shock_erp"), "{e}: {err}");
+        }
     }
 }
